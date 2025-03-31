@@ -1,22 +1,41 @@
-require('dotenv').config();
 const express = require('express');
-const app = express();
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
 const path = require('path');
+const authRoutes = require('./routes/authRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const cookieParser = require('cookie-parser');
 
-// Conectar ao MongoDB
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log("MongoDB conectado!"))
-  .catch(err => console.error(err));
+dotenv.config();
 
-app.set('view engine', 'ejs'); // Configurar EJS como template engine
-app.use(express.static(path.join(__dirname, 'public'))); // Para ficheiros estáticos
-app.use(express.urlencoded({ extended: true })); // Para receber dados de formulários
+const app = express();
 
-// Rotas básicas
-app.get('/', (req, res) => {
-  res.render('index', { title: "Página Inicial" });
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Conectado ao MongoDB'))
+    .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.use((req, res, next) => {
+    console.log(`[${req.method}] ${req.url}`);
+    next();
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor a rodar na porta ${PORT}`));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.use('/auth', authRoutes);
+app.use('/user', profileRoutes);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Servidor a correr na porta ${PORT}`);
+});

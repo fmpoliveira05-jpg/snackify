@@ -1,0 +1,12 @@
+body {
+    background-color: #f8f9fa;
+}
+.hero-section {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(to right, #007bff, #00c6ff);
+    color: white;
+}
