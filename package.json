@@ -14,12 +14,14 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
+    "cookies-parser": "^1.2.0",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.15.0",
-    "mongoose": "^8.13.1"
+    "mongoose": "^8.13.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

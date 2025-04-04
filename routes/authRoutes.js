@@ -1,14 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
+const { registerUser, login, registerRestaurant } = require('../controllers/authController');
 
-router.post('/register', register);
-
+router.post('/registerUser', registerUser);
+router.post('/registerRestaurant', registerRestaurant);
 router.post('/login', login);
-
-router.get("/logout", (req, res) => {
-    res.clearCookie("token");
-    res.redirect("/login");
-});
 
 module.exports = router;

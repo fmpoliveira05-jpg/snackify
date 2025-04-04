@@ -21,11 +21,11 @@
                 <div class="card">
                     <div class="card-header">Registo do cliente</div>
                     <div class="card-body">
-                        <form method="POST" action="/auth/register">
+                        <form method="POST" action="/auth/registerUser">
                             <input type="hidden" name="userType" value="customer">
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text" class="form-control" maxlength="50" required>
+                                <input name="name" type="text" class="form-control" minlength="5" maxlength="50" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Foto de perfil</label>
@@ -37,19 +37,23 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Morada</label>
-                                <input name="address" type="text" class="form-control" maxlength="100" required>
+                                <input name="address" type="text" class="form-control" minlength="5" maxlength="100" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Telemóvel</label>
-                                <input name="phone" type="text" class="form-control" minlength="9" maxlength="9" required>
+                                <input name="phone" type="text" class="form-control" minlength="9" maxlength="9" pattern="\d{9}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">NIF (opcional)</label>
+                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" pattern="\d{9}">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
-                                <input name="username" type="text" class="form-control" maxlength="20" required>
+                                <input name="username" type="text" class="form-control" minlength="5" maxlength="20" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" required>
+                                <input name="email" type="email" class="form-control" minlength="5" maxlength="50" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
@@ -64,4 +68,4 @@
     </section>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html>d

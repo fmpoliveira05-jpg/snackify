@@ -1,17 +1,15 @@
 const mongoose = require('mongoose');
 
-const UserSchema = new mongoose.Schema({
+const RestaurantSchema = new mongoose.Schema({
     name: { type: String, required: true },
     username: { type: String, unique: true, required: true },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    birthDate: { type: Date },
     address: { type: String },
     phone: { type: String },
     nif: { type: String },
-    userType: { type: String, enum: ['customer', 'admin']},
-    profilePicture: { type: String },
+    logo: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('user', UserSchema);
+module.exports = mongoose.model('restaurant', RestaurantSchema);

@@ -21,35 +21,35 @@
                 <div class="card">
                     <div class="card-header">Registo do restaurante</div>
                     <div class="card-body">
-                        <form method="POST" action="/auth/register">
+                        <form method="POST" action="/auth/registerRestaurant">
                             <input type="hidden" name="userType" value="restaurant">
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text" class="form-control" maxlength="50" required>
+                                <input name="name" type="text" class="form-control" minlength="5" maxlength="50" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Logotipo</label>
                                 <input name="logo" type="file" accept="image/*" class="form-control">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Data de fundação</label>
-                                <input name="date" type="date" class="form-control" required>
-                            </div>
-                            <div class="mb-3">
                                 <label class="form-label">Morada</label>
-                                <input name="address" type="text" class="form-control" maxlength="100" required>
+                                <input name="address" type="text" class="form-control" minlength="5" maxlength="100" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Telefone</label>
                                 <input name="phone" type="text" class="form-control" minlength="9" maxlength="9" required>
                             </div>
+                            <div class = "mb-3">
+                                <label class="form-label">Número de Identificação Fiscal (NIF)</label>
+                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" required>
+                            </div>
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
-                                <input name="username" type="text" class="form-control" maxlength="20" required>
+                                <input name="username" type="text" class="form-control" minlength="5" maxlength="20" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" required>
+                                <input name="email" type="email" class="form-control" minlength="5" maxlength="50" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>

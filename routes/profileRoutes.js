@@ -1,13 +1,13 @@
 const express = require('express');
-const User = require('../models/User');
+const User = require('../models/user');
+const Restaurant = require('../models/restaurant');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 
 const authenticate = (req, res, next) => {
-    const token = req.cookies?.authToken || req.header('Authorization')?.replace('Bearer ', '');
+    const token = req.header('Authorization');
     if (!token) return res.status(401).json({ message: 'Acesso negado!' });
-
 
     try {
         const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
@@ -22,7 +22,7 @@ router.get('/profile', authenticate, async (req, res) => {
     try {
         const user = await User.findById(req.user.userId).select('-password');
         if (!user) return res.status(404).json({ message: 'Utilizador não encontrado!' });
-        res.render('profile', { user });
+        res.json(user);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao carregar perfil', error: error.message });
     }

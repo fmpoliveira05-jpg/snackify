@@ -2,9 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const cookieParser = require('cookie-parser');
+const menuRoutes = require('./routes/menuRoutes');
+const authMiddleware = require('./middleware/authMiddleware');
 
 dotenv.config();
 
@@ -14,7 +17,7 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('Conectado ao MongoDB'))
+    .then(() => console.log('Conectado ao MongoDB Atlas'))
     .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
 
 app.use(express.urlencoded({ extended: true }));
@@ -34,6 +37,8 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
+app.use('/menu', menuRoutes);
+app.use('/menu', authMiddleware, menuRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

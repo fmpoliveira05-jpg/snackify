@@ -1,38 +1,71 @@
-const User = require('../models/User');
+const user = require('../models/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const restaurants = require('../models/restaurant');
 
-const register = async (req, res) => {
-    const { name, username, email, password, birthDate, date, address, phone } = req.body;
-    const userType = req.body.userType || (req.originalUrl.includes('restaurant') ? 'restaurant' : 'customer');
+const registerUser = async (req, res) => {
+    const { name, username, email, password, birthDate, address, phone } = req.body;
+
+    const userType= "customer";
 
     try {
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
+        const existinguser = await user.findOne({ $or: [{ email }, { username }] });
+        if (existinguser) {
             return res.status(400).json({ message: "E-mail ou username já em uso!" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newUser = new User({
+        const newuser = new user({
             name,
             username,
             email,
             password: hashedPassword,
             birthDate,
-            date,
             address,
             phone,
             userType
+            
         });
 
         console.log(req.body);
 
-        await newUser.save();
+        await newuser.save();
         res.status(201).json({ message: "Utilizador registado com sucesso!" });
     } catch (error) {
         res.status(500).json({ message: "Erro ao registar o utilizador", error: error.message });
+    }
+};
+
+const registerRestaurant = async (req, res) => {
+    const { name, username, email, password, birthDate, address, phone, nif } = req.body;
+
+    try {
+        const existingRestaurant = await restaurants.findOne({ $or: [{ email }, { username }] });
+        if (existingRestaurant) {
+            return res.status(400).json({ message: "E-mail ou username já em uso!" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newRestaurant = new restaurants({
+            name,
+            address,
+            phone,
+            nif,
+            username,
+            email,
+            password: hashedPassword
+        });
+
+        console.log(req.body);
+
+        await newRestaurant.save();
+        res.status(201).json({ message: "Restaurante registado com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao registar o restaurante", error: error.message });
     }
 };
 
@@ -53,10 +86,22 @@ const login = async (req, res) => {
         );
 
         res.json({ message: "Login bem-sucedido!", token });
-  
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });
     }
 };
 
-module.exports = { register, login };
+/*
+exports.login = (req, res) => {
+    const { username } = req.body;
+
+    if (username) {
+
+        res.cookie("user", username, { maxAge: 900000, httpOnly: true });
+        res.send("Login bem-sucedido! Cookie criado.");
+    } else {
+        res.status(400).send("Nome de usuário necessário.");
+    }
+};
+*/
+module.exports = { registerUser, login, registerRestaurant };
