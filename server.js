@@ -1,13 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
-const cookieParser = require('cookie-parser');
-
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-const menuRoutes = require('./routes/menuRoutes');
-const authMiddleware = require('./middleware/authMiddleware');
+const authMiddleware = require('./middlewares/authMiddleware');
 
 dotenv.config();
 
@@ -18,7 +16,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('Conectado ao MongoDB Atlas'))
-    .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+    .catch((err) => console.error('Erro ao conectar ao MongoDB Atlas:', err));
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -30,9 +28,34 @@ app.use((req, res, next) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.render('index');
+});
+
+app.get('/userRegister', (req, res) => {
+    res.render('userRegister');
+});
+
+app.get('/restaurantRegister', (req, res) => {
+    res.render('restaurantRegister');
+});
+
+app.get('/login', (req, res) => {
+    res.render('login');
+});
+
+app.get('/userDashboard', (req, res) => {
+    res.render('userDashboard');
+});
+
+app.get('/restaurantDashboard', (req, res) => {
+    res.render('restaurantDashboard');
+});
+
+app.get('/profilepage', (req, res) => {
+    res.render('profile');
 });
 
 app.use('/auth', authRoutes);

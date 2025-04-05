@@ -1,23 +1,23 @@
-const user = require('../models/user');
+const User = require('../models/user');
+const Restaurant = require('../models/restaurant');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const restaurants = require('../models/restaurant');
 
-const registerUser = async (req, res) => {
-    const { name, username, email, password, birthDate, address, phone } = req.body;
-
-    const userType= "customer";
+const userRegister = async (req, res) => {
+    const { name, username, email, password, birthDate, address, phone, nif } = req.body;
+    const profilePicture = req.file ? `/uploads/${req.file.filename}` : null;
+    const userType = "customer";
 
     try {
-        const existinguser = await user.findOne({ $or: [{ email }, { username }] });
+        const existinguser = await User.findOne({ $or: [{ email }, { username }] });
         if (existinguser) {
-            return res.status(400).json({ message: "E-mail ou username já em uso!" });
+            return res.status(400).json({ message: "Email ou username já em uso!" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newuser = new user({
+        const newuser = new User({
             name,
             username,
             email,
@@ -25,11 +25,10 @@ const registerUser = async (req, res) => {
             birthDate,
             address,
             phone,
+            nif,
+            profilePicture,
             userType
-            
         });
-
-        console.log(req.body);
 
         await newuser.save();
         res.status(201).json({ message: "Utilizador registado com sucesso!" });
@@ -38,29 +37,31 @@ const registerUser = async (req, res) => {
     }
 };
 
-const registerRestaurant = async (req, res) => {
-    const { name, username, email, password, birthDate, address, phone, nif } = req.body;
+const restaurantRegister = async (req, res) => {
+    const { name, username, email, password, address, phone, nif } = req.body;
+    const logo = req.file ? `/uploads/${req.file.filename}` : null;
+    const userType = "restaurant";
 
     try {
-        const existingRestaurant = await restaurants.findOne({ $or: [{ email }, { username }] });
+        const existingRestaurant = await Restaurant.findOne({ $or: [{ email }, { username }] });
         if (existingRestaurant) {
-            return res.status(400).json({ message: "E-mail ou username já em uso!" });
+            return res.status(400).json({ message: "Email ou username já em uso!" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newRestaurant = new restaurants({
+        const newRestaurant = new Restaurant({
             name,
             address,
             phone,
             nif,
             username,
             email,
+            logo,
+            userType,
             password: hashedPassword
         });
-
-        console.log(req.body);
 
         await newRestaurant.save();
         res.status(201).json({ message: "Restaurante registado com sucesso!" });
@@ -73,35 +74,30 @@ const login = async (req, res) => {
     const { username, password } = req.body;
 
     try {
-        const user = await User.findOne({ username });
-        if (!user) return res.status(400).json({ message: "Utilizador não encontrado!" });
+        let foundUser = await User.findOne({ username });
+        let userType = "customer";
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        if (!foundUser) {
+            foundUser = await Restaurant.findOne({ username });
+            userType = "restaurant";
+        }
+
+        if (!foundUser) return res.status(400).json({ message: "Utilizador não encontrado!" });
+
+        const isMatch = await bcrypt.compare(password, foundUser.password);
         if (!isMatch) return res.status(400).json({ message: "Password incorreta!" });
 
         const token = jwt.sign(
-            { userId: user._id },
+            { userId: foundUser._id, userType },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        res.json({ message: "Login bem-sucedido!", token });
+        res.json({ message: "Login bem-sucedido!", token, userType });
+  
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });
     }
 };
 
-/*
-exports.login = (req, res) => {
-    const { username } = req.body;
-
-    if (username) {
-
-        res.cookie("user", username, { maxAge: 900000, httpOnly: true });
-        res.send("Login bem-sucedido! Cookie criado.");
-    } else {
-        res.status(400).send("Nome de usuário necessário.");
-    }
-};
-*/
-module.exports = { registerUser, login, registerRestaurant };
+module.exports = { userRegister, restaurantRegister, login };

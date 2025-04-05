@@ -12,4 +12,4 @@ const RestaurantSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('restaurant', RestaurantSchema);
+module.exports = mongoose.model('Restaurant', RestaurantSchema);
