@@ -37,8 +37,6 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
-app.use('/menu', menuRoutes);
-app.use('/menu', authMiddleware, menuRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
