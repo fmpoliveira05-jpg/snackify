@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const menuRoutes = require('./routes/menuRoutes');
 const authMiddleware = require('./middlewares/authMiddleware');
 
 dotenv.config();
@@ -60,6 +61,7 @@ app.get('/profilepage', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
+app.use('/menus', menuRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

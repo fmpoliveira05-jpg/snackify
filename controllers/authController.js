@@ -75,11 +75,12 @@ const login = async (req, res) => {
 
     try {
         let foundUser = await User.findOne({ username });
-        let userType = "customer";
-
+        
         if (!foundUser) {
             foundUser = await Restaurant.findOne({ username });
             userType = "restaurant";
+        } else {
+            userType = foundUser.userType;
         }
 
         if (!foundUser) return res.status(400).json({ message: "Utilizador não encontrado!" });
@@ -93,11 +94,25 @@ const login = async (req, res) => {
             { expiresIn: '1h' }
         );
 
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 3600000
+          });
+
         res.json({ message: "Login bem-sucedido!", token, userType });
   
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });
     }
 };
+
+/*
+const logout = (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: "Logout realizado com sucesso!" });
+};
+*/
 
 module.exports = { userRegister, restaurantRegister, login };
