@@ -5,7 +5,7 @@ const Restaurant = require('../models/restaurant');
 const auth = require('../middlewares/authMiddleware');
 
 router.get('/perfil', auth, async (req, res) => {
-    const userId = req.user.userId;
+    const userId = req.user._id;
     const userType = req.user.userType;
 
     try {
