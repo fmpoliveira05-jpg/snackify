@@ -10,25 +10,25 @@
         <h2>Adicionar novo menu</h2>
 
         <form action="/menus/novo" method="POST" enctype="multipart/form-data">
-            <input name="title" class="form-control mb-2" placeholder="Título do menu" required />
-            <textarea name="description" class="form-control mb-3" placeholder="Descrição do menu"></textarea>
+            <input name="title" class="form-control mb-2" placeholder="Introduza um título para o menu" required />
+            <textarea name="description" class="form-control mb-3" placeholder="Introduza uma descrição para o menu (opcional)"></textarea>
 
             <h5>Adicionar pratos ao menu</h5>
 
             <div id="dishes-container">
                 <div class="dish-entry border rounded p-3 mb-3">
-                    <input name="dishes[0][name]" class="form-control mb-2" placeholder="Nome do prato" required />
-                    <textarea name="dishes[0][description]" class="form-control mb-2" placeholder="Descrição (opcional)"></textarea>
+                    <input name="dishes[0][name]" class="form-control mb-2" placeholder="Introduza um nome para o prato" required />
+                    <textarea name="dishes[0][description]" class="form-control mb-2" placeholder="Introduza uma descrição para o prato (opcional)"></textarea>
                     <select name="dishes[0][category]" class="form-control mb-2" required>
-                    <option value="">Seleciona a categoria</option>
+                    <option value="">Selecione a categoria</option>
                     <option value="Carne">Carne</option>
                     <option value="Peixe">Peixe</option>
                     <option value="Vegetariano">Vegetariano</option>
                     <option value="Sobremesa">Sobremesa</option>
                     </select>
-                    <input name="dishes[0][price]" type="number" step="0.01" class="form-control mb-2" placeholder="Preço" required />
+                    <input name="dishes[0][price]" type="number" step="0.01" class="form-control mb-2" placeholder="Introduza um preço para o prato" required />
                     <input name="dishes[0][image]" type="file" class="form-control mb-2" accept="image/*" />
-                    <input name="dishes[0][nutriInfo]" class="form-control mb-2" placeholder="Informação nutricional" required />
+                    <input name="dishes[0][nutriInfo]" class="form-control mb-2" placeholder="Introduza o valor da informação nutricional correspondente ao prato" required />
                 </div>
             </div>
             <button type="button" id="add-dish" class="btn btn-outline-secondary mb-2 d-block w-25">Adicionar mais um prato</button>

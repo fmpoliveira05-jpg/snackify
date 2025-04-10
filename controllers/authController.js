@@ -75,7 +75,8 @@ const login = async (req, res) => {
 
     try {
         let foundUser = await User.findOne({ username });
-        
+        let userType = "undefined";
+
         if (!foundUser) {
             foundUser = await Restaurant.findOne({ username });
             userType = "restaurant";
@@ -108,11 +109,9 @@ const login = async (req, res) => {
     }
 };
 
-/*
 const logout = (req, res) => {
     res.clearCookie('token');
     res.json({ message: "Logout realizado com sucesso!" });
 };
-*/
 
-module.exports = { userRegister, restaurantRegister, login };
+module.exports = { userRegister, restaurantRegister, login, logout };

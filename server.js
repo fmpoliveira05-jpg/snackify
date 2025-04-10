@@ -3,10 +3,11 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
+const auth = require('./middlewares/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const menuRoutes = require('./routes/menuRoutes');
-const authMiddleware = require('./middlewares/authMiddleware');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 dotenv.config();
 
@@ -35,11 +36,11 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
-app.get('/userRegister', (req, res) => {
-    res.render('userRegister');
+app.get('/register/customer', (req, res) => {
+    res.render('customerRegister');
 });
 
-app.get('/restaurantRegister', (req, res) => {
+app.get('/register/restaurant', (req, res) => {
     res.render('restaurantRegister');
 });
 
@@ -47,21 +48,23 @@ app.get('/login', (req, res) => {
     res.render('login');
 });
 
-app.get('/userDashboard', (req, res) => {
-    res.render('userDashboard');
+app.get('/dashboard/customer', (req, res) => {
+    res.render('customerDashboard');
 });
 
-app.get('/restaurantDashboard', (req, res) => {
+app.get('/dashboard/restaurant', (req, res) => {
     res.render('restaurantDashboard');
 });
 
-app.get('/profilepage', (req, res) => {
+app.get('/perfil', (req, res) => {
     res.render('profile');
 });
 
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
-app.use('/menus', menuRoutes);
+app.use('/menus', auth, menuRoutes);
+app.use('/dashboard', auth, dashboardRoutes);
+app.use('/perfil', auth, profileRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

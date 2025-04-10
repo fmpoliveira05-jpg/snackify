@@ -5,11 +5,16 @@
     <title>Perfil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body>    
     <div class="container mt-5">
         <h1 class="mb-4">Perfil de <span id="tipo"></span></h1>
-        <ul id="info" class="list-group"></ul>
+        <ul id="info" class="list-group mb-5"></ul>
+    
+        <div class="text-start">
+            <button id="logoutBtn" class="btn btn-danger">Terminar sessão</button>
+        </div>
     </div>
+    
 
     <script>
         const fieldLabels = {
@@ -41,9 +46,7 @@
         const token = localStorage.getItem('token');
     
         async function loadProfile() {
-            const response = await fetch('/user/profile', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
+            const response = await fetch('/user/perfil');
     
             if (response.ok) {
                 const data = await response.json();
@@ -73,6 +76,20 @@
         }
     
         loadProfile();
+
+        document.getElementById("logoutBtn").addEventListener("click", async () => {
+            const response = await fetch('/auth/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            } else {
+                alert("Erro ao fazer logout.");
+            }
+        });
     </script>    
 </body>
 </html>

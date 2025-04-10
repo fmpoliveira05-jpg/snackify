@@ -1,25 +1,10 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const router = express.Router();
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
+const auth = require('../middlewares/authMiddleware');
 
-const authenticate = (req, res, next) => {
-    const token = req.cookies?.authToken || req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) return res.status(401).json({ message: 'Acesso negado!' });
-
-
-    try {
-        const decoded = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        res.status(400).json({ message: 'Token inválido!' });
-    }
-};
-
-router.get('/profile', authenticate, async (req, res) => {
+router.get('/perfil', auth, async (req, res) => {
     const userId = req.user.userId;
     const userType = req.user.userType;
 
@@ -40,7 +25,7 @@ router.get('/profile', authenticate, async (req, res) => {
 });
 
 
-router.put('/profile', authenticate, async (req, res) => {
+router.put('/perfil', auth, async (req, res) => {
     const { name, address, phone, profilePicture } = req.body;
     
     try {
@@ -54,10 +39,6 @@ router.put('/profile', authenticate, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Erro ao atualizar perfil', error: error.message });
     }
-});
-
-router.get('/profilePage', (req, res) => {
-    res.render('profile');
 });
 
 module.exports = router;

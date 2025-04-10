@@ -25,11 +25,11 @@
                         <form id="loginForm" method="POST" action="/auth/login">
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
-                                <input name= "username" type="username"  class="form-control" required>
+                                <input name= "username" type="username" placeholder="Introduza o seu nome de utilizador" class="form-control" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
-                                <input name="password" type="password" class="form-control" required>
+                                <input name="password" type="password" placeholder="Introduza a sua palavra-passe" class="form-control" required>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Entrar</button>
                         </form>
@@ -62,9 +62,9 @@
                     localStorage.setItem('token', result.token);
 
                     if (result.userType === 'restaurant') {
-                        window.location.href = "/restaurantDashboard"; 
+                        window.location.href = "/dashboard/restaurant"; 
                     } else {
-                        window.location.href = "/userDashboard";
+                        window.location.href = "/dashboard/customer";
                     }
                 } else {
                     alert(result.message);
