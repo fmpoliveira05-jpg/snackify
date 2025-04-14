@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Menu</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .dish-card {
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .dish-card:hover {
+      transform: scale(1.02);
+    }
+
+    .dish-card.selected {
+      border: 2px solid green;
+      background-color: #e6ffe6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Editar Menu</h2>
+
+    <form action="/menus/editar/<%= menu._id %>" method="POST">
+      <div class="mb-3">
+        <label for="title" class="form-label">Título</label>
+        <input type="text" class="form-control" id="title" name="title" value="<%= menu.title %>" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Descrição</label>
+        <textarea class="form-control" id="description" name="description" rows="4"><%= menu.description %></textarea>
+      </div>
+
+      <h4>Adicionar novos pratos</h4>
+      <div class="row" id="dishes-grid">
+        <% if (availableDishes.length === 0) { %>
+          <p class="text-muted">Não há pratos disponíveis no momento.</p>
+        <% } else { %>
+          <% availableDishes.forEach((dish, index) => { %>
+            <div class="col-md-4 mb-3">
+              <div class="card dish-card" data-dish-id="<%= dish._id %>">
+                <% if (dish.imagePath && dish.image) { %>
+                  <img src="/uploads/<%= dish.image %>" class="card-img-top" alt="<%= dish.name %>">
+                <% } %>
+                <div class="card-body">
+                  <h5 class="card-title"><%= dish.name %></h5>
+                  <p class="card-text"><%= dish.description || '' %></p>
+                  <p><strong>Categoria:</strong> <%= dish.category %></p>
+                  <p><strong>Preço:</strong> €<%= dish.price.toFixed(2) %></p>
+                  <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo %> kcal</p>
+                </div>
+                <input type="checkbox" name="availableDishes" value="<%= dish._id %>" class="d-none dish-checkbox" />
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Guardar Alterações</button>
+      <a href="/menus" class="btn btn-secondary ms-2">Cancelar</a>
+    </form>
+  </div>
+
+  <script>
+    const selected = new Set();
+    const maxDishes = 10;
+
+    document.querySelectorAll('.dish-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const checkbox = card.querySelector('.dish-checkbox');
+        const dishId = card.dataset.dishId;
+
+        if (!checkbox.checked && selected.size >= maxDishes) {
+          alert("Máximo de 10 pratos por menu.");
+          return;
+        }
+
+        checkbox.checked = !checkbox.checked;
+        card.classList.toggle('selected', checkbox.checked);
+
+        if (checkbox.checked) {
+          selected.add(dishId);
+        } else {
+          selected.delete(dishId);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

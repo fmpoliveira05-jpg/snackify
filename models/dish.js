@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const dishSchema = new mongoose.Schema({
-    menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: true },
+    restaurantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant', required: true },
+    menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: false },
     name: { type: String, required: true },
     description: String,
     category: { type: String, enum: ['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'], required: true },

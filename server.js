@@ -7,6 +7,7 @@ const auth = require('./middlewares/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const menuRoutes = require('./routes/menuRoutes');
+const dishRoutes = require('./routes/dishRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
 dotenv.config();
@@ -63,6 +64,7 @@ app.get('/perfil', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
 app.use('/menus', auth, menuRoutes);
+app.use('/pratos', auth, dishRoutes);
 app.use('/dashboard', auth, dashboardRoutes);
 app.use('/perfil', auth, profileRoutes);
 

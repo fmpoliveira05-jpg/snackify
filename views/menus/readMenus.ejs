@@ -16,7 +16,14 @@
         <div class="card mb-4">
           <div class="card-body">
             <h4 class="card-title"><%= menu.title %></h4>
-            <p class="card-text"><%= menu.description %></p>
+            <p class="mb-0" class="card-text"><%= menu.description %></p>
+
+            <div class="d-flex justify-content-end gap-2 mb-2">
+              <a href="/menus/editar/<%= menu._id %>" class="btn btn-warning btn-sm">Editar Menu</a>
+              <form action="/menus/remover/<%= menu._id %>" method="POST" class="d-inline">
+                <button class="btn btn-danger btn-sm" onclick="return confirm('Remover este menu?')">Remover Menu</button>
+              </form>
+            </div>            
 
             <% if (menu.dishes.length === 0) { %>
               <p class="text-muted">Este menu ainda não tem pratos.</p>
@@ -28,7 +35,7 @@
                       <div class="col-md-3">
                         <img src="<%= dish.image ? '/uploads/' + dish.image : '/images/sem-imagem.png' %>" alt="<%= dish.name %>" class="img-fluid rounded" style="max-height: 120px;">
                       </div>
-                      <div class="col-md-9">
+                      <div class="col-md-6">
                         <h5><%= dish.name %></h5>
                         <p class="mb-1"><strong>Categoria:</strong> <%= dish.category %> | <strong>Preço:</strong> €<%= dish.price.toFixed(2) %></p>
                         <% if (dish.description) { %>
@@ -38,6 +45,13 @@
                           <small class="text-muted">Informação nutricional: <%= dish.nutriInfo %> kcal</small>
                         <% } %>
                       </div>
+                      <div class="col-md-3">
+                        <div class="d-flex justify-content-end gap-2">
+                          <form action="/menus/pratos/remover/<%= dish._id %>" method="POST" class="d-inline">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="return confirm('Remover este prato do menu?')">Remover do Menu</button>
+                          </form>                          
+                        </div>
+                      </div>                                            
                     </div>
                   </li>
                 <% }) %>
