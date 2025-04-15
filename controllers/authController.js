@@ -3,9 +3,17 @@ const Restaurant = require('../models/restaurant');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const userRegister = async (req, res) => {
+const showCustomerRegisterPage = (req, res) => {
+    res.render('auth/customerRegister');
+};
+
+const showRestaurantRegisterPage = (req, res) => {
+    res.render('auth/restaurantRegister');
+};
+
+const customerRegister = async (req, res) => {
     const { name, username, email, password, birthDate, address, phone, nif } = req.body;
-    const profilePicture = req.file ? `/uploads/${req.file.filename}` : null;
+    const profilePicture = req.file ? `/uploads/profilePictures/${req.file.filename}` : null;
     const userType = "customer";
 
     try {
@@ -31,7 +39,7 @@ const userRegister = async (req, res) => {
         });
 
         await newuser.save();
-        res.status(201).json({ message: "Utilizador registado com sucesso!" });
+        res.redirect('/auth/login');
     } catch (error) {
         res.status(500).json({ message: "Erro ao registar o utilizador", error: error.message });
     }
@@ -39,7 +47,7 @@ const userRegister = async (req, res) => {
 
 const restaurantRegister = async (req, res) => {
     const { name, username, email, password, address, phone, nif } = req.body;
-    const logo = req.file ? `/uploads/${req.file.filename}` : null;
+    const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
     const userType = "restaurant";
 
     try {
@@ -64,7 +72,7 @@ const restaurantRegister = async (req, res) => {
         });
 
         await newRestaurant.save();
-        res.status(201).json({ message: "Restaurante registado com sucesso!" });
+        res.redirect('/auth/login');
     } catch (error) {
         res.status(500).json({ message: "Erro ao registar o restaurante", error: error.message });
     }
@@ -109,9 +117,13 @@ const login = async (req, res) => {
     }
 };
 
+const showLoginPage = (req, res) => {
+    res.render('auth/login');
+};
+
 const logout = (req, res) => {
     res.clearCookie('token');
     res.json({ message: "Logout realizado com sucesso!" });
 };
 
-module.exports = { userRegister, restaurantRegister, login, logout };
+module.exports = { showCustomerRegisterPage, showRestaurantRegisterPage, customerRegister, restaurantRegister, login, logout, showLoginPage };

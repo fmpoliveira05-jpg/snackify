@@ -33,7 +33,7 @@
                   <li class="list-group-item">
                     <div class="row align-items-center">
                       <div class="col-md-3">
-                        <img src="<%= dish.image ? '/uploads/' + dish.image : '/images/sem-imagem.png' %>" alt="<%= dish.name %>" class="img-fluid rounded" style="max-height: 120px;">
+                        <img src="<%= dish.image ? dish.image : '/images/sem-imagem.png' %>" alt="<%= dish.name %>" class="img-fluid rounded" style="max-height: 120px;">
                       </div>
                       <div class="col-md-6">
                         <h5><%= dish.name %></h5>

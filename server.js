@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
-const auth = require('./middlewares/authMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const menuRoutes = require('./routes/menuRoutes');
@@ -37,36 +36,11 @@ app.get('/', (req, res) => {
     res.render('index');
 });
 
-app.get('/register/customer', (req, res) => {
-    res.render('customerRegister');
-});
-
-app.get('/register/restaurant', (req, res) => {
-    res.render('restaurantRegister');
-});
-
-app.get('/login', (req, res) => {
-    res.render('login');
-});
-
-app.get('/dashboard/customer', (req, res) => {
-    res.render('customerDashboard');
-});
-
-app.get('/dashboard/restaurant', (req, res) => {
-    res.render('restaurantDashboard');
-});
-
-app.get('/perfil', (req, res) => {
-    res.render('profile');
-});
-
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
-app.use('/menus', auth, menuRoutes);
-app.use('/pratos', auth, dishRoutes);
-app.use('/dashboard', auth, dashboardRoutes);
-app.use('/perfil', auth, profileRoutes);
+app.use('/menus', menuRoutes);
+app.use('/pratos', dishRoutes);
+app.use('/dashboard', dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -10,3 +10,17 @@ body {
     background: linear-gradient(to right, #007bff, #00c6ff);
     color: white;
 }
+
+.dish-card {
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .dish-card:hover {
+    transform: scale(1.02);
+  }
+
+  .dish-card.selected {
+    border: 2px solid green;
+    background-color: #e6ffe6;
+  }

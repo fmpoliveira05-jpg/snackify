@@ -26,11 +26,11 @@ const updateDish = async (req, res) => {
     dish.nutriInfo = nutriInfo;
 
     if (req.file) {
-      dish.image = req.file.filename;
+      dish.image = req.file ? `/uploads/images/${req.file.filename}` : null;
     }
 
     await dish.save();
-    res.redirect('/menus');
+    res.redirect('/pratos');
   } catch (err) {
     console.error('Erro ao atualizar prato:', err);
     res.status(500).send('Erro ao atualizar prato.');
@@ -57,6 +57,7 @@ const showAddDishForm = (req, res) => {
 const addDish = async (req, res) => {
   try {
     const { name, description, category, price, nutriInfo } = req.body;
+    const image = req.file ? `/uploads/images/${req.file.filename}` : null;
 
     const newDish = new Dish({
       name,
@@ -64,7 +65,7 @@ const addDish = async (req, res) => {
       category,
       price,
       nutriInfo,
-      image: req.file ? req.file.filename : null,
+      image,
       restaurantId: req.user._id,
       menuId: null
     });
