@@ -88,11 +88,24 @@ const listDishes = async (req, res) => {
   }
 };
 
+const showDishDetails = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+    if (!dish) return res.status(404).send('Prato não encontrado.');
+
+    res.render('dishes/showDish', { dish });
+  } catch (err) {
+    console.error('Erro ao carregar detalhes do prato:', err);
+    res.status(500).send('Erro ao carregar detalhes do prato.');
+  }
+};
+
 module.exports = {
   showEditDishForm,
   updateDish,
   deleteDish,
   showAddDishForm,
   addDish,
-  listDishes
+  listDishes,
+  showDishDetails
 };

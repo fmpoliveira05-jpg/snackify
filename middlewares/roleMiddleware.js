@@ -1,10 +1,10 @@
 const isCustomer = (req, res, next) => {
-    if (req.user?.userType === 'customer') return next();
+    if (req.user?.userType === 'customer' || req.user?.userType === 'admin') return next();
     return res.status(403).send('Acesso restrito a clientes!');
 };
 
 const isRestaurant = (req, res, next) => {
-    if (req.user?.userType === 'restaurant') return next();
+    if (req.user?.userType === 'restaurant' || req.user?.userType === 'admin') return next();
     return res.status(403).send('Acesso restrito a restaurantes!');
 };
 

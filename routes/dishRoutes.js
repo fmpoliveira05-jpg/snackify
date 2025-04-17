@@ -6,7 +6,8 @@ const {
   deleteDish,
   showAddDishForm,
   addDish,
-  listDishes
+  listDishes,
+  showDishDetails
 } = require('../controllers/dishController');
 
 const auth = require('../middlewares/authMiddleware');
@@ -15,6 +16,7 @@ const upload = require('../middlewares/uploadMiddleware');
 
 router.get('/', auth, isRestaurant, listDishes);
 router.get('/novo', auth, isRestaurant, showAddDishForm);
+router.get('/:id', auth, isRestaurant, showDishDetails);
 router.get('/editar/:id', auth, isRestaurant, showEditDishForm);
 
 router.post('/novo', auth, isRestaurant, upload.single('image'), addDish);

@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const dishRoutes = require('./routes/dishRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
@@ -41,6 +42,7 @@ app.use('/user', profileRoutes);
 app.use('/menus', menuRoutes);
 app.use('/pratos', dishRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

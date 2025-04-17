@@ -46,7 +46,7 @@ const customerRegister = async (req, res) => {
 };
 
 const restaurantRegister = async (req, res) => {
-    const { name, username, email, password, address, phone, nif } = req.body;
+    const { name, username, email, password, address, phone, nif, foundedAt, isChecked } = req.body;
     const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
     const userType = "restaurant";
 
@@ -64,10 +64,12 @@ const restaurantRegister = async (req, res) => {
             address,
             phone,
             nif,
+            foundedAt,
             username,
             email,
             logo,
             userType,
+            isChecked,
             password: hashedPassword
         });
 

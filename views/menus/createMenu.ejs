@@ -16,7 +16,7 @@
       <h4>Adicionar pratos</h4>
       <div class="row" id="dishes-grid">
         <% if (availableDishes.length === 0) { %>
-          <p class="text-muted text-center">Não há pratos disponíveis no momento.</p>
+          <p class="text-muted text-start">Não há pratos disponíveis no momento.</p>
         <% } else { %>
           <% availableDishes.forEach((dish, index) => { %>
             <div class="col-md-4 mb-3">
