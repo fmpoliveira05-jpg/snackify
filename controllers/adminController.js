@@ -18,6 +18,53 @@ const validateRestaurant = async (req, res) => {
     }
 };
 
+const rejectRestaurant = async (req, res) => {
+    try {
+        await Restaurant.findByIdAndDelete(req.params.id);
+        res.redirect('/admin/validar-restaurantes');
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao rejeitar restaurante", error: error.message });
+    }
+}
+
+const showRestaurantDetails = async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findById(req.params.id);
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurante não encontrado" });
+        }
+        res.render('admin/restaurantDetails', { restaurant });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao obter detalhes do restaurante", error: error.message });
+    }
+}
+
+const showRestaurantEditPage = async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findById(req.params.id);
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurante não encontrado" });
+        }
+        res.render('admin/editRestaurant', { restaurant });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao obter detalhes do restaurante", error: error.message });
+    }
+}
+
+const updateRestaurant = async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurante não encontrado" });
+        }
+        res.redirect('/admin/validar-restaurantes');
+    }
+    catch (error) {
+        res.status(500).json({ message: "Erro ao atualizar restaurante", error: error.message });
+    }
+}
+
+
 module.exports = {
     showPendingRestaurants,
     validateRestaurant
