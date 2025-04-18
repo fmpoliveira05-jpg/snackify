@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/stylesheets/styles.css">
 </head>
 <body>
+  <%- include('../partials/navbar') %>
   <div class="container mt-5">
     <div class="card">
       <% if (dish.image) { %>
@@ -24,9 +25,13 @@
           <p><strong>Descrição:</strong> <%= dish.description %></p>
         <% } %>
 
-        <% if (dish.nutriInfo) { %>
-          <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo %> kcal</p>
-        <% } %>
+        <% if (nutriInfo) { %>
+          <p><strong>Calorias:</strong> <%= nutriInfo.calories || 'Não disponível' %> kcal</p>
+          <p><strong>Nutri-Score:</strong> <%= nutriInfo.nutriScore ? nutriInfo.nutriScore.toUpperCase() : 'Não disponível' %></p>
+          <p><strong>Alergénios:</strong> <%= nutriInfo.allergens || 'Não especificado' %></p>
+        <% } else { %>
+          <p><em>Informação nutricional não disponível.</em></p>
+        <% } %>        
       </div>
     </div>
   </div>

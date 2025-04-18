@@ -125,7 +125,7 @@ const showLoginPage = (req, res) => {
 
 const logout = (req, res) => {
     res.clearCookie('token');
-    res.json({ message: "Logout realizado com sucesso!" });
+    res.redirect('/auth/login');
 };
 
 module.exports = { showCustomerRegisterPage, showRestaurantRegisterPage, customerRegister, restaurantRegister, login, logout, showLoginPage };

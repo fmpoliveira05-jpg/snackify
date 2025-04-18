@@ -9,6 +9,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const dishRoutes = require('./routes/dishRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const checkUser = require('./middlewares/checkUserMiddleware');
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+app.use(checkUser);
 
 app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.url}`);

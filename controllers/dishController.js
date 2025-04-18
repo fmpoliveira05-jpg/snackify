@@ -1,4 +1,5 @@
 const Dish = require('../models/dish');
+const axios = require('axios');
 
 const showEditDishForm = async (req, res) => {
   try {
@@ -93,7 +94,33 @@ const showDishDetails = async (req, res) => {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
 
-    res.render('dishes/showDish', { dish });
+    let nutriInfo = null;
+
+    try {
+      const response = await axios.get('https://world.openfoodfacts.org/cgi/search.pl', {
+        params: {
+          search_terms: dish.name,
+          search_simple: 1,
+          action: 'process',
+          json: 1
+        }
+      });
+
+      const product = response.data.products[0];
+
+      if (product) {
+        nutriInfo = {
+          calories: product.nutriments?.['energy-kcal_100g'],
+          nutriScore: product.nutriscore_grade,
+          allergens: product.allergens
+        };
+      }
+    } catch (apiErr) {
+      console.error('Erro ao obter dados da OpenFoodFacts:', apiErr.message);
+    }
+
+    res.render('dishes/showDish', { dish, nutriInfo });
+
   } catch (err) {
     console.error('Erro ao carregar detalhes do prato:', err);
     res.status(500).send('Erro ao carregar detalhes do prato.');

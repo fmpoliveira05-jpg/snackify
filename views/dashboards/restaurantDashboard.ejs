@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="/stylesheets/styles.css">
 </head>
 <body>
+    <%- include('../partials/navbar') %>
     <div class="container mt-5">
-        <h2>Bem-vindo ao Painel do Restaurante!</h2>
-        <p class="lead">Aqui poderás gerir os teus produtos, encomendas e informações.</p>
-        <a href="/user/perfil" class="btn btn-primary d-block mb-2 w-25">Ver Perfil do Restaurante</a>
-        <a href="/pratos/novo" class="btn btn-warning d-block mb-2 w-25">Adicionar Novo Prato</a>
-        <a href="/menus/novo" class="btn btn-success d-block mb-2 w-25">Adicionar Novo Menu</a>
-        <a href="/pratos" class="btn btn-outline-secondary d-block mb-2 w-25">Ver Pratos Criados</a>
-        <a href="/menus" class="btn btn-outline-primary d-block mb-2 w-25">Ver Menus Disponíveis</a>
-    </div>
+        <h2>Este é o Painel do Restaurante!</h2>
+        <p class="lead">Aqui poderá gerir os seus produtos, encomendas e informações.</p>
+    
+        <a href="/pratos/novo" class="btn btn-warning mb-2 btn-largo">Criar novo prato</a><br>
+        <a href="/menus/novo" class="btn btn-success mb-2 btn-largo">Criar novo menu</a><br>
+        <a href="/pratos" class="btn btn-outline-secondary mb-2 btn-largo">Ver pratos criados</a><br>
+        <a href="/menus" class="btn btn-outline-primary mb-2 btn-largo">Ver menus disponíveis</a>
+    </div>    
 </body>
 </html>

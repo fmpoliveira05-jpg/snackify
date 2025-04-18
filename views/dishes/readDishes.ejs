@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="/stylesheets/styles.css">
 </head>
 <body>
+  <%- include('../partials/navbar') %>
   <div class="container mt-5">
-    <h2>Pratos Criados</h2>
+    <h2>Pratos criados</h2>
 
     <% if (dishes.length === 0) { %>
       <p>Nenhum prato encontrado.</p>
@@ -31,7 +32,7 @@
                 <% } %>
                 <p class="text-muted">Informação nutricional: <%= dish.nutriInfo %> kcal</p>
 
-                <div class="mt-auto d-flex justify-content-between gap-2">
+                <div class="mt-auto d-flex justify-content-start gap-2">
                   <a href="/pratos/editar/<%= dish._id %>" class="btn btn-warning btn-sm">Editar Prato</a>
                   <form action="/pratos/remover/<%= dish._id %>" method="POST" onsubmit="return confirm('Remover este prato permanentemente?')">
                     <button class="btn btn-danger btn-sm">Remover Prato</button>

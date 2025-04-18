@@ -2,11 +2,11 @@ const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 
 const renderProfilePage = (req, res) => {
-  res.render('navbar/profile');
+  res.render('profile/profile');
 };
 
 const renderUpdateProfilePage = (req, res) => {
-  res.render('navbar/updateProfile');
+  res.render('profile/updateProfile');
 };
 
 const getProfile = async (req, res) => {

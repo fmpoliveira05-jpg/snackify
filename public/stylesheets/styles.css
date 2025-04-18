@@ -59,6 +59,10 @@ body {
   margin-left: 10px;
 }
 
+.btn-largo {
+  width: 250px;
+}
+
 /* ---------- NAVBAR ---------- */
 
 .navbar {
@@ -72,7 +76,7 @@ body {
   font-weight: 500;
 }
 
-/* ---------- PERFIL ---------- */
+/* ---------- PERFIS ---------- */
 
 .perfil-imagem,
 .perfil-img,
@@ -172,4 +176,17 @@ form textarea:focus {
 #updateProfileForm button, #updateProfileForm a.btn {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+
+/* ---------- LOGIN ---------- */
+
+.login-background {
+  background: linear-gradient(to right, #ffcc70, #ff8a00); /* Igual à hero-section */
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: white;
 }
