@@ -67,5 +67,9 @@ const updateRestaurant = async (req, res) => {
 
 module.exports = {
     showPendingRestaurants,
-    validateRestaurant
+    validateRestaurant,
+    rejectRestaurant,
+    showRestaurantDetails,
+    showRestaurantEditPage,
+    updateRestaurant
 };

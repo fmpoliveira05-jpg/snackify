@@ -1,4 +1,4 @@
-import { fieldLabels, fieldValueFormat } from "./fieldFormatters.js";
+import { fieldLabels } from "./fieldFormatters.js";
 
 const customerFields = ["name", "username", "email", "address", "phone", "nif", "birthDate"];
 const adminFields = ["name", "username", "email", "address", "phone", "nif"];
@@ -19,13 +19,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     const disabledFields = ["username", "email"];
 
     fields.forEach(field => {
-        const label = fieldLabels[field] || field;
         const rawValue = data[field] || '';
-        const dateFields = ["birthDate", "foundedAt"];
-        const inputType = dateFields.includes(field) ? 'date' : 'text';
-        const value = inputType === 'date' && rawValue ? new Date(rawValue).toISOString().split('T')[0] : rawValue;
-
+        const inputType = (["birthDate", "foundedAt"].includes(field)) ? 'date' : 'text';
         const isDisabled = disabledFields.includes(field) ? 'disabled' : '';
+
+        if (field === 'address' && typeof rawValue === 'object') {
+            const addressKeys = ["street", "number", "floor", "postalCode", "city", "district", "country"];
+            
+            const fieldset = document.createElement("fieldset");
+            fieldset.className = "border p-3 mb-3";
+            fieldset.innerHTML = `<legend class="w-auto px-2">${fieldLabels.address || "Morada"}</legend>`;
+
+            addressKeys.forEach(subField => {
+                const subValue = rawValue[subField] || '';
+                const subLabel = fieldLabels[subField] || subField;
+
+                const div = document.createElement("div");
+                div.className = "mb-3";
+                div.innerHTML = `
+                    <label class="form-label">${subLabel}</label>
+                    <input type="text" class="form-control" name="address[${subField}]" value="${subValue}">
+                `;
+                fieldset.appendChild(div);
+            });
+
+            fieldContainer.appendChild(fieldset);
+            return;
+        }
+
+        const value = inputType === 'date' && rawValue
+            ? new Date(rawValue).toISOString().split('T')[0]
+            : rawValue;
+
+        const label = fieldLabels[field] || field;
 
         const fieldDiv = document.createElement("div");
         fieldDiv.className = "mb-3";
@@ -37,6 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         fieldContainer.appendChild(fieldDiv);
     });
 
+    // 📨 Submissão do formulário
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const formData = new FormData(form);

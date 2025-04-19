@@ -11,48 +11,92 @@
     <%- include('../partials/navbar') %>  
     <section class="container mt-5">
         <div class="row justify-content-center">
-            <div class="col-md-6">
+            <div class="col-md-8">
                 <div class="card">
                     <div class="card-header">Registo do restaurante</div>
                     <div class="card-body">
                         <form method="POST" action="/auth/register/restaurant" enctype="multipart/form-data">
                             <input type="hidden" name="userType" value="restaurant">
+
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text" placeholder="Introduza o nome da marca" class="form-control" maxlength="50" required>
+                                <input name="name" type="text" class="form-control" maxlength="50" required>
                             </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Logotipo (opcional)</label>
                                 <input name="logo" type="file" accept="image/*" class="form-control">
                             </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Data de fundação</label>
                                 <input name="foundedAt" type="date" class="form-control" required>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label">Morada</label>
-                                <input name="address" type="text" placeholder="Introduza a morada onde está sediada a empresa" class="form-control" maxlength="100" required>
-                            </div>
+
+                            <fieldset class="border p-3 mb-3">
+                                <legend class="w-auto px-2">Morada</legend>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Rua</label>
+                                        <input name="address[street]" type="text" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Número</label>
+                                        <input name="address[number]" type="text" class="form-control">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Andar</label>
+                                        <input name="address[floor]" type="text" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Código Postal</label>
+                                        <input name="address[postalCode]" type="text" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Cidade</label>
+                                        <input name="address[city]" type="text" class="form-control" required>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Distrito</label>
+                                        <input name="address[district]" type="text" class="form-control" required>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">País</label>
+                                    <input name="address[country]" type="text" class="form-control" required>
+                                </div>
+                            </fieldset>
+
                             <div class="mb-3">
                                 <label class="form-label">Telefone</label>
-                                <input name="phone" type="tel" placeholder="Introduza o número de telefone da empresa" class="form-control" minlength="9" maxlength="9" required>
+                                <input name="phone" type="tel" class="form-control" minlength="9" maxlength="9" required>
                             </div>
-                            <div class = "mb-3">
+
+                            <div class="mb-3">
                                 <label class="form-label">NIF</label>
-                                <input name="nif" type="text" placeholder="Introduza o número de contribuinte da empresa" class="form-control" minlength="9" maxlength="9" required>
+                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" required>
                             </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
-                                <input name="username" type="text" placeholder="Introduza o seu nome de utilizador" class="form-control" maxlength="20" required>
+                                <input name="username" type="text" class="form-control" maxlength="20" required>
                             </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" placeholder="Introduza o email da empresa" class="form-control" required>
+                                <input name="email" type="email" class="form-control" required>
                             </div>
+
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
-                                <input name="password" type="password" placeholder="Introduza a sua palavra-passe" class="form-control" minlength="8" maxlength="20" required>
+                                <input name="password" type="password" class="form-control" minlength="8" maxlength="20" required>
                             </div>
+
                             <button type="submit" class="btn btn-success w-100">Registar</button>
                         </form>
                     </div>

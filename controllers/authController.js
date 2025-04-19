@@ -12,33 +12,67 @@ const showRestaurantRegisterPage = (req, res) => {
 };
 
 const customerRegister = async (req, res) => {
-    const { name, username, email, password, birthDate, address, phone, nif } = req.body;
+    const {
+        name,
+        username,
+        email,
+        password,
+        birthDate,
+        phone,
+        nif,
+        address: {
+            street,
+            number,
+            floor,
+            postalCode,
+            city,
+            district,
+            country,
+            coordinates
+        }
+    } = req.body;
+
+    const latitude = coordinates ? coordinates.latitude : null;
+    const longitude = coordinates ? coordinates.longitude : null;
+
     const profilePicture = req.file ? `/uploads/profilePictures/${req.file.filename}` : null;
     const userType = "customer";
 
     try {
-        const existinguser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existinguser) {
+        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+        if (existingUser) {
             return res.status(400).json({ message: "Email ou username já em uso!" });
         }
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newuser = new User({
+        const newUser = new User({
             name,
             username,
             email,
             password: hashedPassword,
             birthDate,
-            address,
             phone,
             nif,
             profilePicture,
-            userType
+            userType,
+            address: {
+                street,
+                number,
+                floor,
+                postalCode,
+                city,
+                district,
+                country,
+                coordinates: {
+                    latitude,
+                    longitude
+                }
+            }
         });
 
-        await newuser.save();
+        await newUser.save();
         res.redirect('/auth/login');
     } catch (error) {
         res.status(500).json({ message: "Erro ao registar o utilizador", error: error.message });
@@ -46,9 +80,31 @@ const customerRegister = async (req, res) => {
 };
 
 const restaurantRegister = async (req, res) => {
-    const { name, username, email, password, address, phone, nif, foundedAt, isChecked } = req.body;
+    const {
+        name,
+        username,
+        email,
+        password,
+        phone,
+        nif,
+        foundedAt,
+        isChecked,
+        address: {
+            street,
+            number,
+            floor,
+            postalCode,
+            city,
+            district,
+            country,
+            coordinates
+        }
+    } = req.body;
+
+    const latitude = coordinates ? coordinates.latitude : null;
+    const longitude = coordinates ? coordinates.longitude : null;
+
     const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
-    const userType = "restaurant";
 
     try {
         const existingRestaurant = await Restaurant.findOne({ $or: [{ email }, { username }] });
@@ -61,16 +117,27 @@ const restaurantRegister = async (req, res) => {
 
         const newRestaurant = new Restaurant({
             name,
-            address,
+            username,
+            email,
+            password: hashedPassword,
             phone,
             nif,
             foundedAt,
-            username,
-            email,
-            logo,
-            userType,
             isChecked,
-            password: hashedPassword
+            logo,
+            address: {
+                street,
+                number,
+                floor,
+                postalCode,
+                city,
+                district,
+                country,
+                coordinates: {
+                    latitude,
+                    longitude
+                }
+            }
         });
 
         await newRestaurant.save();
@@ -110,10 +177,10 @@ const login = async (req, res) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 3600000
-          });
+        });
 
         res.json({ message: "Login bem-sucedido!", token, userType });
-  
+
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });
     }
@@ -128,4 +195,12 @@ const logout = (req, res) => {
     res.redirect('/auth/login');
 };
 
-module.exports = { showCustomerRegisterPage, showRestaurantRegisterPage, customerRegister, restaurantRegister, login, logout, showLoginPage };
+module.exports = {
+    showCustomerRegisterPage,
+    showRestaurantRegisterPage,
+    customerRegister,
+    restaurantRegister,
+    login,
+    logout,
+    showLoginPage
+};

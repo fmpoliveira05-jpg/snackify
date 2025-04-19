@@ -29,8 +29,16 @@
                   <h5 class="card-title"><%= dish.name %></h5>
                   <p class="card-text"><%= dish.description || '' %></p>
                   <p><strong>Categoria:</strong> <%= dish.category %></p>
-                  <p><strong>Preço:</strong> €<%= dish.price.toFixed(2) %></p>
-                  <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo %> kcal</p>
+                  <% if (dish.pricePerDose && dish.pricePerDose.length) { %>
+                    <p><strong>Preços por tipo de dose:</strong>
+                      <% dish.pricePerDose.forEach(p => { %>
+                        <br> <%= p.dose %> dose: €<%= p.price.toFixed(2) %>
+                      <% }) %>
+                    </p>
+                  <% } else { %>
+                    <p><strong>Preço:</strong> Não disponível</p>
+                  <% } %>
+                  <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo.calories %> kcal</p>
                 </div>
                 <input type="checkbox" name="selectedDishes" value="<%= dish._id %>" class="d-none dish-checkbox" />
               </div>

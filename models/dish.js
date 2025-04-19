@@ -6,9 +6,18 @@ const dishSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: String,
     category: { type: String, enum: ['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'], required: true },
-    price: { type: Number, required: true },
     image: String,
-    nutriInfo: String
+    nutriInfo: {
+        calories: Number,
+        nutriScore: String,
+        allergens: [String]
+    },
+    pricePerDose: [
+        {
+            dose: { type: String, enum: ['1/2', '1'], required: true },
+            price: { type: Number, required: true }
+        }
+    ]
 });
 
 module.exports = mongoose.model('Dish', dishSchema);

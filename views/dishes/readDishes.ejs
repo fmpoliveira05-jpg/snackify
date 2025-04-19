@@ -26,11 +26,19 @@
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><%= dish.name %></h5>
                 <p><strong>Categoria:</strong> <%= dish.category %></p>
-                <p><strong>Preço:</strong> €<%= dish.price.toFixed(2) %></p>
+                <% if (dish.pricePerDose && dish.pricePerDose.length) { %>
+                  <p><strong>Preços por tipo de dose:</strong>
+                    <% dish.pricePerDose.forEach(p => { %>
+                      <br> <%= p.dose %> dose: €<%= p.price.toFixed(2) %>
+                    <% }) %>
+                  </p>
+                <% } else { %>
+                  <p><strong>Preço:</strong> Não disponível</p>
+                <% } %>                
                 <% if (dish.description) { %>
                   <p><%= dish.description %></p>
                 <% } %>
-                <p class="text-muted">Informação nutricional: <%= dish.nutriInfo %> kcal</p>
+                <p class="text-muted">Informação nutricional: <%= dish.nutriInfo.calories %> kcal</p>
 
                 <div class="mt-auto d-flex justify-content-start gap-2">
                   <a href="/pratos/editar/<%= dish._id %>" class="btn btn-warning btn-sm">Editar Prato</a>

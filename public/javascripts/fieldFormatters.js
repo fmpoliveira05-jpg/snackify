@@ -3,7 +3,17 @@ export const fieldLabels = {
     username: "Username",
     email: "Email",
     birthDate: "Data de nascimento",
-    address: "Morada",
+    address: "Morada completa",
+    street: "Rua",
+    number: "Número da porta",
+    floor: "Andar",
+    postalCode: "Código postal",
+    city: "Cidade",
+    district: "Distrito",
+    country: "País",
+    coordinates: "Coordenadas",
+    latitude: "Latitude",
+    longitude: "Longitude",
     phone: "Telemóvel",
     nif: "NIF",
     userType: "Tipo de utilizador",
@@ -20,6 +30,10 @@ export const fieldValueFormat = (key, value) => {
 
     if (key === "userType") {
         return value === "customer" ? "Cliente" : value === "admin" ? "Administrador" : "Restaurante";
+    }
+
+    if (key === "address" && typeof value === "object") {
+        return `${value.street}, ${value.number}, ${value.floor}, ${value.postalCode}, ${value.city}, ${value.district}, ${value.country}`;
     }
 
     return value;

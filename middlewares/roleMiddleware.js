@@ -10,6 +10,7 @@ const isRestaurant = (req, res, next) => {
 
 const isAdmin = (req, res, next) => {
     if (req.user?.userType === 'admin') return next();
+    console.log(req.user?.userType);
     return res.status(403).send('Acesso restrito a admins!');
 };
 

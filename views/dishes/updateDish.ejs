@@ -11,6 +11,7 @@
   <div class="container mt-5">
     <h2>Editar Prato</h2>
     <form action="/pratos/editar/<%= dish._id %>" method="POST" enctype="multipart/form-data">
+      
       <div class="mb-3">
         <label class="form-label">Nome</label>
         <input type="text" name="name" class="form-control" value="<%= dish.name %>" required>
@@ -31,13 +32,21 @@
       </div>
 
       <div class="mb-3">
-        <label class="form-label">Preço (€)</label>
-        <input type="number" step="0.01" name="price" class="form-control" value="<%= dish.price %>" required>
-      </div>
+        <label class="form-label">Preço por Dose</label>
+        <% const doseMap = { '1/2': '', '1': '' }; %>
+        <% dish.pricePerDose.forEach(p => { doseMap[p.dose] = p.price }); %>
 
-      <div class="mb-3">
-        <label class="form-label">Informação Nutricional (kcal)</label>
-        <input type="text" name="nutriInfo" class="form-control" value="<%= dish.nutriInfo %>">
+        <div class="mb-2">
+          <label class="form-label">1/2 Dose</label>
+          <input type="hidden" name="dose" value="1/2" />
+          <input type="number" step="0.01" name="price" class="form-control" value="<%= doseMap['1/2'] %>" required />
+        </div>
+
+        <div>
+          <label class="form-label">1 Dose</label>
+          <input type="hidden" name="dose" value="1" />
+          <input type="number" step="0.01" name="price" class="form-control" value="<%= doseMap['1'] %>" required />
+        </div>
       </div>
 
       <div class="mb-3">

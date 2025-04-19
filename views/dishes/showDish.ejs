@@ -19,16 +19,23 @@
       <div class="card-body">
         <h2 class="card-title"><%= dish.name %></h2>
         <p><strong>Categoria:</strong> <%= dish.category %></p>
-        <p><strong>Preço:</strong> €<%= dish.price.toFixed(2) %></p>
-
-        <% if (dish.description) { %>
-          <p><strong>Descrição:</strong> <%= dish.description %></p>
-        <% } %>
+        <% if (dish.pricePerDose && dish.pricePerDose.length) { %>
+          <p><strong>Preços por tipo de dose:</strong></p>
+          <ul class="list-group list-group-flush mb-3">
+            <% dish.pricePerDose.forEach(p => { %>
+              <li class="list-group-item"><strong><%= p.dose %> dose:</strong> €<%= p.price.toFixed(2) %></li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p><strong>Preço:</strong> Não disponível</p>
+        <% } %>        
 
         <% if (nutriInfo) { %>
-          <p><strong>Calorias:</strong> <%= nutriInfo.calories || 'Não disponível' %> kcal</p>
-          <p><strong>Nutri-Score:</strong> <%= nutriInfo.nutriScore ? nutriInfo.nutriScore.toUpperCase() : 'Não disponível' %></p>
-          <p><strong>Alergénios:</strong> <%= nutriInfo.allergens || 'Não especificado' %></p>
+          <p><strong>Informação nutricional:</strong></p>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Calorias:</strong> <%= nutriInfo.calories %> kcal</li>
+            <li class="list-group-item"><strong>Nutri-score:</strong> <%= nutriInfo.nutriScore %></li>
+            <li class="list-group-item"><strong>Alergénios:</strong> <%= nutriInfo.allergens %></li>
         <% } else { %>
           <p><em>Informação nutricional não disponível.</em></p>
         <% } %>        

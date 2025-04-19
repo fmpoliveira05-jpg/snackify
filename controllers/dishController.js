@@ -1,5 +1,6 @@
 const Dish = require('../models/dish');
 const axios = require('axios');
+const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
 
 const showEditDishForm = async (req, res) => {
   try {
@@ -18,16 +19,27 @@ const updateDish = async (req, res) => {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
 
-    const { name, description, category, price, nutriInfo } = req.body;
+    const { name, description, category, dose, price } = req.body;
+
+    const nutritionData = await fetchOpenFoodData(name);
 
     dish.name = name;
     dish.description = description;
     dish.category = category;
-    dish.price = price;
-    dish.nutriInfo = nutriInfo;
+
+    dish.pricePerDose = dose.map((d, i) => ({
+      dose: d,
+      price: parseFloat(price[i])
+    }));
+
+    dish.nutriInfo = {
+      calories: nutritionData?.calories || null,
+      nutriScore: nutritionData?.nutriScore || null,
+      allergens: nutritionData?.allergens || []
+    };
 
     if (req.file) {
-      dish.image = req.file ? `/uploads/images/${req.file.filename}` : null;
+      dish.image = `/uploads/images/${req.file.filename}`;
     }
 
     await dish.save();
@@ -57,16 +69,27 @@ const showAddDishForm = (req, res) => {
 
 const addDish = async (req, res) => {
   try {
-    const { name, description, category, price, nutriInfo } = req.body;
+    const { name, description, category, dose, price } = req.body;
     const image = req.file ? `/uploads/images/${req.file.filename}` : null;
+
+    const nutritionData = await fetchOpenFoodData(name);
+
+    const pricePerDose = dose.map((d, i) => ({
+      dose: d,
+      price: parseFloat(price[i])
+    }));
 
     const newDish = new Dish({
       name,
       description,
       category,
-      price,
-      nutriInfo,
       image,
+      pricePerDose,
+      nutriInfo: {
+        calories: nutritionData?.calories || null,
+        nutriScore: nutritionData?.nutriScore || null,
+        allergens: nutritionData?.allergens || []
+      },
       restaurantId: req.user._id,
       menuId: null
     });
@@ -94,33 +117,9 @@ const showDishDetails = async (req, res) => {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
 
-    let nutriInfo = null;
-
-    try {
-      const response = await axios.get('https://world.openfoodfacts.org/cgi/search.pl', {
-        params: {
-          search_terms: dish.name,
-          search_simple: 1,
-          action: 'process',
-          json: 1
-        }
-      });
-
-      const product = response.data.products[0];
-
-      if (product) {
-        nutriInfo = {
-          calories: product.nutriments?.['energy-kcal_100g'],
-          nutriScore: product.nutriscore_grade,
-          allergens: product.allergens
-        };
-      }
-    } catch (apiErr) {
-      console.error('Erro ao obter dados da OpenFoodFacts:', apiErr.message);
-    }
+    const nutriInfo = dish.nutriInfo || null;
 
     res.render('dishes/showDish', { dish, nutriInfo });
-
   } catch (err) {
     console.error('Erro ao carregar detalhes do prato:', err);
     res.status(500).send('Erro ao carregar detalhes do prato.');
