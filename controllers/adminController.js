@@ -64,6 +64,22 @@ const updateRestaurant = async (req, res) => {
     }
 }
 
+const removeRestaurant = async (req, res) => {
+    try {
+        const restaurant = await Restaurant.findByIdAndDelete(req.params.id);
+        if (!restaurant) {
+            return res.status(404).json({ message: "Restaurante não encontrado" });
+        }
+        res.redirect('/admin/validar-restaurantes');
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao remover restaurante", error: error.message });
+    }
+}
+
+
+
+
+
 
 module.exports = {
     showPendingRestaurants,
@@ -71,5 +87,6 @@ module.exports = {
     rejectRestaurant,
     showRestaurantDetails,
     showRestaurantEditPage,
-    updateRestaurant
+    updateRestaurant,
+    removeRestaurant
 };
