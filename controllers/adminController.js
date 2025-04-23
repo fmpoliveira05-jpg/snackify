@@ -77,7 +77,8 @@ const removeRestaurant = async (req, res) => {
 }
 
 
-
+const olaMenu = async(req, res) =>{
+}
 
 
 
