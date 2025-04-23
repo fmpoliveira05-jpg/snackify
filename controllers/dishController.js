@@ -126,6 +126,22 @@ const showDishDetails = async (req, res) => {
   }
 };
 
+const listDishesForClient = async (req, res) => {
+  try {
+    const restaurantId = req.cookies.restaurantId;
+
+    if (!restaurantId) {
+      return res.status(400).send('Restaurante não especificado.');
+    }
+
+    const dishes = await Dish.find({ restaurantId });
+    res.render('dishes/listForClient', { dishes });
+  } catch (err) {
+    console.error('Erro ao carregar pratos para o cliente:', err);
+    res.status(500).send('Erro ao carregar pratos.');
+  }
+};
+
 module.exports = {
   showEditDishForm,
   updateDish,
@@ -133,5 +149,6 @@ module.exports = {
   showAddDishForm,
   addDish,
   listDishes,
-  showDishDetails
+  showDishDetails,
+  listDishesForClient
 };
