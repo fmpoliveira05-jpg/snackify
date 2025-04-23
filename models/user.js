@@ -10,8 +10,8 @@ const UserSchema = new mongoose.Schema({
         street: { type: String, required: true },
         number: { type: String },
         floor: { type: String },
-        postalCode: { type: String, required: true },
-        city: { type: String, required: true },
+        zipCode: { type: String, required: true },
+        place: { type: String, required: true },
         district: { type: String, required: true },
         country: { type: String, required: true },
         coordinates: {
