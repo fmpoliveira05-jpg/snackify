@@ -4,11 +4,17 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const showCustomerRegisterPage = (req, res) => {
-    res.render('auth/customerRegister');
+    res.render('auth/customerRegister', {
+        errors: [],
+        oldInput: {}
+    });
 };
 
 const showRestaurantRegisterPage = (req, res) => {
-    res.render('auth/restaurantRegister');
+    res.render('auth/restaurantRegister', {
+        errors: [],
+        oldInput: {}
+    });
 };
 
 const customerRegister = async (req, res) => {
@@ -24,8 +30,8 @@ const customerRegister = async (req, res) => {
             street,
             number,
             floor,
-            postalCode,
-            city,
+            zipCode,
+            place,
             district,
             country,
             coordinates
@@ -61,8 +67,8 @@ const customerRegister = async (req, res) => {
                 street,
                 number,
                 floor,
-                postalCode,
-                city,
+                zipCode,
+                place,
                 district,
                 country,
                 coordinates: {
@@ -93,8 +99,8 @@ const restaurantRegister = async (req, res) => {
             street,
             number,
             floor,
-            postalCode,
-            city,
+            zipCode,
+            place,
             district,
             country,
             coordinates
@@ -129,8 +135,8 @@ const restaurantRegister = async (req, res) => {
                 street,
                 number,
                 floor,
-                postalCode,
-                city,
+                zipCode,
+                place,
                 district,
                 country,
                 coordinates: {

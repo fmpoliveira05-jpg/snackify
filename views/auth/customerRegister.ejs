@@ -15,12 +15,20 @@
                 <div class="card">
                     <div class="card-header">Registo do cliente</div>
                     <div class="card-body">
+                        <% if (errors && errors.length > 0) { %>
+                            <ul class="errors">
+                              <% errors.forEach(error => { %>
+                                <li><%= error.msg %></li>
+                              <% }) %>
+                            </ul>
+                          <% } %>
+                          
                         <form method="POST" action="/auth/register/customer" enctype="multipart/form-data">
                             <input type="hidden" name="userType" value="customer">
 
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text" class="form-control" maxlength="50" required>
+                                <input name="name" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ][a-záâãéêíóôõúç]+(?: [A-ZÁÂÃÉÊÍÓÔÕÚÇ][a-záâãéêíóôõúç]+)+$" class="form-control" maxlength="50" required value="<%= oldInput?.name || '' %>">
                             </div>
 
                             <div class="mb-3">
@@ -30,7 +38,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Data de nascimento</label>
-                                <input name="birthDate" type="date" class="form-control" required>
+                                <input name="birthDate" type="date" class="form-control" min="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 120)).toISOString().split('T')[0] %>" max="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0] %>" required value="<%= oldInput?.birthDate || '' %>">
                             </div>
 
                             <fieldset class="border p-3 mb-3">
@@ -39,62 +47,62 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Rua</label>
-                                        <input name="address[street]" type="text" class="form-control" required>
+                                        <input name="address[street]" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" type="text" class="form-control" maxlength="50" required value="<%= oldInput?.address?.street || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Número</label>
-                                        <input name="address[number]" type="text" class="form-control">
+                                        <input name="address[number]" type="text" pattern="^[0-9]{1,5}([A-Za-z]|[-/][0-9A-Za-z]{1,3})?$" class="form-control" maxlength="10" required value="<%= oldInput?.address?.number || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Andar</label>
-                                        <input name="address[floor]" type="text" class="form-control">
+                                        <input name="address[floor]" type="text" pattern="^((R\/C)|(RC)|-?[0-9]{1,2}(º)?([A-Za-z]{1,4})?)$" class="form-control" maxlength="10" value="<%= oldInput?.address?.floor || '' %>">
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Código Postal</label>
-                                        <input name="address[postalCode]" type="text" class="form-control" required>
+                                        <input name="address[zipCode]" type="text" pattern="^\d{4}-\d{3}$" class="form-control" maxlength="8" required value="<%= oldInput?.address?.zipCode || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
-                                        <label class="form-label">Cidade</label>
-                                        <input name="address[city]" type="text" class="form-control" required>
+                                        <label class="form-label">Localidade</label>
+                                        <input name="address[place]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.city || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Distrito</label>
-                                        <input name="address[district]" type="text" class="form-control" required>
+                                        <input name="address[district]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.district || '' %>">
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="form-label">País</label>
-                                    <input name="address[country]" type="text" class="form-control" required>
+                                    <input name="address[country]" type="text" value="Portugal" class="form-control" maxlength="50" required value="<%= oldInput?.address?.country || '' %>">
                                 </div>
                             </fieldset>
 
                             <div class="mb-3">
                                 <label class="form-label">Telemóvel</label>
-                                <input name="phone" type="tel" class="form-control" minlength="9" maxlength="9" required>
+                                <input name="phone" type="tel" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.phone || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">NIF (opcional)</label>
-                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9">
+                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" value="<%= oldInput?.nif || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Username</label>
-                                <input name="username" type="text" class="form-control" maxlength="20" required>
+                                <input name="username" type="text" pattern="^\S+$" class="form-control" minlength="5" maxlength="20" required value="<%= oldInput?.username || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" required>
+                                <input name="email" type="email" class="form-control" maxlength="50" required value="<%= oldInput?.email || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Password</label>
-                                <input name="password" type="password" class="form-control" minlength="8" maxlength="20" required>
+                                <input name="password" type="password" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$" class="form-control" minlength="8" maxlength="20">
                             </div>
 
                             <button type="submit" class="btn btn-success w-100">Registar</button>
