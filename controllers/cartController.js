@@ -1,39 +1,159 @@
 const Cart = require('../models/cart');
 const Dish = require('../models/dish');
+const Order = require('../models/order');
 
-const addToCart = async (req, res) => {
-  try {
-    const userId = req.user?._id || req.session?.userId || req.cookies.userId;
-    if (!userId) return res.status(401).send('Utilizador não autenticado.');
+const viewCart = async (req, res) => {
+    const userId = req.user._id;
+    let cart = await Cart.findOne({ userId }).populate('items.dishId');
 
-    const dishIds = Array.isArray(req.body.dishIds) ? req.body.dishIds : [req.body.dishIds];
-
-    for (const dishId of dishIds) {
-      const doseKey = `dose_${dishId}`;
-      const selectedDose = req.body[doseKey];
-
-      const dish = await Dish.findById(dishId);
-      const doseInfo = dish?.pricePerDose?.find(p => p.dose === selectedDose);
-      if (!doseInfo) continue;
-
-      const newCartItem = new Cart({
-        userId,
-        dishID: dishId,
-        addedDate: new Date(),
-        price: doseInfo.price,
-        dose: selectedDose
-      });
-
-      await newCartItem.save();
+    if (!cart) {
+        cart = new Cart({ userId });
+        await cart.save();
     }
 
-    res.redirect('/cliente/cardapio');
-  } catch (err) {
-    console.error('Erro ao adicionar ao carrinho:', err);
-    res.status(500).send('Erro ao adicionar ao carrinho.');
-  }
+    const isExpired = cart.timeout && new Date() > cart.timeout;
+    if (isExpired) {
+        cart.items = [];
+        cart.total = 0;
+        cart.timeout = null;
+        await cart.save();
+    }
+
+    res.render('cart/viewCart', { cart });
 };
 
+const addToCart = async (req, res) => {
+    const { dishId, amount, dose } = req.body;
+
+    const userId = req.user._id;
+
+    const parsedAmount = parseInt(amount, 10);
+    if (!parsedAmount || parsedAmount < 1) {
+        return res.redirect('/menu');
+    }
+
+    let cart = await Cart.findOne({ userId });
+    if (!cart) cart = new Cart({ userId });
+
+    const existingItem = cart.items.find(item =>
+        item.dishId.equals(dishId) && item.dose === dose
+    );
+
+    if (existingItem) {
+        existingItem.amount += parsedAmount;
+    } else {
+        cart.items.push({ dishId, amount: parsedAmount, dose});
+    }
+
+    const dish = await Dish.findById(dishId);
+    const priceEntry = dish.pricePerDose.find(p => p.dose === dose);
+
+    if (!priceEntry) {
+        return res.redirect('/menu');
+    }
+
+    const itemTotal = priceEntry.price * parsedAmount;
+    cart.total += itemTotal;
+
+    if (!cart.timeout) {
+        cart.timeout = new Date(Date.now() + 10 * 60 * 1000);
+    }
+
+    await cart.save();
+    res.redirect('/carrinho');
+};
+
+const removeFromCart = async (req, res) => {
+    const { dishId, dose } = req.body;
+    const userId = req.user._id;
+
+    let cart = await Cart.findOne({ userId }).populate('items.dishId');
+    if (!cart) return res.redirect('/carrinho');
+
+    const index = cart.items.findIndex(item =>
+        item.dishId._id.equals(dishId) && item.dose === dose
+    );
+
+    if (index !== -1) {
+      const item = cart.items[index];
+      const priceInfo = item.dishId.pricePerDose.find(p => p.dose === item.dose);
+      if (priceInfo) {
+        cart.total -= priceInfo.price * item.amount;
+      }
+      cart.items.splice(index, 1);
+    
+      if (cart.items.length === 0) {
+        cart.total = 0;
+        cart.timeout = null;
+      }
+    }    
+
+    await cart.save();
+    res.redirect('/carrinho');
+};
+
+const checkout = async (req, res) => {
+    const orderId = req.query.orderId;
+  
+    try {
+      const order = await Order.findById(orderId).populate('dishes.dishId');
+      if (!order) return res.status(404).send("Encomenda não encontrada.");
+  
+      res.render('cart/checkout', { order });
+    } catch (err) {
+      console.error("Erro no checkout:", err);
+      res.status(500).send("Erro ao processar o checkout.");
+    }
+  };
+
+const createOrderFromCart = async (req, res) => {
+    const userId = req.user._id;
+  
+    try {
+      const cart = await Cart.findOne({ userId }).populate('items.dishId');
+      if (!cart || cart.items.length === 0) {
+        return res.redirect('/carrinho');
+      }
+
+      const uniqueRestaurants = new Set(cart.items.map(item => item.dishId.restaurantId.toString()));
+      if (uniqueRestaurants.size > 1) {
+        return res.status(400).send("Todos os pratos da encomenda devem ser do mesmo restaurante.");
+      }
+  
+      const restaurantId = cart.items[0].dishId.restaurantId;
+  
+      const order = new Order({
+        userId,
+        restaurantId,
+        dishes: cart.items.map(item => ({
+          dishId: item.dishId._id,
+          amount: item.amount,
+          dose: item.dose
+        })),
+        state: "pendente",
+        orderDate: new Date(),
+        cancelTimeout: new Date(Date.now() + 5 * 60 * 1000),
+        orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`
+      });
+  
+      await order.save();
+  
+      cart.items = [];
+      cart.total = 0;
+      cart.timeout = null;
+      await cart.save();
+  
+      res.redirect(`/carrinho/checkout?orderId=${order._id}`);
+    } catch (err) {
+      console.error("Erro ao criar encomenda:", err);
+      res.status(500).send("Erro ao criar a encomenda.");
+    }
+  };
+
 module.exports = {
-  addToCart
+    viewCart,
+    addToCart,
+    removeFromCart,
+    checkout,
+    createOrderFromCart
 };

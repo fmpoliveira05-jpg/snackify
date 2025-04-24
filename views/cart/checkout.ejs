@@ -1,0 +1,12 @@
+<h2>Encomenda Finalizada</h2>
+<p>O seu código de encomenda é: <strong><%= order.orderCode %></strong></p>
+
+<ul>
+  <% order.dishes.forEach(item => { %>
+    <li>
+      <%= item.dishId.name %> - <%= item.dose %> dose - Quantidade: <%= item.amount %>
+    </li>
+  <% }) %>
+</ul>
+
+<p>Estado: <%= order.state %></p>

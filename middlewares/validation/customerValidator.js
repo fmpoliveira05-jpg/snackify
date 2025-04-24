@@ -1,4 +1,5 @@
 const { body } = require('express-validator');
+const axios = require('axios');
 const nifIsValid = require('../../utils/nifValidator');
 
 const customerValidationRules = [
@@ -23,9 +24,10 @@ const customerValidationRules = [
         .isNumeric().withMessage('O número de telemóvel só pode conter números.'),
 
     body('nif')
-    .isLength({ min: 9, max: 9 }).withMessage('O NIF deve ter 9 dígitos.')
-    .isNumeric().withMessage('O NIF só pode conter números.')
-    .custom(nif => {
+        .optional({ checkFalsy: true })
+        .isLength({ min: 9, max: 9 }).withMessage('O NIF deve ter 9 dígitos.')
+        .isNumeric().withMessage('O NIF só pode conter números.')
+        .custom(nif => {
         if (!nifIsValid(nif)) {
             throw new Error('O NIF não é válido.');
         }
@@ -75,9 +77,9 @@ const customerValidationRules = [
         .notEmpty().withMessage('O número da porta é obrigatório.')
         .isNumeric().withMessage('O número da porta só pode conter números.'),
     body('address.zipCode')
-        .optional({ checkFalsy: true })
-        .notEmpty().withMessage('O código postal é obrigatório.')
-        .matches(/^\d{4}-\d{3}$/).withMessage('O formato do código postal é inválido. Exemplo válido: 1234-567')
+    .optional({ checkFalsy: true })
+    .notEmpty().withMessage('O código postal é obrigatório.')
+    .matches(/^\d{4}-\d{3}$/).withMessage('O formato do código postal é inválido. Exemplo válido: 1234-567'),           
 ];
 
 module.exports = customerValidationRules;

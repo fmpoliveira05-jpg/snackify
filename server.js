@@ -10,6 +10,7 @@ const menuRoutes = require('./routes/menuRoutes');
 const dishRoutes = require('./routes/dishRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const customerRoutes = require('./routes/customerRoutes');
 const checkUser = require('./middlewares/checkUserMiddleware');
 
 dotenv.config();
@@ -44,9 +45,11 @@ app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
 app.use('/menus', menuRoutes);
 app.use('/pratos', dishRoutes);
-app.use('/cart', cartRoutes);
+app.use('/carrinho', cartRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/admin', adminRoutes);
+app.use('/clientes', customerRoutes);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Servidor a correr na porta ${PORT}`);
