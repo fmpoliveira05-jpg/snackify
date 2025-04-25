@@ -10,42 +10,78 @@
   <%- include('../partials/navbar') %>
   <div class="container mt-5">
     <h2>Editar Prato</h2>
+
+    <% if (errors && errors.length > 0) { %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% errors.forEach(error => { %>
+            <li><%= error.msg %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
     <form action="/pratos/editar/<%= dish._id %>" method="POST" enctype="multipart/form-data">
-      
       <div class="mb-3">
         <label class="form-label">Nome</label>
-        <input type="text" name="name" class="form-control" value="<%= dish.name %>" required>
+        <input 
+          type="text" 
+          name="name" 
+          class="form-control" 
+          required 
+          value="<%= oldInput?.name || dish.name %>" 
+        >
       </div>
 
       <div class="mb-3">
         <label class="form-label">Descrição</label>
-        <textarea name="description" class="form-control"><%= dish.description %></textarea>
+        <textarea 
+          name="description" 
+          class="form-control"
+        ><%= oldInput?.description || dish.description %></textarea>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Categoria</label>
         <select name="category" class="form-control" required>
           <% ['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'].forEach(cat => { %>
-            <option value="<%= cat %>" <%= dish.category === cat ? 'selected' : '' %>><%= cat %></option>
+            <option value="<%= cat %>" <%= (oldInput?.category || dish.category) === cat ? 'selected' : '' %>><%= cat %></option>
           <% }) %>
         </select>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Preço por Dose</label>
-        <% const doseMap = { '1/2': '', '1': '' }; %>
-        <% dish.pricePerDose.forEach(p => { doseMap[p.dose] = p.price }); %>
+
+        <% 
+          const doseMap = { '1/2': '', '1': '' };
+          if (Array.isArray(dish.pricePerDose)) {
+            dish.pricePerDose.forEach(p => { doseMap[p.dose] = p.price });
+          }
+        %>
 
         <div class="mb-2">
           <label class="form-label">1/2 Dose</label>
           <input type="hidden" name="dose" value="1/2" />
-          <input type="number" step="0.01" name="price" class="form-control" value="<%= doseMap['1/2'] %>" required />
+          <input 
+            type="number" 
+            step="0.01" 
+            name="price" 
+            class="form-control" 
+            value="<%= oldInput?.dose === '1/2' ? oldInput?.price : doseMap['1/2'] %>" 
+          />
         </div>
 
         <div>
           <label class="form-label">1 Dose</label>
           <input type="hidden" name="dose" value="1" />
-          <input type="number" step="0.01" name="price" class="form-control" value="<%= doseMap['1'] %>" required />
+          <input 
+            type="number" 
+            step="0.01" 
+            name="price" 
+            class="form-control" 
+            value="<%= oldInput?.dose === '1' ? oldInput?.price : doseMap['1'] %>" 
+          />
         </div>
       </div>
 

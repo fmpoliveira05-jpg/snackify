@@ -10,16 +10,28 @@
   <%- include('../partials/navbar') %>
   <div class="container mt-5">
     <h1 class="mb-4">Editar Perfil</h1>
-    <form id="updateProfileForm" enctype="multipart/form-data">
-      <div id="dynamicFields"></div>
 
+    <% if (errors && errors.length > 0) { %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% errors.forEach(error => { %>
+            <li><%= error.msg %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+    <form action="/user/perfil/editar" method="POST" enctype="multipart/form-data">
+      <div id="dynamicFields">
+      </div>
+    
       <div class="mb-3">
+        <label class="form-label">Imagem de Perfil (opcional)</label>
         <input type="file" class="form-control" name="image">
       </div>
-
+    
       <button type="submit" class="btn btn-success">Guardar Alterações</button>
       <a href="/user/perfil" class="btn btn-secondary ms-2">Cancelar</a>
-    </form>
+    </form>    
   </div>
 
   <script type="module" src="/javascripts/updateProfile.js"></script>

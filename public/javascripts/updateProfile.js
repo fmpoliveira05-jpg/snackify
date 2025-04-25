@@ -5,7 +5,6 @@ const adminFields = ["name", "username", "email", "address", "phone", "nif"];
 const restaurantFields = ["name", "username", "email", "address", "phone", "nif", "foundedAt"];
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const form = document.getElementById("updateProfileForm");
     const fieldContainer = document.getElementById("dynamicFields");
 
     const response = await fetch('/user/perfil/dados');
@@ -24,8 +23,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const isDisabled = disabledFields.includes(field) ? 'disabled' : '';
 
         if (field === 'address' && typeof rawValue === 'object') {
-            const addressKeys = ["street", "number", "floor", "postalCode", "city", "district", "country"];
-            
+            const addressKeys = ["street", "number", "floor", "zipCode", "place", "district", "country"];
+
             const fieldset = document.createElement("fieldset");
             fieldset.className = "border p-3 mb-3";
             fieldset.innerHTML = `<legend class="w-auto px-2">${fieldLabels.address || "Morada"}</legend>`;
@@ -61,24 +60,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
 
         fieldContainer.appendChild(fieldDiv);
-    });
-
-    // 📨 Submissão do formulário
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-
-        const res = await fetch('/user/perfil/editar', {
-            method: 'PUT',
-            body: formData
-        });
-
-        const result = await res.json();
-        if (res.ok) {
-            alert(result.message);
-            window.location.href = '/user/perfil';
-        } else {
-            alert("Erro ao atualizar: " + result.message);
-        }
     });
 });

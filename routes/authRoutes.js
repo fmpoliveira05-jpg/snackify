@@ -11,8 +11,8 @@ const {
     showLoginPage
 } = require('../controllers/authController');
 
-const customerValidator = require('../middlewares/validation/customerValidator');
-const restaurantValidator = require('../middlewares/validation/restaurantValidator');
+const customerRegisterValidator = require('../middlewares/validation/customerRegisterValidator');
+const restaurantRegisterValidator = require('../middlewares/validation/restaurantRegisterValidator');
 const validateRequest = require('../middlewares/validation/validateRequest');
 
 router.get('/login', showLoginPage);
@@ -22,7 +22,7 @@ router.get('/register/restaurant', showRestaurantRegisterPage);
 router.post(
     '/register/customer',
     upload.single('profilePicture'),
-    customerValidator,
+    customerRegisterValidator,
     validateRequest('auth/customerRegister'),
     customerRegister
 );
@@ -30,7 +30,7 @@ router.post(
 router.post(
     '/register/restaurant',
     upload.single('logo'),
-    restaurantValidator,
+    restaurantRegisterValidator,
     validateRequest('auth/restaurantRegister'),
     restaurantRegister
 );

@@ -11,15 +11,37 @@
   <div class="container mt-5">
     <h2>Editar Menu</h2>
 
+    <% if (errors && errors.length > 0) { %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% errors.forEach(error => { %>
+            <li><%= error.msg %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
     <form action="/menus/editar/<%= menu._id %>" method="POST">
       <div class="mb-3">
         <label for="title" class="form-label">Título</label>
-        <input type="text" class="form-control" id="title" name="title" value="<%= menu.title %>" required>
+        <input 
+          type="text" 
+          class="form-control" 
+          id="title" 
+          name="title" 
+          required
+          value="<%= oldInput?.title || menu.title %>"
+        >
       </div>
 
       <div class="mb-3">
         <label for="description" class="form-label">Descrição</label>
-        <textarea class="form-control" id="description" name="description" rows="4"><%= menu.description %></textarea>
+        <textarea 
+          class="form-control" 
+          id="description" 
+          name="description" 
+          rows="4"
+        ><%= oldInput?.description || menu.description %></textarea>
       </div>
 
       <h4>Adicionar novos pratos</h4>
@@ -45,10 +67,16 @@
                     </p>
                   <% } else { %>
                     <p><strong>Preço:</strong> Não disponível</p>
-                  <% } %>                  
+                  <% } %>
                   <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo.calories %> kcal</p>
                 </div>
-                <input type="checkbox" name="availableDishes" value="<%= dish._id %>" class="d-none dish-checkbox" />
+                <input 
+                  type="checkbox" 
+                  name="availableDishes" 
+                  value="<%= dish._id %>" 
+                  class="d-none dish-checkbox"
+                  <%= (oldInput?.availableDishes?.includes(dish._id.toString()) || menu.dishes?.includes(dish._id.toString())) ? 'checked' : '' %>
+                />
               </div>
             </div>
           <% }) %>

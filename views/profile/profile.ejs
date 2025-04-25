@@ -8,14 +8,20 @@
 </head>
 <body>
     <%- include('../partials/navbar') %>    
+
     <div class="container mt-5">
         <h1 class="mb-4">Perfil de <span id="tipo"></span></h1>
-        <ul id="info" class="list-group mb-3">
-            <div class="text-start mt-2">
-                <a id="validarRestaurantesBtn" href="/admin/validar-restaurantes" class="btn btn-warning d-none">Validar Restaurantes</a>
-                <a href="/user/perfil/editar" class="btn btn-primary">Editar Perfil</a>
-            </div>
-        </ul>  
+
+        <h4>Histórico de Encomendas</h4>
+        <div id="historico" class="mb-4"></div>
+
+        <h4>Dados de utilizador</h4>
+        <ul id="info" class="list-group mb-3"></ul>
+
+        <div class="d-flex gap-2">
+            <a id="validarRestaurantesBtn" href="/admin/validar-restaurantes" class="btn btn-warning d-none">Validar Restaurantes</a>
+            <a href="/user/perfil/editar" class="btn btn-primary">Editar Perfil</a>
+        </div>
     </div>
 
     <script type="module" src="/javascripts/main.js"></script>

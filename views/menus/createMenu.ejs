@@ -10,9 +10,31 @@
   <%- include('../partials/navbar') %>
   <div class="container mt-5">
     <h2>Criar novo menu</h2>
+    
+    <% if (errors && errors.length > 0) { %>
+      <div class="alert alert-danger">
+        <ul class="mb-0">
+          <% errors.forEach(error => { %>
+            <li><%= error.msg %></li>
+          <% }) %>
+        </ul>
+      </div>
+    <% } %>
+
     <form action="/menus/novo" method="POST">
-      <input name="title" class="form-control mb-2" placeholder="Título do menu" required />
-      <textarea name="description" class="form-control mb-3" placeholder="Descrição do menu (opcional)"></textarea>
+      <input 
+        name="title" 
+        class="form-control mb-2" 
+        placeholder="Título do menu" 
+        required 
+        value="<%= oldInput?.title || '' %>"
+      />
+      
+      <textarea 
+        name="description" 
+        class="form-control mb-3" 
+        placeholder="Descrição do menu (opcional)"
+      ><%= oldInput?.description || '' %></textarea>
 
       <h4>Adicionar pratos</h4>
       <div class="row" id="dishes-grid">
@@ -40,12 +62,18 @@
                   <% } %>
                   <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo.calories %> kcal</p>
                 </div>
-                <input type="checkbox" name="selectedDishes" value="<%= dish._id %>" class="d-none dish-checkbox" />
+                <input 
+                  type="checkbox" 
+                  name="selectedDishes" 
+                  value="<%= dish._id %>" 
+                  class="d-none dish-checkbox"
+                  <%= oldInput?.selectedDishes?.includes(dish._id.toString()) ? 'checked' : '' %>
+                />
               </div>
             </div>
           <% }) %>
         <% } %>
-      </div>      
+      </div>
 
       <button type="submit" class="btn btn-success mt-3">Criar menu</button>
     </form>

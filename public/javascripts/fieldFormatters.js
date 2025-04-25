@@ -6,9 +6,9 @@ export const fieldLabels = {
     address: "Morada completa",
     street: "Rua",
     number: "Número da porta",
-    floor: "Andar",
-    postalCode: "Código postal",
-    city: "Cidade",
+    floor: "Andar (opcional)",
+    zipCode: "Código postal",
+    place: "Localidade",
     district: "Distrito",
     country: "País",
     coordinates: "Coordenadas",
@@ -33,7 +33,7 @@ export const fieldValueFormat = (key, value) => {
     }
 
     if (key === "address" && typeof value === "object") {
-        return `${value.street}, ${value.number}, ${value.floor}, ${value.postalCode}, ${value.city}, ${value.district}, ${value.country}`;
+        return `${value.street}, ${value.number}, ${value.floor}, ${value.zipCode}, ${value.place}, ${value.district}, ${value.country}`;
     }
 
     return value;

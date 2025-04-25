@@ -16,12 +16,14 @@
                     <div class="card-header">Registo do restaurante</div>
                     <div class="card-body">
                         <% if (errors && errors.length > 0) { %>
-                            <ul class="errors">
-                              <% errors.forEach(error => { %>
-                                <li><%= error.msg %></li>
-                              <% }) %>
-                            </ul>
-                          <% } %>
+                            <div class="alert alert-danger">
+                              <ul class="mb-0">
+                                <% errors.forEach(error => { %>
+                                  <li><%= error.msg %></li>
+                                <% }) %>
+                              </ul>
+                            </div>
+                          <% } %>                          
                           
                         <form method="POST" action="/auth/register/restaurant" enctype="multipart/form-data">
                             <input type="hidden" name="userType" value="restaurant">
@@ -66,7 +68,7 @@
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Localidade</label>
-                                        <input name="address[place]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.city || '' %>">
+                                        <input name="address[place]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.place || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Distrito</label>

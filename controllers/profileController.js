@@ -1,12 +1,13 @@
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
+const Order = require('../models/order');
 
 const renderProfilePage = (req, res) => {
   res.render('profile/profile');
 };
 
 const renderUpdateProfilePage = (req, res) => {
-  res.render('profile/updateProfile');
+  res.render('profile/updateProfile', { errors: [] });
 };
 
 const getProfile = async (req, res) => {
@@ -30,6 +31,25 @@ const getProfile = async (req, res) => {
   }
 };
 
+const getOrderHistory = async (req, res) => {
+  try {
+    let orders;
+
+    if (req.user?.userType === 'customer') {
+      orders = await Order.find({ userId: req.user._id }).populate('dishes.dishId').populate('restaurantId');
+    } else if (req.user?.userType === 'admin') {
+      return res.status(403).json({ message: "Admins não têm histórico de encomendas." });
+    } else {
+      orders = await Order.find({ restaurantId: req.user._id }).populate('dishes.dishId').populate('userId');
+    } 
+
+    res.json(orders);
+  } catch (err) {
+    console.error('Erro ao carregar encomendas:', err);
+    res.status(500).json({ message: "Erro ao carregar histórico de encomendas." });
+  }
+};
+
 const updateProfile = async (req, res) => {
   const userType = req.user.userType;
   const userId = req.user._id;
@@ -48,17 +68,18 @@ const updateProfile = async (req, res) => {
     const excluded = ['_id', '__v', 'email', 'username', 'password'];
     excluded.forEach(field => delete updateFields[field]);
 
-    const updatedUser = await Model.findByIdAndUpdate(
+    await Model.findByIdAndUpdate(
       userId,
       updateFields,
       { new: true, runValidators: true }
-    ).select('-password');
+    );
 
-    res.json({ message: 'Perfil atualizado com sucesso!', user: updatedUser });
-
+    res.redirect('/user/perfil');
   } catch (error) {
     console.error("Erro no updateProfile:", error);
-    res.status(500).json({ message: 'Erro ao atualizar perfil', error: error.message });
+    res.status(500).render('profile/updateProfile', {
+      errors: [{ msg: 'Erro ao atualizar perfil: ' + error.message }]
+    });
   }
 };
 
@@ -66,5 +87,6 @@ module.exports = {
   renderProfilePage,
   renderUpdateProfilePage,
   getProfile,
+  getOrderHistory,
   updateProfile
 };

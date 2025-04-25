@@ -23,6 +23,7 @@
             <div class="d-flex justify-content-end gap-2 mb-2">
               <a href="/menus/editar/<%= menu._id %>" class="btn btn-warning btn-sm">Editar menu</a>
               <form action="/menus/remover/<%= menu._id %>" method="POST" class="d-inline">
+                <input type="hidden" name="_method" value="DELETE">
                 <button class="btn btn-danger btn-sm" onclick="return confirm('Remover este menu?')">Remover <map name=""></map>menu</button>
               </form>
             </div>            
@@ -37,6 +38,7 @@
                     <div class="d-flex gap-2">
                       <a href="/pratos/<%= dish._id %>" target="_blank" class="btn btn-primary btn-sm">Ver detalhes</a>
                       <form action="/menus/pratos/remover/<%= dish._id %>" method="POST" class="d-inline">
+                        <input type="hidden" name="_method" value="DELETE">
                         <button class="btn btn-outline-secondary btn-sm" onclick="return confirm('Remover este prato do menu?')">Remover do menu</button>
                       </form>
                     </div>

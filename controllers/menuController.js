@@ -27,7 +27,7 @@ const showAddMenuForm = async (req, res) => {
       restaurantId: req.user._id
     });
 
-    res.render('menus/createMenu', { availableDishes: availableDishes });
+    res.render('menus/createMenu', { availableDishes: availableDishes, errors: [], oldInput: {} });
   } catch (err) {
     console.error('Erro ao carregar pratos para o menu:', err);
     res.status(500).send('Erro ao carregar formulário.');
@@ -80,7 +80,7 @@ const showEditMenuForm = async (req, res) => {
       restaurantId: req.user._id
     });
 
-    res.render('menus/updateMenu', { menu, availableDishes });
+    res.render('menus/updateMenu', { menu, availableDishes, errors: [], oldInput: {} });
   } catch (err) {
     console.error('Erro ao carregar formulário de edição:', err);
     res.status(500).send('Erro ao carregar menu.');

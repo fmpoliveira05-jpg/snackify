@@ -7,7 +7,7 @@ const showEditDishForm = async (req, res) => {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
 
-    res.render('dishes/updateDish', { dish });
+    res.render('dishes/updateDish', { dish, errors: [], oldInput: {} });
   } catch (err) {
     console.error('Erro ao buscar prato:', err);
     res.status(500).send('Erro ao buscar prato.');
@@ -21,7 +21,15 @@ const updateDish = async (req, res) => {
 
     const { name, description, category, dose, price } = req.body;
 
-    const nutritionData = await fetchOpenFoodData(name);
+    let nutritionData = null;
+    if (name !== dish.name) {
+      nutritionData = await fetchOpenFoodData(name);
+      dish.nutriInfo = {
+        calories: nutritionData?.calories || null,
+        nutriScore: nutritionData?.nutriScore || null,
+        allergens: nutritionData?.allergens || []
+      };
+    }
 
     dish.name = name;
     dish.description = description;
@@ -31,12 +39,6 @@ const updateDish = async (req, res) => {
       dose: d,
       price: parseFloat(price[i])
     }));
-
-    dish.nutriInfo = {
-      calories: nutritionData?.calories || null,
-      nutriScore: nutritionData?.nutriScore || null,
-      allergens: nutritionData?.allergens || []
-    };
 
     if (req.file) {
       dish.image = `/uploads/images/${req.file.filename}`;
@@ -64,7 +66,7 @@ const deleteDish = async (req, res) => {
 };
 
 const showAddDishForm = (req, res) => {
-  res.render('dishes/createDish');
+  res.render('dishes/createDish', { errors: [], oldInput: {} });
 };
 
 const addDish = async (req, res) => {
