@@ -21,9 +21,12 @@
       <div class="d-flex gap-2">
           <a id="validarRestaurantesBtn" href="/admin/validar-restaurantes" class="btn btn-warning d-none">Validar Restaurantes</a>
           <a href="/user/perfil/editar" class="btn btn-primary">Editar Perfil</a>
+          <form method="POST" action="/auth/logout" class="d-inline">
+            <button type="submit" class="btn btn-primary">Logout</button>
+          </form>
+
       </div>
   </div>
-
   <script type="module" src="/javascripts/main.js"></script>
 </body>
 </html>

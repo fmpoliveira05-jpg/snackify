@@ -13,8 +13,11 @@
             <a class="nav-link" href="/auth/login">Login</a>
           </li>
           <li class="nav-item">
-            <form method="POST" action="/auth/logout" class="d-inline">
-              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">Logout</button>
+            <form method="GET" action="/user/perfil" class="d-inline">
+              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">perfil</button>
+            </form>
+            <form method="GET" action="/carrinho" class="d-inline">
+              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">carrinho</button>
             </form>
           </li>
         </ul>
