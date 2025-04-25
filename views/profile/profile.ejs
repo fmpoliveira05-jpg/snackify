@@ -10,23 +10,28 @@
   <%- include('../partials/navbar') %>
 
   <div class="container mt-5">
-      <h1 class="mb-4">Perfil de <span id="tipo"></span></h1>
-
+    <h1 class="mb-4">Perfil de <span id="tipo"></span></h1>
+  
+    <div class="mb-4">
       <h4>Histórico de Encomendas</h4>
-      <div id="historico" class="mb-4"></div>
-
-      <h4>Dados de utilizador</h4>
-      <ul id="info" class="list-group mb-3"></ul>
-
-      <div class="d-flex gap-2">
+      <div id="historico" class="list-group"></div>
+    </div>
+  
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4 class="card-title">Dados de utilizador</h4>
+        <ul id="info" class="list-group list-group-flush mb-3"></ul>
+  
+        <div class="d-flex flex-column flex-md-row align-items-start gap-2">
           <a id="validarRestaurantesBtn" href="/admin/validar-restaurantes" class="btn btn-warning d-none">Validar Restaurantes</a>
           <a href="/user/perfil/editar" class="btn btn-primary">Editar Perfil</a>
           <form method="POST" action="/auth/logout" class="d-inline">
             <button type="submit" class="btn btn-primary">Logout</button>
           </form>
-
+        </div>
       </div>
-  </div>
+    </div>
+  </div>  
   <script type="module" src="/javascripts/main.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
   <div class="container">
-    <a class="navbar-brand" href="/">Snackify</a>
+    <a class="navbar-brand" href="/">Início</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
       aria-controls="navbarContent" aria-expanded="false" aria-label="Alternar navegação">
@@ -12,19 +12,23 @@
         <% if (!user) { %>
           <li class="nav-item">
             <form method="GET" action="/auth/login" class="d-inline">
-              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">login</button>
+              <button type="submit" class="btn btn-link nav-link">login</button>
             </form>
           </li>
-        <% } else { %>
-          <li class="nav-item">
-            <form method="GET" action="/user/perfil" class="d-inline">
-              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">perfil</button>
-            </form>
-            <form method="GET" action="/carrinho" class="d-inline">
-              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">carrinho</button>
-            </form>
-          </li>
-        <% } %>
+          <% } else { %>
+            <li class="nav-item">
+              <form method="GET" action="/user/perfil" class="d-inline">
+                <button type="submit" class="btn btn-link nav-link">perfil</button>
+              </form>
+            </li>
+            <% if (user.userType === "customer") { %>
+              <li class="nav-item">
+                <form method="GET" action="/carrinho" class="d-inline">
+                  <button type="submit" class="btn btn-link nav-link">carrinho</button>
+                </form>
+              </li>
+            <% } %>
+          <% } %>          
       </ul>
     </div>
   </div>
