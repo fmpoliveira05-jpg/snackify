@@ -1,17 +1,21 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <div class="container">
-      <a class="navbar-brand" href="/">Snackify</a>
-      
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
-        aria-controls="navbarContent" aria-expanded="false" aria-label="Alternar navegação">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      
-      <div class="collapse navbar-collapse" id="navbarContent">
-        <ul class="navbar-nav ms-auto">
+  <div class="container">
+    <a class="navbar-brand" href="/">Snackify</a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+      aria-controls="navbarContent" aria-expanded="false" aria-label="Alternar navegação">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <ul class="navbar-nav ms-auto">
+        <% if (!user) { %>
           <li class="nav-item">
-            <a class="nav-link" href="/auth/login">Login</a>
+            <form method="GET" action="/auth/login" class="d-inline">
+              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">login</button>
+            </form>
           </li>
+        <% } else { %>
           <li class="nav-item">
             <form method="GET" action="/user/perfil" class="d-inline">
               <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">perfil</button>
@@ -20,7 +24,8 @@
               <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">carrinho</button>
             </form>
           </li>
-        </ul>
-      </div>
+        <% } %>
+      </ul>
     </div>
-  </nav>
+  </div>
+</nav>

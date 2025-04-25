@@ -178,6 +178,10 @@ form textarea:focus {
   margin-bottom: 0.5rem;
 }
 
+html {
+  overflow-y: scroll;
+}
+
 
 /* ---------- LOGIN ---------- */
 
