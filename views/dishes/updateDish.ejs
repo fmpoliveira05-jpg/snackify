@@ -8,6 +8,22 @@
 </head>
 <body>
   <%- include('../partials/navbar') %>
+  
+  <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+    <ul class="navbar-nav">
+      <% if (user) { %>
+        <li class="nav-item">
+          <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
+        </li>
+        <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
+      <% } else { %>
+        <li class="nav-item">
+          <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
+        </li>
+      <% } %>
+    </ul>
+  </div>
+  
   <div class="container mt-5">
     <h2>Editar Prato</h2>
 

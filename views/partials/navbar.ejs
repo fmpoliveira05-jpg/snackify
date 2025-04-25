@@ -1,24 +1,23 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
-      <a class="navbar-brand" href="/">Página inicial</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-        aria-controls="navbarNav" aria-expanded="false" aria-label="Alternar navegação">
+      <a class="navbar-brand" href="/">Snackify</a>
+      
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+        aria-controls="navbarContent" aria-expanded="false" aria-label="Alternar navegação">
         <span class="navbar-toggler-icon"></span>
       </button>
-  
-      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav">
-          <% if (user) { %>
-            <li class="nav-item">
-              <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
-            </li>
-            <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
-          <% } else { %>
-            <li class="nav-item">
-              <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
-            </li>
-          <% } %>
+      
+      <div class="collapse navbar-collapse" id="navbarContent">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/auth/login">Login</a>
+          </li>
+          <li class="nav-item">
+            <form method="POST" action="/auth/logout" class="d-inline">
+              <button type="submit" class="btn btn-link nav-link" style="display: inline; padding: 0;">Logout</button>
+            </form>
+          </li>
         </ul>
       </div>
     </div>
-  </nav>  
+  </nav>
