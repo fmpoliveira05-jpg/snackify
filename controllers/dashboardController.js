@@ -16,7 +16,9 @@ const showRestaurantDashboard = async (req, res) => {
   
 const showCustomerDashboard = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.user._id }).sort({ orderDate: -1 }).limit(5).populate('dishes.dishId');
+    const userId = req.user._id;
+
+    const orders = await Order.find({ userId }).sort({ orderDate: -1 }).limit(5).populate('dishes.dishId');
 
     const orderTotals = orders.map(order => {
       let total = 0;
@@ -35,7 +37,25 @@ const showCustomerDashboard = async (req, res) => {
       };
     });
 
-    res.render('dashboards/customerDashboard', { orderTotals });
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    const cancelledOrders = await Order.find({
+      userId,
+      state: 'cancelada',
+      orderDate: { $gte: oneMonthAgo }
+    }).sort({ orderDate: 1 });
+
+    let blockedUntil = null;
+
+    if (cancelledOrders.length >= 5) {
+      const fifthCancelDate = cancelledOrders[4].orderDate;
+      blockedUntil = new Date(fifthCancelDate);
+      blockedUntil.setMonth(blockedUntil.getMonth() + 2);
+    }
+
+    res.render('dashboards/customerDashboard', { orderTotals, isBlocked: !!blockedUntil, blockedUntil: blockedUntil ? blockedUntil.toLocaleDateString('pt-PT') : null });
+
   } catch (error) {
     console.error(error);
     res.status(500).send('Erro ao carregar dados das encomendas.');

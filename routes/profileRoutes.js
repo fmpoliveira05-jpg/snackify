@@ -5,12 +5,17 @@ const auth = require('../middlewares/authMiddleware');
 const customerUpdateValidator = require('../middlewares/validation/customerUpdateValidator');
 const restaurantUpdateValidator = require('../middlewares/validation/restaurantUpdateValidator');
 const validateRequest = require('../middlewares/validation/validateRequest');
+const { isCustomer } = require('../middlewares/roleMiddleware');
 const {
   renderProfilePage,
   renderUpdateProfilePage,
   getProfile,
   getOrderHistory,
-  updateProfile
+  updateProfile,
+  cancelOrder,
+  submitReview,
+  hasReview,
+  renderReviewPage
 } = require('../controllers/profileController');
 
 const getValidatorForUser = (user) => {
@@ -21,6 +26,7 @@ router.get('/perfil', auth, renderProfilePage);
 router.get('/perfil/editar', auth, renderUpdateProfilePage);
 router.get('/perfil/dados', auth, getProfile);
 router.get('/perfil/encomendas', auth, getOrderHistory);
+router.get('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, renderReviewPage);
 
 router.post(
   '/perfil/editar',
@@ -47,5 +53,8 @@ router.post(
   validateRequest('profile/updateProfile'),
   updateProfile
 );
+
+router.post('/perfil/encomendas/:orderId/cancelar', auth, isCustomer, cancelOrder);
+router.post('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, upload.single('image'), submitReview);
 
 module.exports = router;

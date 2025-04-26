@@ -35,13 +35,11 @@
             <input type="hidden" id="orderId" value="<%= order._id %>">
             <input type="hidden" id="orderCode" value="<%= order.orderCode %>">
             <input type="hidden" id="dishes" value='<%- JSON.stringify(order.dishes) %>'>
-            <button type="button" id="pay-button" class="btn btn-success btn-lg">Pagar agora</button>
+            <p>Nota: aceda ao seu perfil para efetuar o pagamento.</p>
           </form>
         <% } %>
       </div>
     </div>
   </div>
-
-  <script src="/javascripts/payCart.js"></script>
 </body>
 </html>

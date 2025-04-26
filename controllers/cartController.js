@@ -172,7 +172,7 @@ const createStripeSession = async (req, res) => {
       line_items,
       mode: 'payment',
       success_url: `${req.headers.origin}/carrinho/pagamento-sucesso?orderId=${orderId}`,
-      cancel_url: `${req.headers.origin}/carrinho/checkout?orderId=${orderId}`,
+      cancel_url: `${req.headers.origin}/user/perfil`,
     });
 
     res.json({ url: session.url });

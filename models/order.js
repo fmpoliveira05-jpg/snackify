@@ -14,7 +14,8 @@ const orderSchema = new mongoose.Schema({
     orderDate: { type: Date, default: Date.now },
     cancelTimeout: { type: Date },
     orderCode: String,
-    identityDoc: String
+    identityDoc: String,
+    reviewed: { type: Boolean, default: false }
   });
 
   module.exports = mongoose.model('Order', orderSchema);

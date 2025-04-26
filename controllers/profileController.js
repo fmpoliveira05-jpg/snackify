@@ -1,6 +1,7 @@
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const Order = require('../models/order');
+const Review = require('../models/review');
 
 const renderProfilePage = (req, res) => {
   res.render('profile/profile');
@@ -83,10 +84,114 @@ const updateProfile = async (req, res) => {
   }
 };
 
+const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ message: "Pedido não encontrado." });
+    }
+
+    if (order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Não tens permissão para cancelar este pedido." });
+    }
+
+    const now = new Date();
+    const orderDate = new Date(order.orderDate);
+    const minutesSinceOrder = (now - orderDate) / (1000 * 60);
+
+    if (minutesSinceOrder > 5) {
+      return res.status(400).json({ message: "O tempo para cancelar este pedido já passou." });
+    }
+
+    if (order.state !== 'pendente') {
+      return res.status(400).json({ message: "O pedido já foi processado e não pode ser cancelado." });
+    }
+
+    order.state = 'cancelada';
+    await order.save();
+
+    res.json({ message: "Pedido cancelado com sucesso." });
+  } catch (error) {
+    console.error('Erro ao cancelar pedido:', error);
+    res.status(500).json({ message: "Erro ao cancelar pedido." });
+  }
+};
+
+const submitReview = async (req, res) => {
+  const { orderId } = req.params;
+  const { title, description } = req.body;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: "Pedido não encontrado." });
+    if (order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Sem permissão para avaliar este pedido." });
+    }
+
+    const existingReview = await Review.findOne({ orderId });
+    if (existingReview) {
+      return res.status(400).json({ message: "Já enviaste avaliação para esta encomenda." });
+    }
+
+    const reviewData = {
+      title,
+      description,
+      userId: req.user._id,
+      restaurantId: order.restaurantId,
+      orderId: order._id,
+    };
+
+    if (req.file) {
+      reviewData.image = `/uploads/reviews/${req.file.filename}`;
+    }
+
+    const review = new Review(reviewData);
+    await review.save();
+
+    order.reviewed = true;
+    await order.save();
+
+    res.redirect('/user/perfil');
+  } catch (error) {
+    console.error('Erro ao enviar avaliação:', error);
+    res.status(500).json({ message: "Erro ao enviar avaliação." });
+  }
+};
+
+const renderReviewPage = async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const order = await Order.findById(orderId).populate('restaurantId').populate('dishes.dishId').lean();
+
+    if (!order) return res.status(404).render('errors/404', { message: "Pedido não encontrado." });
+
+    if (order.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).render('errors/403', { message: "Sem permissão para avaliar este pedido." });
+    }
+
+    const existingReview = await Review.findOne({ orderId });
+    if (existingReview) {
+      return res.redirect('/user/perfil');
+    }
+
+    res.render('profile/review', { order });
+  } catch (error) {
+    console.error('Erro ao carregar página de avaliação:', error);
+    res.status(500).render('errors/500', { message: "Erro interno ao carregar avaliação." });
+  }
+};
+
 module.exports = {
   renderProfilePage,
   renderUpdateProfilePage,
   getProfile,
   getOrderHistory,
-  updateProfile
+  updateProfile,
+  cancelOrder,
+  submitReview,
+  renderReviewPage
 };

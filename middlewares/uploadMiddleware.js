@@ -15,7 +15,9 @@ const storage = multer.diskStorage({
     } else if (req.url.includes('register/restaurant')) {
       folder = 'uploads/logos';
     } else if (req.url.includes('novo') || req.url.includes('editar')) {
-      folder = 'uploads/images';
+      folder = 'uploads/dishes';
+    } else if (req.url.includes('/perfil/encomendas/avaliar')) {
+      folder = 'uploads/reviews';
     } else {
       folder = 'uploads/others';
     }
