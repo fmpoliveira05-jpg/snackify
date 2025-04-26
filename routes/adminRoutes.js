@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
 const { isAdmin } = require('../middlewares/roleMiddleware');
-const { showPendingRestaurants, validateRestaurant, rejectRestaurant, showRestaurantDetails, showRestaurantEditPage, updateRestaurant, removeRestaurant, createCategory, showCategories} = require('../controllers/adminController');
+const { showPendingRestaurants, validateRestaurant, rejectRestaurant, showRestaurantDetails, showRestaurantEditPage, updateRestaurant, removeRestaurant, createCategory, showCategories,deleteCategory, deleteOrder, showOrders, showOrderDetails } = require('../controllers/adminController');
 
 router.get('/validar-restaurantes', authMiddleware, isAdmin, showPendingRestaurants);
 router.post('/validar-restaurante/:id', authMiddleware, isAdmin, validateRestaurant);
@@ -14,5 +14,15 @@ router.post('/remover-restaurante/:id', authMiddleware, isAdmin, removeRestauran
 
 router.get('/editar-categorias', authMiddleware, isAdmin, showCategories);
 router.post('/criar-categoria', authMiddleware, isAdmin, createCategory);
+
+router.post('/remover-categoria/:id', authMiddleware, isAdmin, removeCategory);
+router.post('/remover-pedido/:id', authMiddleware, isAdmin, deleteOrder);
+router.post('pedidos/:id', authMiddleware, isAdmin, deleteOrder);
+router.get('/pedidos', authMiddleware, isAdmin, showOrders);
+
+router.get('/detalhes-pedido/:id', authMiddleware, isAdmin, showOrderDetails);
+
+router.post('/detalhes-pedido/:id', authMiddleware, isAdmin, showOrderDetails);
+
 
 module.exports = router;
