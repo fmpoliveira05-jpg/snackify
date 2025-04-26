@@ -1,4 +1,5 @@
 const Restaurant = require('../models/restaurant');
+const Category = require('../models/category');
 
 const showPendingRestaurants = async (req, res) => {
     try {
@@ -76,6 +77,25 @@ const removeRestaurant = async (req, res) => {
     }
 }
 
+const showCategories = async (req, res) => {
+    try {
+        const categorias = await Category.find({ isChecked: false });
+        res.render('admin/editCategories', { categorias });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao obter categorias", error: error.message });
+    }
+};
+
+const createCategory = async (req, res) => {
+    const { name } = req.body;
+    try {
+        if (!name){ return res.status(404).json({ message: "Categoria já existe" });}
+        await Category.create({ name });
+        res.redirect('/admin/editar-categorias');
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao criar categoria", error: error.message });
+    }
+};
 
 module.exports = {
     showPendingRestaurants,
@@ -84,5 +104,7 @@ module.exports = {
     showRestaurantDetails,
     showRestaurantEditPage,
     updateRestaurant,
-    removeRestaurant
+    removeRestaurant,
+    showCategories,
+    createCategory
 };

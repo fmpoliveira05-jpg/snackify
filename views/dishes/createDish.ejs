@@ -54,10 +54,13 @@
 
       <select name="category" class="form-control mb-2" required>
         <option value="">Seleciona a categoria</option>
-        <option value="Carne" <%= oldInput?.category === 'Carne' ? 'selected' : '' %>>Carne</option>
-        <option value="Peixe" <%= oldInput?.category === 'Peixe' ? 'selected' : '' %>>Peixe</option>
-        <option value="Vegetariano" <%= oldInput?.category === 'Vegetariano' ? 'selected' : '' %>>Vegetariano</option>
-        <option value="Sobremesa" <%= oldInput?.category === 'Sobremesa' ? 'selected' : '' %>>Sobremesa</option>
+        <% if (categories && categories.length > 0) { %>
+          <% categories.forEach(category => { %>
+            <option value="<%= category.name %>" <%= oldInput && oldInput.category === category.name ? 'selected' : '' %>>
+              <%= category.name %>
+            </option>
+          <% }) %>
+        <% } %>
       </select>
 
       <div class="input-group mb-2">

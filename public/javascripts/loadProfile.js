@@ -34,8 +34,10 @@ export async function loadProfile() {
         }
 
         if (data.userType === 'admin') {
-            const btn = document.getElementById("validarRestaurantesBtn");
-            if (btn) btn.classList.remove("d-none");
+            const btn1 = document.getElementById("validarRestaurantesBtn");
+            const btn2 = document.getElementById("editCategoryBtn");
+            if (btn1) btn1.classList.remove("d-none");
+            if (btn2) btn2.classList.remove("d-none");
         }
 
         const historyResponse = await fetch('/user/perfil/encomendas');

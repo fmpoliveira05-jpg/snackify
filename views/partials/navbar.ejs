@@ -16,12 +16,14 @@
             </form>
           </li>
           <% } else { %>
-            <li class="nav-item">
-              <form method="GET" action="/user/perfil" class="d-inline">
-                <button type="submit" class="btn btn-link nav-link">perfil</button>
-              </form>
-            </li>
-            <% if (user.userType === "customer") { %>
+            <% if (currentPath !== '/user/perfil') { %>
+              <li class="nav-item">
+                <form method="GET" action="/user/perfil" class="d-inline">
+                  <button type="submit" class="btn btn-link nav-link">perfil</button>
+                </form>
+              </li>
+            <% } %>
+            <% if ((user.userType === "customer" || user.userType === "admin") && currentPath !== '/carrinho') { %>
               <li class="nav-item">
                 <form method="GET" action="/carrinho" class="d-inline">
                   <button type="submit" class="btn btn-link nav-link">carrinho</button>

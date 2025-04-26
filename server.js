@@ -34,6 +34,11 @@ app.use(cookieParser());
 app.use(checkUser); 
 
 app.use((req, res, next) => {
+    res.locals.currentPath = req.path;
+    next();
+});
+
+app.use((req, res, next) => {
     console.log(`[${req.method}] ${req.url}`);
     next();
 });

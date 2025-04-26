@@ -58,14 +58,16 @@
           ><%= oldInput?.description || dish.description %></textarea>
         </div>
   
-        <div class="mb-3">
-          <label class="form-label">Categoria</label>
-          <select name="category" class="form-control" required>
-            <% ['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'].forEach(cat => { %>
-              <option value="<%= cat %>" <%= (oldInput?.category || dish.category) === cat ? 'selected' : '' %>><%= cat %></option>
+        <select name="category" class="form-control mb-2" required>
+          <option value="">Seleciona a categoria</option>
+          <% if (categories && categories.length > 0) { %>
+            <% categories.forEach(category => { %>
+              <option value="<%= category.name %>" <%= oldInput && oldInput.category === category.name ? 'selected' : '' %>>
+                <%= category.name %>
+              </option>
             <% }) %>
-          </select>
-        </div>
+          <% } %>
+        </select>
   
         <div class="mb-3">
           <label class="form-label">Preço por Dose</label>

@@ -33,6 +33,7 @@ router.get('/:id', auth, isRestaurant, showDishDetails);
 router.get('/editar/:id', auth, isRestaurant, showEditDishForm);
 router.get('/cardapio/cliente', listDishesForClient);
 
+
 router.post(
   '/novo',
   auth,

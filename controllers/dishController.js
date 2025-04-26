@@ -1,4 +1,5 @@
 const Dish = require('../models/dish');
+const Category = require('../models/category');
 const axios = require('axios');
 const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
 
@@ -6,8 +7,9 @@ const showEditDishForm = async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
-
-    res.render('dishes/updateDish', { dish, errors: [], oldInput: {} });
+    const categories = await Category.find();
+    if (!categories) return res.status(404).send('categorias não encontradas.');
+    res.render('dishes/updateDish', { categories, dish, errors: [], oldInput: {} });
   } catch (err) {
     console.error('Erro ao buscar prato:', err);
     res.status(500).send('Erro ao buscar prato.');
@@ -65,8 +67,15 @@ const deleteDish = async (req, res) => {
   }
 };
 
-const showAddDishForm = (req, res) => {
-  res.render('dishes/createDish', { errors: [], oldInput: {} });
+const showAddDishForm = async (req, res) => {
+  try {
+    const categories = await Category.find();
+    if (!categories) return res.status(404).send('categorias não encontradas.');
+    res.render('dishes/createDish', { categories, errors: [], oldInput: {}       
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao carregar formulário', error: error.message });
+  }
 };
 
 const addDish = async (req, res) => {
@@ -143,6 +152,7 @@ const listDishesForClient = async (req, res) => {
     res.status(500).send('Erro ao carregar pratos.');
   }
 };
+
 
 module.exports = {
   showEditDishForm,

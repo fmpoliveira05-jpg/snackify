@@ -23,6 +23,9 @@
                     <form action="/admin/validar-restaurante/<%= r._id %>" method="POST">
                         <button class="btn btn-success btn-sm">Validar</button>
                     </form>
+                    <form action="/admin/recusar-restaurante/<%= r._id %>" method="POST">
+                        <button class="btn btn-success btn-sm">Recusar</button>
+                    </form>
                 </li>
             <% }); %>
         </ul>
