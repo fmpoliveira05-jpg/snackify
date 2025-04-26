@@ -27,7 +27,11 @@
     <%- include('../partials/sidebar') %>
     <div class="container mt-5">
         <h4>Esta é a sua área pessoal.</h4>
-        <button class="btn btn-primary" onclick="window.location.href='/clientes/restaurantes'">Ver restaurantes</button>
+        <div id="orderTotalsChart" data-chart='<%= JSON.stringify(orderTotals) %>'></div>
+        <button class="btn btn-primary" onclick="window.location.href='/clientes/restaurantes'">Encomendar comida</button>
     </div>
+    
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="/javascripts/drawCharts.js"></script>
 </body>
 </html>

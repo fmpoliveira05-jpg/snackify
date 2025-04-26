@@ -26,11 +26,17 @@
     
     <div class="container mt-5">
         <h4>Aqui poderá gerir os seus produtos, encomendas e informações.</h4>
+        <div id="ordersStateChart" class="my-4"></div>
+        <div id="orderStatsData" data-chart='<%- JSON.stringify(orderStats || []) %>'></div>
     
         <a href="/pratos/novo" class="btn btn-warning mb-2 btn-largo">Criar novo prato</a><br>
         <a href="/menus/novo" class="btn btn-success mb-2 btn-largo">Criar novo menu</a><br>
         <a href="/pratos" class="btn btn-outline-secondary mb-2 btn-largo">Ver pratos criados</a><br>
         <a href="/menus" class="btn btn-outline-primary mb-2 btn-largo">Ver menus disponíveis</a>
-    </div>    
+    </div>
+
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript" src="/javascripts/drawCharts.js"></script>   
 </body>
 </html>

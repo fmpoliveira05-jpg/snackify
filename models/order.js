@@ -15,6 +15,6 @@ const orderSchema = new mongoose.Schema({
     cancelTimeout: { type: Date },
     orderCode: String,
     identityDoc: String
-  });  
+  });
 
   module.exports = mongoose.model('Order', orderSchema);
