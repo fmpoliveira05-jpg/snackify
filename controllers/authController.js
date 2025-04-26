@@ -181,11 +181,11 @@ const login = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 3600000
         });
 
-        res.json({ message: "Login bem-sucedido!", token, userType });
+        res.json({ message: "Login bem-sucedido!", userType });
 
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });

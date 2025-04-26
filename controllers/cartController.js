@@ -1,3 +1,4 @@
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const Cart = require('../models/cart');
 const Dish = require('../models/dish');
 const Order = require('../models/order');
@@ -148,12 +149,62 @@ const createOrderFromCart = async (req, res) => {
       console.error("Erro ao criar encomenda:", err);
       res.status(500).send("Erro ao criar a encomenda.");
     }
-  };
+};
+
+const createStripeSession = async (req, res) => {
+  try {
+    console.log(req.body);
+    const { orderId, orderCode, dishes } = req.body;
+
+    const line_items = dishes.map(item => ({
+      price_data: {
+        currency: 'eur',
+        product_data: {
+          name: item.dishId.name,
+        },
+        unit_amount: item.dishId.pricePerDose.find(p => p.dose === item.dose).price * 100,
+      },
+      quantity: item.amount,
+    }));
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items,
+      mode: 'payment',
+      success_url: `${req.headers.origin}/carrinho/pagamento-sucesso?orderId=${orderId}`,
+      cancel_url: `${req.headers.origin}/carrinho/checkout?orderId=${orderId}`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error("Erro a criar sessão Stripe:", err);
+    res.status(500).json({ error: "Erro ao criar sessão de pagamento." });
+  }
+};
+
+const handlePaymentSuccess = async (req, res) => {
+  const { orderId } = req.query;
+
+  try {
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).send("Encomenda não encontrada.");
+
+    order.state = 'concluída';
+    await order.save();
+
+    res.redirect(`/carrinho/checkout?orderId=${order._id}`);
+  } catch (err) {
+    console.error("Erro ao finalizar pagamento:", err);
+    res.status(500).send("Erro ao concluir o pagamento.");
+  }
+};
 
 module.exports = {
     viewCart,
     addToCart,
     removeFromCart,
     checkout,
-    createOrderFromCart
+    createOrderFromCart,
+    createStripeSession,
+    handlePaymentSuccess
 };

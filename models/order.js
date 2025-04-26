@@ -10,7 +10,7 @@ const orderSchema = new mongoose.Schema({
         dose: { type: String, enum: ['1/2', '1'], required: true }
       }
     ],
-    state: { type: String, enum: ["pendente", "em preparação", "expedida", "entregue", "cancelada"], default: "pendente" },
+    state: { type: String, enum: ["pendente", "concluída", "em preparação", "expedida", "entregue", "cancelada"], default: "pendente" },
     orderDate: { type: Date, default: Date.now },
     cancelTimeout: { type: Date },
     orderCode: String,

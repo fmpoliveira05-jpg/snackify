@@ -3,6 +3,7 @@ const Restaurant = require('../models/restaurant');
 
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+
     if (!token) return res.status(401).json({ message: "Token não fornecido!" });
 
     try {
