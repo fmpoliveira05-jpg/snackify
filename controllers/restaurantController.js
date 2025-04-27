@@ -307,18 +307,6 @@ const showDishDetails = async (req, res) => {
   }
 };
 
-const listDishesForClient = async (req, res) => {
-  try {
-    const restaurantId = req.cookies.restaurantId;
-
-    const dishes = await Dish.find({ restaurantId });
-    res.render('dishes/listForClient', { dishes });
-  } catch (err) {
-    console.error('Erro ao carregar pratos para o cliente:', err);
-    res.status(500).send('Erro ao carregar pratos.');
-  }
-};
-
 module.exports = {
   showRestaurantDashboard,
   listMenus,
@@ -335,5 +323,4 @@ module.exports = {
   addDish,
   listDishes,
   showDishDetails,
-  listDishesForClient
 };

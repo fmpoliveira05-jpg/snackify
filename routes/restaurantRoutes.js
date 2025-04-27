@@ -15,7 +15,6 @@ const {
   addDish,
   updateDish,
   deleteDish,
-  listDishesForClient,
   showRestaurantDashboard
 } = require('../controllers/restaurantController');
 const upload = require('../middlewares/uploadMiddleware');
@@ -81,8 +80,6 @@ router.get('/pratos', auth, isRestaurant, listDishes);
 router.get('/pratos/novo', auth, isRestaurant, showAddDishForm);
 router.get('/pratos/:id', auth, isRestaurant, showDishDetails);
 router.get('/pratos/editar/:id', auth, isRestaurant, showEditDishForm);
-router.get('/pratos/cardapio/cliente', listDishesForClient);
-
 
 router.post(
   '/pratos/novo',
