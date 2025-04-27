@@ -15,7 +15,7 @@ router.post('/remover-restaurante/:id', authMiddleware, isAdmin, removeRestauran
 router.get('/editar-categorias', authMiddleware, isAdmin, showCategories);
 router.post('/criar-categoria', authMiddleware, isAdmin, createCategory);
 
-router.post('/remover-categoria/:id', authMiddleware, isAdmin, removeCategory);
+//router.post('/remover-categoria/:id', authMiddleware, isAdmin, removeCategory);
 router.post('/remover-pedido/:id', authMiddleware, isAdmin, deleteOrder);
 router.post('pedidos/:id', authMiddleware, isAdmin, deleteOrder);
 router.get('/pedidos', authMiddleware, isAdmin, showOrders);
