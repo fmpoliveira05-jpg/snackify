@@ -27,6 +27,7 @@ const customerRegisterValidator = [
     .isNumeric().withMessage('O número de telemóvel só pode conter números.'),
 
     body('nif')
+    .optional({checkFalsy: true })
     .custom((nif, { req }) => {
         const userType = req.user?.userType;
     
@@ -34,9 +35,7 @@ const customerRegisterValidator = [
         return true;
         }
     
-        if (!nif) {
-        throw new Error('O NIF é obrigatório.');
-        }
+        
     
         if (!/^\d{9}$/.test(nif)) {
         throw new Error('O NIF deve ter 9 dígitos numéricos.');
