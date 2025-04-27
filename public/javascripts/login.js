@@ -19,9 +19,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             localStorage.setItem('token', result.token);
 
             if (result.userType === 'restaurant') {
-                window.location.href = "/dashboard/restaurant"; 
+                window.location.href = "/restaurante/dashboard"; 
             } else {
-                window.location.href = "/dashboard/customer";
+                window.location.href = "/cliente/dashboard";
             }
         } else {
             alert(result.message);

@@ -1,4 +1,5 @@
 const { body } = require('express-validator');
+const Category = require('../../models/category');
 
 const dishValidator = [
   body('name')
@@ -12,24 +13,29 @@ const dishValidator = [
     .isLength({ max: 500 }).withMessage('A descrição do prato deve ter no máximo 500 caracteres.'),
 
   body('category')
-    .notEmpty().withMessage('A categoria é obrigatória.')
-    .isIn(['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'])
-    .withMessage('Categoria inválida.'),
+  .notEmpty().withMessage('A categoria é obrigatória.')
+  .custom(async (value) => {
+    const categoryExists = await Category.findOne({ _id: value });
+    if (!categoryExists) {
+      throw new Error('Categoria inválida.');
+    }
+    return true;
+  }),
 
   body('price')
-    .custom((value, { req }) => {
-      const prices = req.body.price;
-      if (!Array.isArray(prices) || prices.length === 0) {
-        throw new Error('É necessário fornecer pelo menos um preço.');
+  .custom((value, { req }) => {
+    const prices = req.body.price;
+    if (!Array.isArray(prices)) {
+      throw new Error('Erro ao processar os preços.');
+    }
+    const filledPrices = prices.filter(p => p !== '');
+    for (let p of filledPrices) {
+      if (isNaN(p) || Number(p) <= 0) {
+        throw new Error('Todos os preços preenchidos devem ser números válidos e maiores que zero.');
       }
-
-      for (let p of prices) {
-        if (isNaN(p) || Number(p) <= 0) {
-          throw new Error('Todos os preços devem ser números válidos e maiores que zero.');
-        }
-      }
-      return true;
-    }),
+    }
+    return true;
+  }),
 ];
 
 module.exports = dishValidator;

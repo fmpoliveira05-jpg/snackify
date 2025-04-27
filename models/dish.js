@@ -5,7 +5,11 @@ const dishSchema = new mongoose.Schema({
     menuId: { type: mongoose.Schema.Types.ObjectId, ref: 'Menu', required: false },
     name: { type: String, required: true },
     description: String,
-    category: { type: String, enum: ['Carne', 'Peixe', 'Vegetariano', 'Sobremesa'], required: true },
+    category: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: true
+    },
     image: String,
     nutriInfo: {
         calories: Number,

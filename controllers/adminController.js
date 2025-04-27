@@ -79,7 +79,7 @@ const removeRestaurant = async (req, res) => {
 
 const showCategories = async (req, res) => {
     try {
-        const categorias = await Category.find({ isChecked: false });
+        const categorias = await Category.find();
         res.render('admin/editCategories', { categorias });
     } catch (error) {
         res.status(500).json({ message: "Erro ao obter categorias", error: error.message });

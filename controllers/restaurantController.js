@@ -1,0 +1,339 @@
+const Order = require('../models/order');
+const Menu = require('../models/menu');
+const Dish = require('../models/dish');
+const Category = require('../models/category');
+const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
+
+const showRestaurantDashboard = async (req, res) => {
+  try {
+    const orderStats = await Order.aggregate([
+      { $group: { _id: "$state", count: { $sum: 1 } } },
+      { $project: { _id: 0, state: "$_id", count: 1 } }
+    ]);
+
+    res.render('dashboards/restaurantDashboard', { orderStats });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Erro ao carregar dados de encomendas.');
+  }
+};
+
+const listMenus = async (req, res) => {
+  try {
+    const restaurantId = req.user._id;
+    const menus = await Menu.find({ restaurantId });
+
+    const menusWithDishes = await Promise.all(
+      menus.map(async (menu) => {
+        const dishes = await Dish.find({ menuId: menu._id });
+        return { ...menu.toObject(), dishes };
+      })
+    );
+
+    res.render('menus/readMenus', { menus: menusWithDishes });
+  } catch (err) {
+    console.error('Erro ao listar menus:', err);
+    res.status(500).send('Erro ao listar menus.');
+  }
+};
+
+const showAddMenuForm = async (req, res) => {
+  try {
+    const availableDishes = await Dish.find({
+      menuId: null,
+      restaurantId: req.user._id
+    });
+
+    res.render('menus/createMenu', { availableDishes: availableDishes, errors: [], oldInput: {} });
+  } catch (err) {
+    console.error('Erro ao carregar pratos para o menu:', err);
+    res.status(500).send('Erro ao carregar formulário.');
+  }
+};
+
+const addMenu = async (req, res) => {
+  try {
+    const { title, description, selectedDishes } = req.body;
+
+    const dishIds = Array.isArray(selectedDishes) ? selectedDishes : [selectedDishes];
+
+    if (!dishIds || dishIds.length > 10) {
+      return res.status(400).send('Seleciona no máximo 10 pratos.');
+    }
+
+    const newMenu = new Menu({
+      restaurantId: req.user._id,
+      title,
+      description
+    });
+
+    await newMenu.save();
+
+    await Dish.updateMany(
+      { _id: { $in: dishIds }, restaurantId: req.user._id },
+      { $set: { menuId: newMenu._id } }
+    );
+
+    res.redirect('/restaurante/menus');
+  } catch (err) {
+    console.error('Erro ao adicionar menu:', err);
+    res.status(400).send('Erro ao criar menu.');
+  }
+};
+
+const showEditMenuForm = async (req, res) => {
+  try {
+    const menu = await Menu.findById(req.params.id);
+    
+    if (!menu || !menu.restaurantId.equals(req.user._id)) {
+      return res.status(404).send('Menu não encontrado ou acesso negado.');
+    }
+
+    const availableDishes = await Dish.find({
+      $or: [
+        { menuId: { $exists: false } },
+        { menuId: null }
+      ],
+      restaurantId: req.user._id
+    });
+
+    res.render('menus/updateMenu', { menu, availableDishes, errors: [], oldInput: {} });
+  } catch (err) {
+    console.error('Erro ao carregar formulário de edição:', err);
+    res.status(500).send('Erro ao carregar menu.');
+  }
+};
+
+const updateMenu = async (req, res) => {
+  try {
+    const { title, description, availableDishes } = req.body;
+
+    const menu = await Menu.findById(req.params.id);
+    if (!menu || !menu.restaurantId.equals(req.user._id)) {
+      return res.status(404).send('Menu não encontrado ou acesso negado.');
+    }
+
+    menu.title = title;
+    menu.description = description;
+    await menu.save();
+
+    if (availableDishes) {
+      const selectedDishIds = Array.isArray(availableDishes)
+        ? availableDishes
+        : [availableDishes];
+
+      await Dish.updateMany(
+        {
+          _id: { $in: selectedDishIds },
+          $or: [
+            { menuId: null },
+            { menuId: { $exists: false } }
+          ],
+          restaurantId: req.user._id
+        },
+        { $set: { menuId: menu._id } }
+      );
+    }
+
+    res.redirect('/restaurante/menus');
+  } catch (err) {
+    console.error('Erro ao atualizar menu:', err);
+    res.status(500).send('Erro ao atualizar menu.');
+  }
+};
+
+const deleteMenu = async (req, res) => {
+  try {
+    const menu = await Menu.findById(req.params.id);
+
+    if (!menu || !menu.restaurantId.equals(req.user._id)) {
+      return res.status(404).send('Menu não encontrado ou acesso negado.');
+    }
+
+    await Dish.deleteMany({ menuId: menu._id });
+    await menu.deleteOne();
+
+    res.redirect('/restaurante/menus');
+  } catch (err) {
+    console.error('Erro ao deletar menu:', err);
+    res.status(500).send('Erro ao deletar menu.');
+  }
+};
+
+const removeDishFromMenu = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+
+    if (!dish || !dish.restaurantId.equals(req.user._id)) {
+      return res.status(404).send('Prato não encontrado ou acesso negado.');
+    }
+
+    dish.menuId = null;
+    await dish.save();
+
+    res.redirect('/restaurante/menus');
+  } catch (err) {
+    console.error('Erro ao desassociar prato do menu:', err);
+    res.status(500).send('Erro ao desassociar prato.');
+  }
+};
+
+const showEditDishForm = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+    const categories = await Category.find();
+    res.render('dishes/updateDish', { categories, dish, errors: [], oldInput: {} });
+  } catch (err) {
+    console.error('Erro ao buscar prato:', err);
+    res.status(500).send('Erro ao buscar prato.');
+  }
+};
+
+const updateDish = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+
+    const { name, description, category, dose, price } = req.body;
+
+    let nutritionData = null;
+    if (name !== dish.name) {
+      nutritionData = await fetchOpenFoodData(name);
+      dish.nutriInfo = {
+        calories: nutritionData?.calories || null,
+        nutriScore: nutritionData?.nutriScore || null,
+        allergens: nutritionData?.allergens || []
+      };
+    }
+
+    dish.name = name;
+    dish.description = description;
+    dish.category = category;
+
+    dish.pricePerDose = dose.map((d, i) => ({
+      dose: d,
+      price: parseFloat(price[i])
+    }));
+
+    if (req.file) {
+      dish.image = `/uploads/images/${req.file.filename}`;
+    }
+
+    await dish.save();
+    res.redirect('/restaurante/pratos');
+  } catch (err) {
+    console.error('Erro ao atualizar prato:', err);
+    res.status(500).send('Erro ao atualizar prato.');
+  }
+};
+
+const deleteDish = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id);
+    if (!dish) return res.status(404).send('Prato não encontrado.');
+
+    await dish.deleteOne();
+    res.redirect('/restaurante/pratos');
+  } catch (err) {
+    console.error('Erro ao remover prato:', err);
+    res.status(500).send('Erro ao remover prato.');
+  }
+};
+
+const showAddDishForm = async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.render('dishes/createDish', { categories, errors: [], oldInput: {} });
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao carregar formulário', error: error.message });
+  }
+};
+
+const addDish = async (req, res) => {
+  try {
+    const { name, description, category, dose, price } = req.body;
+    const image = req.file ? `/uploads/images/${req.file.filename}` : null;
+
+    const nutritionData = await fetchOpenFoodData(name);
+
+    const pricePerDose = dose.map((d, i) => ({
+      dose: d,
+      price: parseFloat(price[i])
+    }));
+
+    const newDish = new Dish({
+      name,
+      description,
+      category,
+      image,
+      pricePerDose,
+      nutriInfo: {
+        calories: nutritionData?.calories || null,
+        nutriScore: nutritionData?.nutriScore || null,
+        allergens: nutritionData?.allergens || []
+      },
+      restaurantId: req.user._id,
+      menuId: null
+    });
+
+    await newDish.save();
+
+    res.redirect('/restaurante/pratos');
+  } catch (err) {
+    console.error('Erro ao criar prato:', err);
+    res.status(500).send('Erro ao criar prato.');
+  }
+};
+
+const listDishes = async (req, res) => {
+  try {
+    const dishes = await Dish.find({ restaurantId: req.user._id }).populate('category', 'name');
+    res.render('dishes/readDishes', { dishes });
+  } catch (err) {
+    console.error('Erro ao listar pratos:', err);
+    res.status(500).send('Erro ao listar pratos.');
+  }
+};
+
+const showDishDetails = async (req, res) => {
+  try {
+    const dish = await Dish.findById(req.params.id).populate('category', 'name');
+
+    const nutriInfo = dish.nutriInfo || null;
+
+    res.render('dishes/showDish', { dish, nutriInfo });
+  } catch (err) {
+    console.error('Erro ao carregar detalhes do prato:', err);
+    res.status(500).send('Erro ao carregar detalhes do prato.');
+  }
+};
+
+const listDishesForClient = async (req, res) => {
+  try {
+    const restaurantId = req.cookies.restaurantId;
+
+    const dishes = await Dish.find({ restaurantId });
+    res.render('dishes/listForClient', { dishes });
+  } catch (err) {
+    console.error('Erro ao carregar pratos para o cliente:', err);
+    res.status(500).send('Erro ao carregar pratos.');
+  }
+};
+
+module.exports = {
+  showRestaurantDashboard,
+  listMenus,
+  showAddMenuForm,
+  addMenu,
+  showEditMenuForm,
+  updateMenu,
+  deleteMenu,
+  removeDishFromMenu,
+  showEditDishForm,
+  updateDish,
+  deleteDish,
+  showAddDishForm,
+  addDish,
+  listDishes,
+  showDishDetails,
+  listDishesForClient
+};

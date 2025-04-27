@@ -51,7 +51,7 @@ const customerUpdateValidator = [
     }),      
 
     body('birthDate')
-    .notEmpty().withMessage('A data de nascimento é obrigatória.')
+    .optional({ checkFalsy: true })
     .isISO8601().toDate().withMessage('A data de nascimento é inválida.')
     .custom((value) => {
         const today = new Date();

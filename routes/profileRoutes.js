@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/uploadMiddleware');
 const auth = require('../middlewares/authMiddleware');
-const customerUpdateValidator = require('../middlewares/validation/customerUpdateValidator');
+const userUpdateValidator = require('../middlewares/validation/userUpdateValidator');
 const restaurantUpdateValidator = require('../middlewares/validation/restaurantUpdateValidator');
 const validateRequest = require('../middlewares/validation/validateRequest');
 const { isCustomer } = require('../middlewares/roleMiddleware');
@@ -14,12 +14,11 @@ const {
   updateProfile,
   cancelOrder,
   submitReview,
-  hasReview,
   renderReviewPage
 } = require('../controllers/profileController');
 
 const getValidatorForUser = (user) => {
-  return user.userType === 'customer' ? customerUpdateValidator : restaurantUpdateValidator;
+  return (user.userType === 'customer' || user.userType === 'admin') ? userUpdateValidator : restaurantUpdateValidator;
 };
 
 router.get('/perfil', auth, renderProfilePage);

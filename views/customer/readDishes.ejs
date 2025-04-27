@@ -27,7 +27,7 @@
               <% } else { %>
                 <p><strong>Preço:</strong> Não disponível</p>
               <% } %>
-              <form action="/carrinho/adicionar" method="POST" class="mt-auto">
+              <form action="/cliente/carrinho/adicionar" method="POST" class="mt-auto">
                 <input type="hidden" name="dishId" value="<%= dish._id %>">
                 <input type="number" name="amount" value="1" min="1" class="form-control mb-2" />
                 

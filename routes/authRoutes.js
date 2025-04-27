@@ -16,11 +16,11 @@ const restaurantRegisterValidator = require('../middlewares/validation/restauran
 const validateRequest = require('../middlewares/validation/validateRequest');
 
 router.get('/login', showLoginPage);
-router.get('/register/customer', showCustomerRegisterPage);
-router.get('/register/restaurant', showRestaurantRegisterPage);
+router.get('/registar-cliente', showCustomerRegisterPage);
+router.get('/registar-restaurante', showRestaurantRegisterPage);
 
 router.post(
-    '/register/customer',
+    '/registar-cliente',
     upload.single('profilePicture'),
     customerRegisterValidator,
     validateRequest('auth/customerRegister'),
@@ -28,7 +28,7 @@ router.post(
 );
 
 router.post(
-    '/register/restaurant',
+    '/registar-restaurante',
     upload.single('logo'),
     restaurantRegisterValidator,
     validateRequest('auth/restaurantRegister'),

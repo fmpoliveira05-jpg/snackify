@@ -9,21 +9,6 @@
 <body>
   <%- include('../partials/navbar') %>
   
-  <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-    <ul class="navbar-nav">
-      <% if (user) { %>
-        <li class="nav-item">
-          <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
-        </li>
-        <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
-      <% } else { %>
-        <li class="nav-item">
-          <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
-        </li>
-      <% } %>
-    </ul>
-  </div>
-  
   <div class="container mt-5">
     <div class="card">
       <% if (dish.image) { %>
@@ -34,7 +19,7 @@
 
       <div class="card-body">
         <h2 class="card-title"><%= dish.name %></h2>
-        <p><strong>Categoria:</strong> <%= dish.category %></p>
+        <p><strong>Categoria:</strong> <%= dish.category.name %></p>
         <% if (dish.pricePerDose && dish.pricePerDose.length) { %>
           <p><strong>Preços por tipo de dose:</strong></p>
           <ul class="list-group list-group-flush mb-3">
@@ -49,9 +34,13 @@
         <% if (nutriInfo) { %>
           <p><strong>Informação nutricional:</strong></p>
           <ul class="list-group list-group-flush">
-            <li class="list-group-item"><strong>Calorias:</strong> <%= nutriInfo.calories %> kcal</li>
-            <li class="list-group-item"><strong>Nutri-score:</strong> <%= nutriInfo.nutriScore %></li>
-            <li class="list-group-item"><strong>Alergénios:</strong> <%= nutriInfo.allergens %></li>
+            <% if (nutriInfo.calories === null || nutriInfo.nutriScore === null || nutriInfo.allergens === null) { %>
+              <li class="list-group-item">A informação nutricional está indisponível.</li>
+            <% } else { %>
+              <li class="list-group-item"><strong>Calorias:</strong> <%= nutriInfo.calories %> kcal</li>
+              <li class="list-group-item"><strong>Nutri-score:</strong> <%= nutriInfo.nutriScore %></li>
+              <li class="list-group-item"><strong>Alergénios:</strong> <%= nutriInfo.allergens %></li>
+            <% } %>
         <% } else { %>
           <p><em>Informação nutricional não disponível.</em></p>
         <% } %>        

@@ -9,34 +9,18 @@
 <body>
     <%- include('../partials/navbar') %>
     
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav">
-            <% if (user) { %>
-            <li class="nav-item">
-                <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
-            </li>
-            <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
-            <% } else { %>
-            <li class="nav-item">
-                <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
-            </li>
-            <% } %>
-        </ul>
-    </div>
-    
-    <%- include('../partials/sidebar') %>
     <div class="container mt-5">
         <h4>Esta é a sua área pessoal.</h4>
         <div id="orderTotalsChart" data-chart='<%= JSON.stringify(orderTotals) %>'></div>
         
         <% if (!isBlocked) { %>
-            <button class="btn btn-primary" onclick="window.location.href='/clientes/restaurantes'">Encomendar comida</button>
+            <button class="btn btn-primary" onclick="window.location.href='/cliente/restaurantes'">Encomendar comida</button>
         <% } else { %>
             <div class="alert alert-warning mt-3">
                 Está temporariamente impedido(a) de encomendar comida até <strong><%= blockedUntil %></strong>.
             </div>
         <% } %>
-    </div>
+    </div>         
     
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="/javascripts/drawCharts.js"></script>

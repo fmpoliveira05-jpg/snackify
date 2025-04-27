@@ -9,21 +9,6 @@
 <body>
   <%- include('../partials/navbar') %>
   
-  <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-    <ul class="navbar-nav">
-      <% if (user) { %>
-        <li class="nav-item">
-          <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
-        </li>
-        <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
-      <% } else { %>
-        <li class="nav-item">
-          <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
-        </li>
-      <% } %>
-    </ul>
-  </div>
-  
   <div class="container mt-5">
     <h2>Editar Menu</h2>
 
@@ -37,7 +22,7 @@
       </div>
     <% } %>
 
-    <form action="/menus/editar/<%= menu._id %>" method="POST">
+    <form action="/restaurante/menus/editar/<%= menu._id %>" method="POST">
       <div class="mb-3">
         <label for="title" class="form-label">Título</label>
         <input 
@@ -100,7 +85,7 @@
       </div>
 
       <button type="submit" class="btn btn-primary">Guardar Alterações</button>
-      <a href="/menus" class="btn btn-secondary ms-2">Cancelar</a>
+      <a href="/restaurante/menus" class="btn btn-secondary ms-2">Cancelar</a>
     </form>
   </div>
 

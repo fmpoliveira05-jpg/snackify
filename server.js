@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const http = require('http');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -9,14 +10,13 @@ dotenv.config();
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const menuRoutes = require('./routes/menuRoutes');
-const dishRoutes = require('./routes/dishRoutes');
-const cartRoutes = require('./routes/cartRoutes');
-const dashboardRoutes = require('./routes/dashboardRoutes');
 const customerRoutes = require('./routes/customerRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
 const checkUser = require('./middlewares/checkUserMiddleware');
 
 const app = express();
+
+const server = http.createServer(app);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -49,14 +49,11 @@ app.get('/', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
-app.use('/menus', menuRoutes);
-app.use('/pratos', dishRoutes);
-app.use('/carrinho', cartRoutes);
-app.use('/dashboard', dashboardRoutes);
 app.use('/admin', adminRoutes);
-app.use('/clientes', customerRoutes);
+app.use('/cliente', customerRoutes);
+app.use('/restaurante', restaurantRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor a correr na porta ${PORT}`);
 });

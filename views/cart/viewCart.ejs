@@ -24,7 +24,7 @@
             <span>
               <strong><%= item.dishId.name %></strong> - Tipo de dose: <%= item.dose %> - Quantidade: <%= item.amount %>
             </span>
-            <form method="POST" action="/carrinho/remover" class="ms-3">
+            <form method="POST" action="/cliente/carrinho/remover" class="ms-3">
               <input type="hidden" name="dishId" value="<%= item.dishId._id %>" />
               <input type="hidden" name="dose" value="<%= item.dose %>" />
               <button type="submit" class="btn btn-danger btn-sm">Remover do carrinho</button>
@@ -35,7 +35,7 @@
 
       <p><strong>Total:</strong> €<%= cart.total.toFixed(2) %></p>
 
-      <form action="/carrinho/finalizar" method="POST">
+      <form action="/cliente/carrinho/finalizar" method="POST">
         <button type="submit" class="btn btn-primary">Finalizar encomenda</button>
       </form>
     <% } %>

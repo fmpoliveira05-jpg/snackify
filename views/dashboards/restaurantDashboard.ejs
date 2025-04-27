@@ -9,32 +9,16 @@
 <body>
     <%- include('../partials/navbar') %>
     
-    <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-        <ul class="navbar-nav">
-            <% if (user) { %>
-            <li class="nav-item">
-                <a class="btn btn-outline-secondary ms-2" href="/user/perfil">Perfil</a>
-            </li>
-            <button id="logoutBtn" class="btn btn-outline-danger ms-2">Sair</button>
-            <% } else { %>
-            <li class="nav-item">
-                <a class="btn btn-outline-primary ms-2" href="/auth/login">Entrar</a>
-            </li>
-            <% } %>
-        </ul>
-    </div>
-    
     <div class="container mt-5">
         <h4>Aqui poderá gerir os seus produtos, encomendas e informações.</h4>
         <div id="ordersStateChart" class="my-4"></div>
         <div id="orderStatsData" data-chart='<%- JSON.stringify(orderStats || []) %>'></div>
     
-        <a href="/pratos/novo" class="btn btn-warning mb-2 btn-largo">Criar novo prato</a><br>
-        <a href="/menus/novo" class="btn btn-success mb-2 btn-largo">Criar novo menu</a><br>
-        <a href="/pratos" class="btn btn-outline-secondary mb-2 btn-largo">Ver pratos criados</a><br>
-        <a href="/menus" class="btn btn-outline-primary mb-2 btn-largo">Ver menus disponíveis</a>
+        <a href="/restaurante/pratos/novo" class="btn btn-warning mb-2 btn-largo">Criar novo prato</a><br>
+        <a href="/restaurante/menus/novo" class="btn btn-success mb-2 btn-largo">Criar novo menu</a><br>
+        <a href="/restaurante/pratos" class="btn btn-outline-secondary mb-2 btn-largo">Ver pratos criados</a><br>
+        <a href="/restaurante/menus" class="btn btn-outline-primary mb-2 btn-largo">Ver menus disponíveis</a>
     </div>
-
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="/javascripts/drawCharts.js"></script>   
