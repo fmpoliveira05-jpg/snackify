@@ -16,7 +16,7 @@ const {
     handlePaymentSuccess
 } = require('../controllers/customerController');
 
-router.get('/restaurantes', auth, isCustomer, listRestaurants);
+router.get('/api/restaurantes', listRestaurants);
 router.get('/restaurantes/:id/menus', auth, isCustomer, listMenus);
 router.get('/menus/:id/pratos', auth, isCustomer, listDishes);
 

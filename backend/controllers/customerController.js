@@ -8,7 +8,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const listRestaurants = async (req, res) => {
   try {
     const restaurants = await Restaurant.find();
-    res.render('customer/readRestaurants', { restaurants });
+    res.json(restaurants);
   } catch (err) {
     res.status(500).send('Erro ao carregar os restaurantes.');
   }

@@ -14,7 +14,7 @@
         <div id="orderTotalsChart" data-chart='<%= JSON.stringify(orderTotals) %>'></div>
         
         <% if (!isBlocked) { %>
-            <button class="btn btn-primary" onclick="window.location.href='/cliente/restaurantes'">Encomendar comida</button>
+            <button onclick="window.location.href='/cliente/restaurantes'">Encomendar comida</button>
         <% } else { %>
             <div class="alert alert-warning mt-3">
                 Está temporariamente impedido(a) de encomendar comida até <strong><%= blockedUntil %></strong>.

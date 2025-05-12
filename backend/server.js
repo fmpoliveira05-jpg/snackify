@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const http = require('http');
+const cors = require('cors');
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -20,6 +21,9 @@ const server = http.createServer(app);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(cors({
+  origin: 'http://localhost:4200'
+}));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -52,6 +56,12 @@ app.use('/user', profileRoutes);
 app.use('/admin', adminRoutes);
 app.use('/cliente', customerRoutes);
 app.use('/restaurante', restaurantRoutes);
+
+const angularDistPath = path.join(__dirname, 'dist', 'angular', 'browser');
+app.use('/cliente', express.static(angularDistPath));
+app.get('/cliente/*', (req, res) => {
+  res.sendFile(path.join(angularDistPath, 'index.html'));
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
