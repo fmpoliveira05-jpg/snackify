@@ -3,6 +3,35 @@ const Restaurant = require('../models/restaurant');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+const getMe = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Não autenticado' });
+  }
+
+  console.log("Req.user no /auth/me:", req.user);
+
+  try {
+    let userData = null;
+
+    if (req.user.userType === 'restaurant') {
+      userData = await Restaurant.findById(req.user._id).select('-password');
+    } else if (req.user.userType === 'customer') {
+      userData = await User.findById(req.user._id).select('-password');
+    }
+
+    if (!userData) {
+      return res.status(404).json({ message: 'Utilizador não encontrado' });
+    }
+
+    console.log("Usuário encontrado:", userData);
+
+    res.json(userData);
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao obter dados do utilizador', error: error.message });
+  }
+};
+
 const showCustomerRegisterPage = (req, res) => {
     res.render('auth/customerRegister', {
         errors: [],
@@ -180,12 +209,12 @@ const login = async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false,
             sameSite: 'lax',
             maxAge: 3600000
         });
 
-        res.json({ message: "Login bem-sucedido!", userType });
+        res.json({ message: "Login bem-sucedido!", token, userType });
 
     } catch (error) {
         res.status(500).json({ message: "Erro ao tentar fazer login", error: error.message });
@@ -202,6 +231,7 @@ const logout = (req, res) => {
 };
 
 module.exports = {
+    getMe,
     showCustomerRegisterPage,
     showRestaurantRegisterPage,
     customerRegister,

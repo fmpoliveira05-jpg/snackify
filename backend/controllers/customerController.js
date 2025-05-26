@@ -14,6 +14,29 @@ const listRestaurants = async (req, res) => {
   }
 };
 
+const readRestaurant = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) return res.status(404).send('Restaurante não encontrado.');
+    res.json(restaurant);
+  } catch (err) {
+    console.error('Erro ao carregar restaurante:', err);
+    res.status(500).send('Erro ao carregar restaurante.');
+  }
+};
+
+const readMenu = async (req, res) => {
+  try {
+    const menu = await Menu.findById(req.params.id);
+    if (!menu) {
+      return res.status(404).json({ message: 'Menu não encontrado' });
+    }
+    res.json(menu);
+  } catch (error) {
+    res.status(500).json({ message: 'Erro ao carregar menu', error });
+  }
+};
+
 const listMenus = async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
@@ -26,7 +49,7 @@ const listMenus = async (req, res) => {
       return { ...menu.toObject(), dishes: pratos };
     }));
 
-    res.render('customer/readMenus', { restaurant, menus: menusComPratos });
+    res.json(menusComPratos);
   } catch (err) {
     console.error('Erro ao carregar os menus:', err);
     res.status(500).send('Erro ao carregar os menus.');
@@ -40,7 +63,7 @@ const listDishes = async (req, res) => {
 
     const dishes = await Dish.find({ menuId: menu._id });
 
-    res.render('customer/readDishes', { menu, dishes });
+    res.json(dishes);
   } catch (err) {
     console.error('Erro ao carregar os pratos:', err);
     res.status(500).send('Erro ao carregar os pratos.');
@@ -51,7 +74,10 @@ const showCustomerDashboard = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const orders = await Order.find({ userId }).sort({ orderDate: -1 }).limit(5).populate('dishes.dishId');
+    const orders = await Order.find({ userId })
+      .sort({ orderDate: -1 })
+      .limit(5)
+      .populate('dishes.dishId');
 
     const orderTotals = orders.map(order => {
       let total = 0;
@@ -87,11 +113,15 @@ const showCustomerDashboard = async (req, res) => {
       blockedUntil.setMonth(blockedUntil.getMonth() + 2);
     }
 
-    res.render('dashboards/customerDashboard', { orderTotals, isBlocked: !!blockedUntil, blockedUntil: blockedUntil ? blockedUntil.toLocaleDateString('pt-PT') : null });
+    res.json({
+      orderTotals,
+      isBlocked: !!blockedUntil,
+      blockedUntil: blockedUntil ? blockedUntil.toLocaleDateString('pt-PT') : null
+    });
 
   } catch (error) {
     console.error(error);
-    res.status(500).send('Erro ao carregar dados das encomendas.');
+    res.status(500).json({ message: 'Erro ao carregar dados das encomendas.' });
   }
 };
 
@@ -112,7 +142,7 @@ const viewCart = async (req, res) => {
         await cart.save();
     }
 
-    res.render('cart/viewCart', { cart });
+    res.json(cart);
 };
 
 const addToCart = async (req, res) => {
@@ -122,7 +152,7 @@ const addToCart = async (req, res) => {
 
     const parsedAmount = parseInt(amount, 10);
     if (!parsedAmount || parsedAmount < 1) {
-        return res.redirect('/menu');
+        return res.status(400).json({ message: 'Quantidade inválida.' });
     }
 
     let cart = await Cart.findOne({ userId });
@@ -142,7 +172,7 @@ const addToCart = async (req, res) => {
     const priceEntry = dish.pricePerDose.find(p => p.dose === dose);
 
     if (!priceEntry) {
-        return res.redirect('/menu');
+        return res.status(400).json({ message: 'Dose inválida.' });
     }
 
     const itemTotal = priceEntry.price * parsedAmount;
@@ -153,18 +183,20 @@ const addToCart = async (req, res) => {
     }
 
     await cart.save();
-    res.redirect('/cliente/carrinho');
+    await cart.populate('items.dishId');
+    res.json(cart);
 };
 
 const removeFromCart = async (req, res) => {
-    const { dishId, dose } = req.body;
-    const userId = req.user._id;
+  const { dishId, dose } = req.body;
+  const userId = req.user._id;
 
+  try {
     let cart = await Cart.findOne({ userId }).populate('items.dishId');
-    if (!cart) return res.redirect('/cliente/carrinho');
+    if (!cart) return res.status(404).json({ message: 'Carrinho não encontrado.' });
 
     const index = cart.items.findIndex(item =>
-        item.dishId._id.equals(dishId) && item.dose === dose
+      item.dishId._id.equals(dishId) && item.dose === dose
     );
 
     if (index !== -1) {
@@ -173,80 +205,93 @@ const removeFromCart = async (req, res) => {
       if (priceInfo) {
         cart.total -= priceInfo.price * item.amount;
       }
+
       cart.items.splice(index, 1);
-    
+
       if (cart.items.length === 0) {
         cart.total = 0;
         cart.timeout = null;
       }
-    }    
 
-    await cart.save();
-    res.redirect('/cliente/carrinho');
+      await cart.save();
+      return res.status(200).json(cart);
+    } else {
+      return res.status(404).json({ message: 'Item não encontrado no carrinho.' });
+    }
+  } catch (err) {
+    console.error('Erro ao remover item do carrinho:', err);
+    return res.status(500).json({ message: 'Erro interno ao remover item.' });
+  }
 };
 
 const checkout = async (req, res) => {
-    const orderId = req.query.orderId;
-  
-    try {
-      const order = await Order.findById(orderId).populate('dishes.dishId');
-      if (!order) return res.status(404).send("Encomenda não encontrada.");
-  
-      res.render('cart/checkout', { order });
-    } catch (err) {
-      console.error("Erro no checkout:", err);
-      res.status(500).send("Erro ao processar o checkout.");
+  const orderId = req.query.orderId;
+
+  try {
+    const order = await Order.findById(orderId).populate('dishes.dishId');
+    if (!order) {
+      return res.status(404).json({ message: "Encomenda não encontrada." });
     }
-  };
+
+    return res.status(200).json(order);
+  } catch (err) {
+    console.error("Erro no checkout:", err);
+    res.status(500).json({ message: "Erro ao processar o checkout." });
+  }
+};
 
 const createOrderFromCart = async (req, res) => {
-    const userId = req.user._id;
-  
-    try {
-      const cart = await Cart.findOne({ userId }).populate('items.dishId');
-      if (!cart || cart.items.length === 0) {
-        return res.redirect('/cliente/carrinho');
-      }
+  const userId = req.user._id;
 
-      const uniqueRestaurants = new Set(cart.items.map(item => item.dishId.restaurantId.toString()));
-      if (uniqueRestaurants.size > 1) {
-        return res.status(400).send("Todos os pratos da encomenda devem ser do mesmo restaurante.");
-      }
-  
-      const restaurantId = cart.items[0].dishId.restaurantId;
-  
-      const order = new Order({
-        userId,
-        restaurantId,
-        dishes: cart.items.map(item => ({
-          dishId: item.dishId._id,
-          amount: item.amount,
-          dose: item.dose
-        })),
-        state: "pendente",
-        orderDate: new Date(),
-        cancelTimeout: new Date(Date.now() + 5 * 60 * 1000),
-        orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`
-      });
-  
-      await order.save();
-  
-      cart.items = [];
-      cart.total = 0;
-      cart.timeout = null;
-      await cart.save();
-  
-      res.redirect(`/cliente/carrinho/checkout?orderId=${order._id}`);
-    } catch (err) {
-      console.error("Erro ao criar encomenda:", err);
-      res.status(500).send("Erro ao criar a encomenda.");
+  try {
+    const cart = await Cart.findOne({ userId }).populate('items.dishId');
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ message: 'Carrinho vazio.' });
     }
+
+    const uniqueRestaurants = new Set(cart.items.map(item => item.dishId.restaurantId.toString()));
+    if (uniqueRestaurants.size > 1) {
+      return res.status(400).json({ message: 'Todos os pratos da encomenda devem ser do mesmo restaurante.' });
+    }
+
+    const restaurantId = cart.items[0].dishId.restaurantId;
+
+    const order = new Order({
+      userId,
+      restaurantId,
+      dishes: cart.items.map(item => ({
+        dishId: item.dishId._id,
+        amount: item.amount,
+        dose: item.dose
+      })),
+      state: "pendente",
+      orderDate: new Date(),
+      cancelTimeout: new Date(Date.now() + 5 * 60 * 1000),
+      orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`
+    });
+
+    await order.save();
+
+    cart.items = [];
+    cart.total = 0;
+    cart.timeout = null;
+    await cart.save();
+
+    return res.status(201).json({
+      message: 'Encomenda criada com sucesso.',
+      orderId: order._id,
+      orderCode: order.orderCode
+    });
+  } catch (err) {
+    console.error("Erro ao criar encomenda:", err);
+    res.status(500).json({ message: 'Erro ao criar a encomenda.' });
+  }
 };
 
 const createStripeSession = async (req, res) => {
   try {
     console.log(req.body);
-    const { orderId, orderCode, dishes } = req.body;
+    const { orderId, dishes } = req.body;
 
     const line_items = dishes.map(item => ({
       price_data: {
@@ -293,6 +338,8 @@ const handlePaymentSuccess = async (req, res) => {
 
 module.exports = {
     listRestaurants,
+    readRestaurant,
+    readMenu,
     listMenus,
     listDishes,
     showCustomerDashboard,

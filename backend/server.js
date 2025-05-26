@@ -22,7 +22,8 @@ const server = http.createServer(app);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors({
-  origin: 'http://localhost:4200'
+  origin: 'http://localhost:4200',
+  credentials: true
 }));
 
 app.set('view engine', 'ejs');
@@ -54,12 +55,12 @@ app.get('/', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/user', profileRoutes);
 app.use('/admin', adminRoutes);
-app.use('/cliente', customerRoutes);
+app.use('/cliente/api', customerRoutes);
 app.use('/restaurante', restaurantRoutes);
 
-const angularDistPath = path.join(__dirname, 'dist', 'angular', 'browser');
-app.use('/cliente', express.static(angularDistPath));
-app.get('/cliente/*', (req, res) => {
+const angularDistPath = path.join(__dirname, '..', 'frontend-angular', 'angular', 'angular', 'dist', 'angular', 'browser');
+app.use('/', express.static(angularDistPath));
+app.get(/^\/(?!api|auth|user|admin|cliente\/api|restaurante|uploads).*/, (req, res) => {
   res.sendFile(path.join(angularDistPath, 'index.html'));
 });
 

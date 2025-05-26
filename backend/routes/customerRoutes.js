@@ -4,6 +4,8 @@ const auth = require('../middlewares/authMiddleware');
 const { isCustomer } = require('../middlewares/roleMiddleware');
 const {
     listRestaurants,
+    readRestaurant,
+    readMenu,
     listMenus,
     listDishes,
     showCustomerDashboard,
@@ -16,7 +18,9 @@ const {
     handlePaymentSuccess
 } = require('../controllers/customerController');
 
-router.get('/api/restaurantes', listRestaurants);
+router.get('/restaurantes', auth, isCustomer, listRestaurants);
+router.get('/restaurantes/:id', auth, isCustomer, readRestaurant);
+router.get('/menus/:id', auth, isCustomer, readMenu);
 router.get('/restaurantes/:id/menus', auth, isCustomer, listMenus);
 router.get('/menus/:id/pratos', auth, isCustomer, listDishes);
 

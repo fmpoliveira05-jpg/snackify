@@ -3,11 +3,13 @@ const Restaurant = require('../models/restaurant');
 
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    console.log("Token recebido:", token);
 
     if (!token) return res.status(401).json({ message: "Token não fornecido!" });
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log("Token decodificado:", decoded);
 
         if (decoded.userType === 'restaurant') {
             const restaurant = await Restaurant.findById(decoded.userId);

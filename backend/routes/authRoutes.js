@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/uploadMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 const {
+    getMe,
     showCustomerRegisterPage,
     showRestaurantRegisterPage,
     customerRegister,
@@ -15,6 +17,7 @@ const customerRegisterValidator = require('../middlewares/validation/customerReg
 const restaurantRegisterValidator = require('../middlewares/validation/restaurantRegisterValidator');
 const validateRequest = require('../middlewares/validation/validateRequest');
 
+router.get('/me', authMiddleware, getMe);
 router.get('/login', showLoginPage);
 router.get('/registar-cliente', showCustomerRegisterPage);
 router.get('/registar-restaurante', showRestaurantRegisterPage);
