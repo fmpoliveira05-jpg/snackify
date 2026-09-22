@@ -28,7 +28,8 @@ export class OrderChartComponent implements OnChanges {
   }
 
   private loadGoogleCharts() {
-    if (!google || !google.charts || !google.charts.load) {
+    // typeof evita um ReferenceError quando o script do Google Charts não foi carregado.
+    if (typeof google === 'undefined' || !google.charts?.load) {
       console.error('Google Charts não está disponível. Verifique se o script está incluído no index.html');
       return;
     }

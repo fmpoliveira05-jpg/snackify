@@ -35,10 +35,23 @@
         Avaliar pedido
         </button>
 
-        <button *ngIf="order.state === 'concluída' && user.userType === 'restaurant'"
-                class="btn btn-warning mt-2"
+        <!-- O restaurante avança a encomenda uma etapa de cada vez (a API recusa saltos). -->
+        <button *ngIf="(order.state === 'pendente' || order.state === 'concluída') && user.userType === 'restaurant'"
+                class="btn btn-secondary mt-2"
+                (click)="updateOrderState(order._id, 'em preparação')">
+          Iniciar preparação
+        </button>
+
+        <button *ngIf="order.state === 'em preparação' && user.userType === 'restaurant'"
+                class="btn btn-warning mt-2 me-2"
                 (click)="updateOrderState(order._id, 'expedida')">
           Alterar para expedida
+        </button>
+
+        <button *ngIf="order.state === 'em preparação' && user.userType === 'restaurant'"
+                class="btn btn-success mt-2"
+                (click)="updateOrderState(order._id, 'entregue')">
+          Entregue no restaurante
         </button>
 
         <button *ngIf="order.state === 'expedida' && user.userType === 'restaurant'"

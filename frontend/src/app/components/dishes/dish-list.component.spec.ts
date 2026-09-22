@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { DishListComponent } from './dish-list.component';
+import { testProviders } from '../../../testing/test-providers';
 
 describe('DishListComponent', () => {
   let component: DishListComponent;
@@ -8,6 +9,7 @@ describe('DishListComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [DishListComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('DishListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

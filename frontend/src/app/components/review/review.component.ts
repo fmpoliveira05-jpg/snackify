@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-review',
@@ -42,7 +43,7 @@ export class ReviewComponent implements OnInit {
 
   fetchOrderDetails(): void {
     this.isLoading = true;
-    this.http.get(`http://localhost:5000/user/perfil/encomendas/${this.orderId}`).subscribe({
+    this.http.get(`${environment.apiUrl}/user/perfil/encomendas/${this.orderId}`).subscribe({
       next: data => {
         this.order = data;
         this.isLoading = false;
@@ -81,7 +82,7 @@ export class ReviewComponent implements OnInit {
       formData.append('image', imageFile);
     }
 
-    this.http.post(`http://localhost:5000/user/perfil/encomendas/${this.orderId}/avaliar`, formData).subscribe({
+    this.http.post(`${environment.apiUrl}/user/perfil/encomendas/${this.orderId}/avaliar`, formData).subscribe({
       next: () => this.router.navigate(['/user/perfil']),
       error: () => this.error = 'Erro ao submeter avaliação.'
     });

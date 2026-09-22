@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LoginComponent } from './login.component';
+import { testProviders } from '../../../testing/test-providers';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -8,6 +9,7 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [LoginComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

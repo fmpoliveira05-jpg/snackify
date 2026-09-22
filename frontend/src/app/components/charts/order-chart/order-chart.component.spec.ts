@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { OrderChartComponent } from './order-chart.component';
+import { testProviders } from '../../../../testing/test-providers';
 
 describe('OrderChartComponent', () => {
   let component: OrderChartComponent;
@@ -8,6 +9,7 @@ describe('OrderChartComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [OrderChartComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('OrderChartComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

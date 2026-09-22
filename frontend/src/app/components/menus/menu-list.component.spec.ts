@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MenuListComponent } from './menu-list.component';
+import { testProviders } from '../../../testing/test-providers';
 
 describe('MenuListComponent', () => {
   let component: MenuListComponent;
@@ -8,6 +9,7 @@ describe('MenuListComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [MenuListComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('MenuListComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

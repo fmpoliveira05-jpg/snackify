@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CustomerDashboardComponent } from './customer-dashboard.component';
+import { testProviders } from '../../../testing/test-providers';
 
 describe('CustomerDashboardComponent', () => {
   let component: CustomerDashboardComponent;
@@ -8,6 +9,7 @@ describe('CustomerDashboardComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [CustomerDashboardComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('CustomerDashboardComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

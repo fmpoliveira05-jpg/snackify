@@ -1,17 +1,36 @@
 import { TestBed } from '@angular/core/testing';
-import { CanActivateFn } from '@angular/router';
+import { Router, UrlTree, provideRouter } from '@angular/router';
+import { firstValueFrom, of } from 'rxjs';
+import { NoAuthGuard } from './no-auth.guard';
+import { AuthService } from '../services/auth.service';
 
-import { noAuthGuard } from './no-auth.guard';
-
-describe('noAuthGuard', () => {
-  const executeGuard: CanActivateFn = (...guardParameters) => 
-      TestBed.runInInjectionContext(() => noAuthGuard(...guardParameters));
+describe('NoAuthGuard', () => {
+  let session$: any;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    session$ = of(null);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { getUserSession: () => session$ } },
+      ],
+    });
   });
 
-  it('should be created', () => {
-    expect(executeGuard).toBeTruthy();
+  const run = () => firstValueFrom(TestBed.inject(NoAuthGuard).canActivate());
+  const url = (tree: unknown) => TestBed.inject(Router).serializeUrl(tree as UrlTree);
+
+  it('mostra o login a quem não tem sessão', async () => {
+    expect(await run()).toBeTrue();
+  });
+
+  it('envia o cliente para o seu dashboard', async () => {
+    session$ = of({ userType: 'customer' });
+    expect(url(await run())).toBe('/cliente/dashboard');
+  });
+
+  it('envia o administrador para o perfil', async () => {
+    session$ = of({ userType: 'admin' });
+    expect(url(await run())).toBe('/user/perfil');
   });
 });

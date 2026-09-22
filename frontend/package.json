@@ -1,15 +1,17 @@
 {
-  "name": "angular",
-  "version": "0.0.0",
+  "name": "snackify-frontend",
+  "version": "2.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:ci": "ng test --watch=false"
   },
   "private": true,
   "dependencies": {
+    "@angular/animations": "^19.2.13",
     "@angular/cdk": "^19.2.18",
     "@angular/common": "19.2.13",
     "@angular/compiler": "19.2.13",

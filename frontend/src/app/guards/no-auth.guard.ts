@@ -7,6 +7,7 @@ import {
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -23,7 +24,7 @@ export class NoAuthGuard implements CanActivate {
           } else if (user.userType === 'admin') {
             return this.router.createUrlTree(['/user/perfil']);
           } else {
-            window.location.href = 'http://localhost:5000/restaurante/dashboard';
+            window.location.href = `${environment.apiUrl}/restaurante/dashboard`;
             return false;
           }
         }

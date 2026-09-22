@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { CreateCategoriesComponent } from './create-categories.component';
+import { testProviders } from '../../../../testing/test-providers';
 
 describe('CreateCategoriesComponent', () => {
   let component: CreateCategoriesComponent;
@@ -8,6 +9,7 @@ describe('CreateCategoriesComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [CreateCategoriesComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('CreateCategoriesComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

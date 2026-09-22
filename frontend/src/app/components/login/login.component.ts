@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -23,7 +24,7 @@ export class LoginComponent {
         if (res.userType === 'customer') {
           this.router.navigate(['/cliente/dashboard']);
         } else if (res.userType === 'restaurant') {
-          window.location.href = 'http://localhost:5000/restaurante/dashboard';
+          window.location.href = `${environment.apiUrl}/restaurante/dashboard`;
         } else if (res.userType === 'admin') {
           this.router.navigate(['/user/perfil']);
         }

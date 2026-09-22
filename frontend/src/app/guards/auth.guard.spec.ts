@@ -1,17 +1,31 @@
 import { TestBed } from '@angular/core/testing';
-import { CanActivateFn } from '@angular/router';
+import { Router, UrlTree, provideRouter } from '@angular/router';
+import { firstValueFrom, of } from 'rxjs';
+import { AuthGuard } from './auth.guard';
+import { AuthService } from '../services/auth.service';
 
-import { authGuard } from './auth.guard';
-
-describe('authGuard', () => {
-  const executeGuard: CanActivateFn = (...guardParameters) => 
-      TestBed.runInInjectionContext(() => authGuard(...guardParameters));
+describe('AuthGuard', () => {
+  let session$: any;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    session$ = of(null);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { getUserSession: () => session$ } },
+      ],
+    });
   });
 
-  it('should be created', () => {
-    expect(executeGuard).toBeTruthy();
+  it('deixa passar quem tem sessão', async () => {
+    session$ = of({ username: 'ana', userType: 'customer' });
+    const result = await firstValueFrom(TestBed.inject(AuthGuard).canActivate());
+    expect(result).toBeTrue();
+  });
+
+  it('envia para o login quem não tem sessão', async () => {
+    const result = await firstValueFrom(TestBed.inject(AuthGuard).canActivate());
+    expect(result instanceof UrlTree).toBeTrue();
+    expect(TestBed.inject(Router).serializeUrl(result as UrlTree)).toBe('/login');
   });
 });

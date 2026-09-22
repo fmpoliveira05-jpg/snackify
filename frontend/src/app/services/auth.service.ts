@@ -3,10 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'http://localhost:5000/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
 
   private currentUserSubject = new BehaviorSubject<any>(null);
   currentUser$ = this.currentUserSubject.asObservable();
@@ -24,7 +25,7 @@ export class AuthService {
   logout(): void {
     this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe(() => {
       this.currentUserSubject.next(null);
-      window.location.href = 'http://localhost:5000';
+      window.location.href = `${environment.apiUrl}`;
     });
   }
 

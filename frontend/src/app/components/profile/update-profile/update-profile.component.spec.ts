@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { UpdateProfileComponent } from './update-profile.component';
+import { testProviders } from '../../../../testing/test-providers';
 
 describe('UpdateProfileComponent', () => {
   let component: UpdateProfileComponent;
@@ -8,6 +9,7 @@ describe('UpdateProfileComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: testProviders,
       imports: [UpdateProfileComponent]
     })
     .compileComponents();
@@ -17,7 +19,7 @@ describe('UpdateProfileComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('é criado sem erros', () => {
     expect(component).toBeTruthy();
   });
 });

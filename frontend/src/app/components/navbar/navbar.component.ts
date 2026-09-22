@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { filter } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-navbar',
@@ -32,21 +33,21 @@ export class NavbarComponent implements OnInit {
   getDashboardLink(): string {
     switch (this.user?.userType) {
       case 'customer': return '/cliente/dashboard';
-      case 'restaurant': return 'http://localhost:5000/restaurante/dashboard';
+      case 'restaurant': return `${environment.apiUrl}/restaurante/dashboard`;
       case 'admin': return '/user/perfil';
-      default: return 'http://localhost:5000/restaurante/dashboard';
+      default: return `${environment.apiUrl}/restaurante/dashboard`;
     }
   }
 
   goToDashboard() {
     if (!this.user) {
-      window.location.href = 'http://localhost:5000';
+      window.location.href = `${environment.apiUrl}/`;
       return;
     }
 
     const link = this.getDashboardLink();
 
-    if (link === 'http://localhost:5000/restaurante/dashboard') {
+    if (link === `${environment.apiUrl}/restaurante/dashboard`) {
       window.location.href = link;
       return;
     }
