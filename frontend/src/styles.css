@@ -1,0 +1,302 @@
+/* ---------- BASE ---------- */
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  padding-bottom: 50px;
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* ---------- NAVBAR ---------- */
+
+.navbar {
+  padding: 2px 0;
+  border-bottom: 1px solid #eee;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.navbar-brand:hover {
+  color: #ff9500;
+}
+
+.navbar-nav .nav-link {
+  color: #333;
+  font-weight: 500;
+  margin-left: 15px;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #ff9500;
+}
+
+.navbar-toggler {
+  border: none;
+}
+
+.navbar-toggler:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.btn-link.nav-link {
+  padding: 0;
+  font-weight: 500;
+}
+
+/* ---------- HERO SECTION ---------- */
+
+.hero-section {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(to right, #ffcc70, #ff8a00);
+  color: white;
+  padding: 60px 20px;
+  border-radius: 0 0 30px 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.hero-section h1 {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.hero-section p.lead {
+  font-size: 1.25rem;
+  margin-bottom: 30px;
+}
+
+/* ---------- BOTÕES ---------- */
+
+.btn-primary {
+  background-color: #ff9500;
+  border-color: #ff9500;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #e07d00;
+  border-color: #e07d00;
+}
+
+.btn-outline-primary {
+  border-color: #ff9500;
+  color: #ff9500;
+}
+
+.btn-outline-primary:hover {
+  background-color: #ff9500;
+  color: white;
+}
+
+.btn + .btn {
+  margin-left: 10px;
+}
+
+.btn-largo {
+  width: 100%;
+}
+
+.btn-largo-fixo {
+  width: 250px;
+}
+
+.btn-centered {
+  display: block;
+  margin: 2rem auto 0 auto;
+}
+
+/* ---------- FORMULÁRIOS ---------- */
+
+form input,
+form select,
+form textarea {
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+  outline: none;
+  border-color: #ff9500;
+  box-shadow: 0 0 5px rgba(255, 149, 0, 0.5);
+}
+
+/* ---------- PERFIS ---------- */
+
+.perfil-imagem,
+.perfil-img,
+.logo-img {
+  max-width: 120px;
+  height: auto;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  margin-top: 10px;
+}
+
+/* ---------- CARDS ---------- */
+
+.card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem; 
+  background-color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.card-img-top {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  background-color: #ffffff;
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+}
+
+.card-img-placeholder {
+  height: 200px;
+  background-color: #f0f0f0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-style: italic;
+  border-bottom: 1px solid #ddd;
+}
+
+/* ---------- DISH CARDS / PRATOS ---------- */
+
+.dish-card {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.dish-card:hover {
+  transform: scale(1.02);
+}
+
+.dish-card.selected {
+  border: 2px solid green;
+  background-color: #e6ffe6;
+}
+
+.menu-dish-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- LOGIN ---------- */
+
+.login-background {
+  background: linear-gradient(to right, #ffcc70, #ff8a00);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: white;
+}
+
+/* ---------- LAYOUT e SIDEBAR ---------- */
+
+#layout {
+  display: flex;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#sidebar {
+  width: 180px;
+  min-width: 180px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #ddd;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+}
+
+#content {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- CHARTS ---------- */
+
+#ordersStateChart,
+#orderTotalsChart {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.google-visualization-chart-container {
+  width: 100%;
+  height: auto;
+}
+
+/* ---------- LAYOUT CONTAINERS ---------- */
+
+.container {
+  padding-top: 2rem;
+}
+
+/* ---------- UTILITÁRIOS ---------- */
+
+.text-start .btn {
+  margin-bottom: 10px;
+}
+
+.mt-5 {
+  margin-top: 3rem !important;
+}
+
+.mt-4 {
+  margin-top: 1.5rem !important;
+}
+
+.mt-3 {
+  margin-top: 1rem !important;
+}
+
+.mt-2 {
+  margin-top: 0.5rem !important;
+}
+
+/* ---------- OUTROS ---------- */
+
+#updateProfileForm button,
+#updateProfileForm a.btn {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}

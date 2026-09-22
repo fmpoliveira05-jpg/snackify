@@ -1,0 +1,80 @@
+<div class="container mt-5">
+  <h1 class="mb-4">Perfil de {{ userTypeFormatted }}</h1>
+
+  <div class="mb-4">
+    <h4>Histórico de Encomendas</h4>
+    <div *ngIf="orders.length === 0">
+      <p>Sem encomendas anteriores.</p>
+    </div>
+    <div *ngFor="let order of orders" class="card mb-2">
+      <div class="card-body">
+        <h5 class="card-title"><strong>Código da encomenda:</strong> {{ order.orderCode || '(sem código)' }}</h5>
+        <p><strong>Data e hora:</strong> {{ order.orderDate | date:'short' }}</p>
+        <p><strong>Estado da encomenda:</strong> {{ order.state }}</p>
+        <p><strong>Itens adquiridos:</strong><br>
+          <span *ngFor="let d of order.dishes">
+            {{ d.amount }}x {{ d.dishId?.name || 'Prato removido' }} ({{ d.dose }} dose)<br>
+          </span>
+        </p>
+
+        <button *ngIf="isOrderPendingAndRecent(order) && user.userType === 'customer'" 
+              class="btn btn-danger mt-2"
+              (click)="cancelOrder(order._id)">
+        Cancelar Pedido
+        </button>
+
+        <button *ngIf="order.state === 'pendente' && user.userType === 'customer'" 
+              class="btn btn-success mt-2"
+              (click)="pay(order._id, order.orderCode, order.dishes)">
+        Pagar agora
+        </button>
+
+        <button *ngIf="order.state === 'entregue' && !order.reviewed && user.userType === 'customer'" 
+              class="btn btn-primary mt-2"
+              (click)="reviewOrder(order._id)">
+        Avaliar pedido
+        </button>
+
+        <button *ngIf="order.state === 'concluída' && user.userType === 'restaurant'"
+                class="btn btn-warning mt-2"
+                (click)="updateOrderState(order._id, 'expedida')">
+          Alterar para expedida
+        </button>
+
+        <button *ngIf="order.state === 'expedida' && user.userType === 'restaurant'"
+                class="btn btn-success mt-2"
+                (click)="updateOrderState(order._id, 'entregue')">
+          Alterar para entregue
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <h4 class="card-title">Dados de utilizador</h4>
+      <ul class="list-group list-group-flush mb-3">
+        <li *ngFor="let field of formattedUserFields" class="list-group-item">
+          <strong>{{ field.label }}: </strong>
+          <span *ngIf="field.label === 'NIF' && !field.value">Não tem</span>
+          <span *ngIf="field.label !== 'Foto de perfil' && field.label !== 'Logótipo'">{{ field.value }}</span>
+          <div *ngIf="field.label === 'Foto de perfil' || field.label === 'Logótipo'" class="perfil-imagem-container">
+            <img *ngIf="field.value" [src]="field.value" alt="imagem perfil" class="perfil-imagem" />
+            <div *ngIf="!field.value" class="perfil-placeholder">
+              <span>Sem imagem</span>
+            </div>
+          </div>
+        </li>
+      </ul>
+      <div class="d-flex flex-column flex-md-row gap-2">
+        <a *ngIf="isAdmin" routerLink="/user/perfil/validar-restaurantes" class="btn btn-warning">Validar Restaurantes</a>
+        <a *ngIf="isAdmin" routerLink="/user/perfil/listar-restaurantes-validados" class="btn btn-warning">Ver Restaurantes Validados</a>
+        <a *ngIf="isAdmin" routerLink="/user/perfil/criar-categoria" class="btn btn-warning">Criar Categoria</a>
+        <a *ngIf="isAdmin" routerLink="/user/perfil/listar-categorias" class="btn btn-warning">Ver Categorias</a>
+        <a routerLink="/user/perfil/editar" class="btn btn-primary">Editar Perfil</a>
+        <button class="btn btn-primary" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</div>

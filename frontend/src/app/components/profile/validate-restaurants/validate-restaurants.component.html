@@ -1,0 +1,21 @@
+<div class="container mt-4">
+  <h2>Restaurantes Pendentes</h2>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div *ngIf="pendingRestaurants.length === 0">
+    <p>Nenhum restaurante pendente para validar.</p>
+  </div>
+
+  <div *ngFor="let r of pendingRestaurants" class="card mb-3">
+    <div class="card-body">
+      <h5 class="card-title">{{ r.name }}</h5>
+      <p><strong>Email:</strong> {{ r.email }}</p>
+      <p><strong>NIF:</strong> {{ r.nif }}</p>
+      <p><strong>Morada:</strong> {{ r.address?.street }}, {{ r.address?.place }}</p>
+
+      <button class="btn btn-success me-2" (click)="validate(r._id)">Validar</button>
+      <button class="btn btn-danger" (click)="reject(r._id)">Rejeitar</button>
+    </div>
+  </div>
+</div>

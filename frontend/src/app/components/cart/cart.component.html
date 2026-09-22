@@ -1,0 +1,48 @@
+<div class="container mt-4">
+  <h2>Carrinho</h2>
+
+  <div *ngIf="isLoading">A carregar carrinho...</div>
+  <div *ngIf="!isLoading && cart?.items?.length === 0">Carrinho vazio.</div>
+
+  <div *ngIf="cartTimeout" class="alert alert-warning" role="alert">
+    Tem {{ minutes }}:{{ seconds }} minutos para concluir a sua encomenda.
+  </div>
+
+  <div *ngIf="!isLoading && cart?.items?.length">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Prato</th>
+          <th>Dose</th>
+          <th>Quantidade</th>
+          <th>Preço por unidade</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of cart.items">
+          <td>{{ item.dishId.name }}</td>
+          <td>{{ item.dose }}</td>
+          <td>{{ item.amount }}</td>
+          <td>€ {{ getDosePrice(item)?.toFixed(2) || 'N/A' }}</td>
+          <td>
+            € {{
+              getDosePrice(item) !== undefined
+                ? (getDosePrice(item)! * item.amount).toFixed(2)
+                : 'N/A'
+            }}
+          </td>
+          <td>
+            <button class="btn btn-danger btn-sm" (click)="removeItem(item)">Remover</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4 class="text-end">Total: €{{ cart?.total ? cart.total.toFixed(2) : '0.00' }}</h4>
+
+    <div class="text-end">
+      <button class="btn btn-success" (click)="finalizeOrder()">Finalizar encomenda</button>
+    </div>
+  </div>
+</div>

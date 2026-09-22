@@ -1,0 +1,19 @@
+<div *ngIf="error" class="error">{{ error }}</div>
+
+<ul *ngIf="checkedRestaurants.length > 0; else noData">
+  <li *ngFor="let restaurant of checkedRestaurants" class="d-flex justify-content-between align-items-center">
+    <strong>{{ restaurant.name }}</strong>
+    <div>
+      <button class="btn btn-warning btn-sm me-2" (click)="disableRestaurant(restaurant._id)">
+        Desativar
+      </button>
+      <button class="btn btn-danger btn-sm" (click)="deleteRestaurant(restaurant._id)">
+        Remover
+      </button>
+    </div>
+  </li>
+</ul>
+
+<ng-template #noData>
+  <p>Não há restaurantes para mostrar.</p>
+</ng-template>

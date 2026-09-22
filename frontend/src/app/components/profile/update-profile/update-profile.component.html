@@ -1,0 +1,96 @@
+<div class="container mt-5">
+  <h2 class="mb-4">
+    Editar Perfil de
+    {{ userType === 'customer' ? 'Cliente' : userType === 'admin' ? 'Administrador' : 'Restaurante' }}
+  </h2>
+
+  <form *ngIf="profileForm" [formGroup]="profileForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label">{{ fieldLabels.name }}</label>
+      <input type="text" formControlName="name" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ fieldLabels.username }}</label>
+      <input type="text" formControlName="username" class="form-control" [disabled]="true" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ fieldLabels.email }}</label>
+      <input type="email" formControlName="email" class="form-control" [disabled]="true" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ fieldLabels.phone }}</label>
+      <input type="text" formControlName="phone" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">{{ fieldLabels.nif }}</label>
+      <input type="text" formControlName="nif" class="form-control" />
+    </div>
+
+    <div class="mb-3" *ngIf="userType === 'customer'">
+      <label class="form-label">{{ fieldLabels.birthDate }}</label>
+      <input type="date" formControlName="birthDate" class="form-control" />
+    </div>
+
+    <div class="mb-3" *ngIf="userType === 'restaurant'">
+      <label class="form-label">{{ fieldLabels.foundedAt }}</label>
+      <input type="date" formControlName="foundedAt" class="form-control" />
+    </div>
+
+    <fieldset class="border p-3 mb-4">
+      <legend class="w-auto px-2">{{ fieldLabels.address }}</legend>
+
+      <div formGroupName="address">
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.street }}</label>
+          <input type="text" formControlName="street" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.number }}</label>
+          <input type="text" formControlName="number" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.floor }}</label>
+          <input type="text" formControlName="floor" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.zipCode }}</label>
+          <input type="text" formControlName="zipCode" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.place }}</label>
+          <input type="text" formControlName="place" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.district }}</label>
+          <input type="text" formControlName="district" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">{{ fieldLabels.country }}</label>
+          <input type="text" formControlName="country" class="form-control" />
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="mb-3">
+      <label class="form-label">Imagem de Perfil</label>
+      <input type="file" class="form-control" (change)="onFileChange($event)" />
+    </div>
+
+    <div class="mb-3" *ngIf="previewUrl">
+      <label class="form-label">Preview:</label><br />
+      <img [src]="previewUrl" class="img-thumbnail" style="max-width: 200px;" />
+    </div>
+
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+    <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+    <div class="container mt-1 pb-2">
+      <button type="submit" class="btn btn-warning">Guardar Alterações</button>
+      <button type="button" class="btn btn-secondary" (click)="cancel()">Cancelar</button>
+    </div>
+  </form>
+</div>

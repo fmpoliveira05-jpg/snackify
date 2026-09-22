@@ -1,0 +1,14 @@
+<div class="container mt-5">
+  <h2>Restaurantes disponíveis</h2>
+  <div class="row">
+    <div class="col-md-4" *ngFor="let rest of restaurants">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">{{ rest.name }}</h5>
+          <p class="card-text">{{ rest.description }}</p>
+          <a [routerLink]="['/cliente/restaurantes', rest._id, 'menus']" class="btn btn-primary">Ver menus</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

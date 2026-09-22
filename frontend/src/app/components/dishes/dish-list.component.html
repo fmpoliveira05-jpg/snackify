@@ -1,0 +1,37 @@
+<div class="container mt-5">
+  <h2 *ngIf="menu">{{ menu.title }}</h2>
+
+  <div class="row">
+    <div *ngFor="let dish of dishes" class="col-md-4 mb-3">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">{{ dish.name }}</h5>
+          <p class="card-text">{{ dish.description }}</p>
+
+          <div *ngIf="dish.pricePerDose?.length; else noPrice">
+            <p><strong>Preços por tipo de dose:</strong></p>
+            <div *ngFor="let p of dish.pricePerDose">
+              {{ p.dose.charAt(0).toUpperCase() + p.dose.slice(1) }} dose: €{{ p.price.toFixed(2) }}
+            </div>
+          </div>
+          <ng-template #noPrice>
+            <p><strong>Preço:</strong> Não disponível</p>
+          </ng-template>
+
+          <form (ngSubmit)="addToCart(dish)" class="mt-auto">
+            <input type="number" [(ngModel)]="dish.selectedAmount" placeholder="Introduza a quantidade desejada" name="amount-{{dish._id}}" min="1" class="form-control mb-2" required />
+            
+            <select [(ngModel)]="dish.selectedDose" name="dose-{{dish._id}}" class="form-select mb-2" required>
+              <option *ngFor="let p of dish.pricePerDose" [value]="p.dose">
+                {{ p.dose.charAt(0).toUpperCase() + p.dose.slice(1) }} dose
+              </option>
+            </select>
+
+            <button type="submit" class="btn btn-success btn-sm">Adicionar ao carrinho</button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

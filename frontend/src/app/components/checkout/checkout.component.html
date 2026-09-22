@@ -1,0 +1,28 @@
+<div class="container my-5 d-flex justify-content-center">
+  <div class="card shadow-lg p-4" style="max-width: 600px; width: 100%;">
+    <div class="card-body">
+      <h2 class="card-title text-center mb-4">Encomenda Registada</h2>
+
+      <p class="mb-3 text-center">
+        O seu código de encomenda é:
+        <strong class="text-primary">{{ order?.orderCode }}</strong>
+      </p>
+
+      <h5>Itens:</h5>
+      <ul class="list-group mb-3">
+        <li class="list-group-item" *ngFor="let item of order?.dishes">
+          {{ item.amount }}x {{ item.dishId.name }} - ({{ item.dose }} dose)
+        </li>
+      </ul>
+
+      <p>
+        <strong>Estado da encomenda: </strong>
+        <span class="text-muted">{{ order?.state }}</span>
+      </p>
+
+      <div *ngIf="order?.state === 'pendente'" class="text-center mt-4">
+        <p><strong>Nota: aceda ao seu perfil para efetuar o pagamento.</strong></p>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,54 @@
+<section class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header text-center">
+          <h3>Entrar</h3>
+        </div>
+        <div class="card-body">
+          <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
+            <div class="mb-3">
+              <label for="username" class="form-label">Nome de utilizador</label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                class="form-control"
+                placeholder="Introduza o seu nome de utilizador"
+                required
+                [(ngModel)]="username"
+                #usernameInput="ngModel"
+              />
+              <div class="text-danger mt-1" *ngIf="usernameInput.invalid && usernameInput.touched">
+                O nome de utilizador é obrigatório.
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="password" class="form-label">Palavra-passe</label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                class="form-control"
+                placeholder="Introduza a sua palavra-passe"
+                required
+                [(ngModel)]="password"
+                #passwordInput="ngModel"
+              />
+              <div class="text-danger mt-1" *ngIf="passwordInput.invalid && passwordInput.touched">
+                A palavra-passe é obrigatória.
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100" [disabled]="loginForm.invalid">
+              Entrar
+            </button>
+          </form>
+
+          <p class="text-danger mt-3" *ngIf="errorMessage">{{ errorMessage }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

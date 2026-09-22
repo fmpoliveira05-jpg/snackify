@@ -1,0 +1,14 @@
+<div class="container mt-4">
+  <h2>Criar Nova Categoria</h2>
+
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
+    <div class="mb-3">
+      <label for="name" class="form-label">Nome da Categoria</label>
+      <input type="text" id="name" formControlName="name" class="form-control" />
+    </div>
+    <button type="submit" class="btn btn-primary">Criar Categoria</button>
+  </form>
+</div>

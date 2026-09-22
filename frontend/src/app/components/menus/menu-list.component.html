@@ -1,0 +1,10 @@
+<div class="container mt-5">
+  <h2 *ngIf="restaurant">{{ restaurant.name }}</h2>
+  <div *ngFor="let menu of menus" class="card mb-4">
+    <div class="card-body">
+      <h4 class="card-title">{{ menu.title }}</h4>
+      <p>{{ menu.description }}</p>
+      <a [routerLink]="['/cliente/menus', menu._id, 'pratos']" class="btn btn-outline-primary">Ver pratos</a>
+    </div>
+  </div>
+</div>

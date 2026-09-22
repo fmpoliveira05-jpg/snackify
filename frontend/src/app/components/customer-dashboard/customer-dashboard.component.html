@@ -1,0 +1,19 @@
+<div class="container mt-5">
+  <h4>Esta é a sua área pessoal.</h4>
+
+  <div *ngIf="isLoading">A carregar dados da dashboard...</div>
+
+  <div *ngIf="!isLoading">
+    <div *ngIf="orderTotals?.length">
+      <app-order-chart [data]="orderTotals"></app-order-chart>
+    </div>
+
+    <div *ngIf="!isBlocked">
+      <button class="btn btn-primary" (click)="goToRestaurants()">Encomendar comida</button>
+    </div>
+
+    <div *ngIf="isBlocked" class="alert alert-warning mt-3">
+      Está temporariamente impedido(a) de encomendar comida até <strong>{{ blockedUntil }}</strong>.
+    </div>
+  </div>
+</div>
