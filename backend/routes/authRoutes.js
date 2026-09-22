@@ -1,44 +1,77 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middlewares/uploadMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
+const checkUser = require('../middlewares/checkUserMiddleware');
 const {
     getMe,
-    showCustomerRegisterPage,
-    showRestaurantRegisterPage,
-    customerRegister,
     login,
-    restaurantRegister,
     logout,
     showLoginPage
 } = require('../controllers/authController');
 
-const customerRegisterValidator = require('../middlewares/validation/customerRegisterValidator');
-const restaurantRegisterValidator = require('../middlewares/validation/restaurantRegisterValidator');
-const validateRequest = require('../middlewares/validation/validateRequest');
-
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Obter dados do utilizador autenticado
+ *     tags: [Autenticação]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Dados do utilizador.
+ *       401:
+ *         description: Não autorizado.
+ */
 router.get('/me', authMiddleware, getMe);
-router.get('/login', showLoginPage);
-router.get('/registar-cliente', showCustomerRegisterPage);
-router.get('/registar-restaurante', showRestaurantRegisterPage);
 
-router.post(
-    '/registar-cliente',
-    upload.single('profilePicture'),
-    customerRegisterValidator,
-    validateRequest('auth/customerRegister'),
-    customerRegister
-);
+/**
+ * @swagger
+ * /auth/login:
+ *   get:
+ *     summary: Carregar formulário de login
+ *     tags: [Autenticação]
+ *     responses:
+ *       200:
+ *         description: Página de login.
+ */
+router.get('/login', checkUser, authMiddleware, showLoginPage);
 
-router.post(
-    '/registar-restaurante',
-    upload.single('logo'),
-    restaurantRegisterValidator,
-    validateRequest('auth/restaurantRegister'),
-    restaurantRegister
-);
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Login de utilizador
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Autenticado com sucesso.
+ *       401:
+ *         description: Credenciais inválidas.
+ */
+router.post('/login', checkUser, login);
 
-router.post('/login', login);
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Efetuar logout
+ *     tags: [Autenticação]
+ *     responses:
+ *       200:
+ *         description: Logout efetuado com sucesso.
+ */
 router.post('/logout', logout);
 
 module.exports = router;

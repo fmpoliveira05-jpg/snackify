@@ -24,19 +24,24 @@
                                 <% }) %>
                               </ul>
                             </div>
-                          <% } %>                          
-                          
-                        <form method="POST" action="/auth/registar-restaurante" enctype="multipart/form-data">
+                        <% } %>                          
+
+                        <form method="POST" action="/register/registar-restaurante" enctype="multipart/form-data">
                             <input type="hidden" name="userType" value="restaurant">
 
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text" class="form-control" maxlength="50" required value="<%= oldInput?.name || '' %>">
+                                <input name="name" type="text" placeholder="Nome da marca" class="form-control" maxlength="50" required value="<%= oldInput?.name || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Logotipo (opcional)</label>
-                                <input name="logo" type="file" accept="image/*" class="form-control">
+                                <input id="logoInput" name="logo" type="file" accept="image/*" class="form-control">
+                            </div>
+
+                            <div class="mt-2" id="logoPreviewContainer" style="display: none;">
+                                <label class="form-label">Preview:</label><br>
+                                <img id="logoPreview" class="img-thumbnail" style="max-width: 200px;">
                             </div>
 
                             <div class="mb-3">
@@ -50,30 +55,30 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Rua</label>
-                                        <input name="address[street]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.street || '' %>">
+                                        <input name="address[street]" type="text" placeholder="Rua onde mora" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.street || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Número</label>
-                                        <input name="address[number]" type="text" pattern="^[0-9]{1,5}([A-Za-z]|[-/][0-9A-Za-z]{1,3})?$" class="form-control" maxlength="10" required value="<%= oldInput?.address?.number || '' %>">
+                                        <input name="address[number]" type="text" placeholder="Número da porta" pattern="^[0-9]{1,5}([A-Za-z]|[-/][0-9A-Za-z]{1,3})?$" class="form-control" maxlength="10" required value="<%= oldInput?.address?.number || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Andar (opcional)</label>
-                                        <input name="address[floor]" type="text" pattern="^((R\/C)|(RC)|-?[0-9]{1,2}(º)?([A-Za-z]{1,4})?)$" class="form-control" maxlength="10" value="<%= oldInput?.address?.floor || '' %>">
+                                        <input name="address[floor]" type="text" placeholder="1º, 2º, ..." pattern="^((R\/C)|(RC)|-?[0-9]{1,2}(º)?([A-Za-z]{1,4})?)$" class="form-control" maxlength="10" value="<%= oldInput?.address?.floor || '' %>">
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Código Postal</label>
-                                        <input name="address[zipCode]" type="text" pattern="^\d{4}-\d{3}$" class="form-control" maxlength="8" required value="<%= oldInput?.address?.zipCode || '' %>">
+                                        <input name="address[zipCode]" type="text" placeholder="Código postal da localidade" pattern="^\d{4}-\d{3}$" class="form-control" maxlength="8" required value="<%= oldInput?.address?.zipCode || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Localidade</label>
-                                        <input name="address[place]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.place || '' %>">
+                                        <input name="address[place]" type="text" placeholder="Localidade onde vive" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.place || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Distrito</label>
-                                        <input name="address[district]" type="text" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.district || '' %>">
+                                        <input name="address[district]" type="text" placeholder="Distrito da localidade" pattern="^[A-ZÁÂÃÉÊÍÓÔÕÚÇ].*" class="form-control" maxlength="50" required value="<%= oldInput?.address?.district || '' %>">
                                     </div>
                                 </div>
 
@@ -85,27 +90,27 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Telefone</label>
-                                <input name="phone" type="tel" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.phone || '' %>">
+                                <input name="phone" type="tel" placeholder="Introduza o seu número de telefone" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.phone || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">NIF</label>
-                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.nif || '' %>">
+                                <input name="nif" type="text" placeholder="Introduza o seu número de contribuinte" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.nif || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Nome de utilizador</label>
-                                <input name="username" type="text" pattern="^\S+$" class="form-control" minlength="5" maxlength="20" required value="<%= oldInput?.username || '' %>">
+                                <input name="username" type="text" placeholder="Defina um nome de utilizador para o login" pattern="^\S+$" class="form-control" minlength="5" maxlength="20" required value="<%= oldInput?.username || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" maxlength="50" required value="<%= oldInput?.email || '' %>">
+                                <input name="email" type="email" placeholder="Introduza o seu email" class="form-control" maxlength="50" required value="<%= oldInput?.email || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Palavra-passe</label>
-                                <input name="password" type="password" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$" class="form-control" minlength="8" maxlength="20">
+                                <input name="password" type="password" placeholder="Introduza uma palavra-passe" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$" class="form-control" minlength="8" maxlength="20">
                             </div>
 
                             <button type="submit" class="btn btn-success w-100">Registar</button>
@@ -115,6 +120,8 @@
             </div>
         </div>
     </section>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/javascripts/createImagePreview.js"></script>
 </body>
 </html>

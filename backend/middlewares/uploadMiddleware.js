@@ -6,7 +6,11 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let folder = 'uploads/';
 
-    if (req.user?.userType === 'restaurant') {
+    if (req.url.includes('pratos/novo') || req.url.includes('pratos/editar')) {
+      folder = 'uploads/dishes';
+    } else if (req.url.includes('/encomendas') && req.url.includes('/avaliar')) {
+      folder = 'uploads/reviews';
+    } else if (req.user?.userType === 'restaurant') {
       folder = 'uploads/logos';
     } else if (req.user?.userType === 'customer' || req.user?.userType === 'admin') {
       folder = 'uploads/profilePictures';
@@ -14,10 +18,6 @@ const storage = multer.diskStorage({
       folder = 'uploads/profilePictures';
     } else if (req.url.includes('register/restaurant')) {
       folder = 'uploads/logos';
-    } else if (req.url.includes('novo') || req.url.includes('editar')) {
-      folder = 'uploads/dishes';
-    } else if (req.url.includes('/perfil/encomendas/avaliar')) {
-      folder = 'uploads/reviews';
     } else {
       folder = 'uploads/others';
     }

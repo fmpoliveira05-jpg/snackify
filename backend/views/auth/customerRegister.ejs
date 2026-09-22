@@ -9,7 +9,7 @@
 </head>
 <body>
     <%- include('../partials/navbar') %>
-    
+
     <section class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -24,24 +24,32 @@
                                 <% }) %>
                               </ul>
                             </div>
-                          <% } %>                          
-                          
-                        <form method="POST" action="/auth/registar-cliente" enctype="multipart/form-data">
+                        <% } %>
+
+                        <form method="POST" action="/register/registar-cliente" enctype="multipart/form-data">
                             <input type="hidden" name="userType" value="customer">
 
                             <div class="mb-3">
                                 <label class="form-label">Nome</label>
-                                <input name="name" type="text"  class="form-control" maxlength="50" required value="<%= oldInput?.name || '' %>">
+                                <input name="name" type="text" placeholder="Nome completo" class="form-control" maxlength="50" required value="<%= oldInput?.name || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Foto de perfil (opcional)</label>
-                                <input name="profilePicture" type="file" accept="image/*" class="form-control">
+                                <input id="profilePictureInput" name="profilePicture" type="file" accept="image/*" class="form-control">
+                            </div>
+
+                            <div class="mt-2" id="profilePicturePreviewContainer" style="display: none;">
+                                <label class="form-label">Preview:</label><br>
+                                <img id="profilePicturePreview" class="img-thumbnail" style="max-width: 200px;">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Data de nascimento</label>
-                                <input name="birthDate" type="date" class="form-control" min="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 120)).toISOString().split('T')[0] %>" max="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0] %>" required value="<%= oldInput?.birthDate || '' %>">
+                                <input name="birthDate" type="date" class="form-control" 
+                                       min="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 120)).toISOString().split('T')[0] %>" 
+                                       max="<%= new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0] %>" 
+                                       required value="<%= oldInput?.birthDate || '' %>">
                             </div>
 
                             <fieldset class="border p-3 mb-3">
@@ -50,30 +58,30 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Rua</label>
-                                        <input name="address[street]"  type="text" class="form-control" maxlength="50" required value="<%= oldInput?.address?.street || '' %>">
+                                        <input name="address[street]" type="text" placeholder="Rua onde mora" class="form-control" maxlength="50" required value="<%= oldInput?.address?.street || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Número</label>
-                                        <input name="address[number]" type="text"  class="form-control" maxlength="10" required value="<%= oldInput?.address?.number || '' %>">
+                                        <input name="address[number]" type="text" placeholder="Número da porta" class="form-control" maxlength="10" required value="<%= oldInput?.address?.number || '' %>">
                                     </div>
                                     <div class="col-md-3 mb-3">
                                         <label class="form-label">Andar (opcional)</label>
-                                        <input name="address[floor]" type="text"  class="form-control" maxlength="10" value="<%= oldInput?.address?.floor || '' %>">
+                                        <input name="address[floor]" type="text" placeholder="1º, 2º, ..." class="form-control" maxlength="10" value="<%= oldInput?.address?.floor || '' %>">
                                     </div>
                                 </div>
 
                                 <div class="row">
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Código Postal</label>
-                                        <input name="address[zipCode]" type="text" class="form-control" maxlength="8" required value="<%= oldInput?.address?.zipCode || '' %>">
+                                        <input name="address[zipCode]" type="text" placeholder="Código postal da localidade" class="form-control" maxlength="8" required value="<%= oldInput?.address?.zipCode || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Localidade</label>
-                                        <input name="address[place]" type="text"  class="form-control" maxlength="50" required value="<%= oldInput?.address?.city || '' %>">
+                                        <input name="address[place]" type="text" placeholder="Localidade onde vive" class="form-control" maxlength="50" required value="<%= oldInput?.address?.city || '' %>">
                                     </div>
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">Distrito</label>
-                                        <input name="address[district]" type="text"  class="form-control" maxlength="50" required value="<%= oldInput?.address?.district || '' %>">
+                                        <input name="address[district]" type="text" placeholder="Distrito da localidade" class="form-control" maxlength="50" required value="<%= oldInput?.address?.district || '' %>">
                                     </div>
                                 </div>
 
@@ -85,27 +93,27 @@
 
                             <div class="mb-3">
                                 <label class="form-label">Telemóvel</label>
-                                <input name="phone" type="tel" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.phone || '' %>">
+                                <input name="phone" type="tel" placeholder="Introduza o seu número de telemóvel" class="form-control" minlength="9" maxlength="9" required value="<%= oldInput?.phone || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">NIF (opcional)</label>
-                                <input name="nif" type="text" class="form-control" minlength="9" maxlength="9" value="<%= oldInput?.nif || '' %>">
+                                <input name="nif" type="text" placeholder="Introduza o seu número de contribuinte" class="form-control" minlength="9" maxlength="9" value="<%= oldInput?.nif || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Nome de utilizador</label>
-                                <input name="username" type="text"  class="form-control" minlength="5" maxlength="20" required value="<%= oldInput?.username || '' %>">
+                                <input name="username" type="text" placeholder="Defina um nome de utilizador para o login" class="form-control" minlength="5" maxlength="20" required value="<%= oldInput?.username || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
-                                <input name="email" type="email" class="form-control" maxlength="50" required value="<%= oldInput?.email || '' %>">
+                                <input name="email" type="email" placeholder="Introduza o seu email" class="form-control" maxlength="50" required value="<%= oldInput?.email || '' %>">
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">Palavra-passe</label>
-                                <input name="password" type="password"  class="form-control" minlength="8" maxlength="20">
+                                <input name="password" type="password" placeholder="Introduza uma palavra-passe" class="form-control" minlength="8" maxlength="20">
                             </div>
 
                             <button type="submit" class="btn btn-success w-100">Registar</button>
@@ -115,6 +123,8 @@
             </div>
         </div>
     </section>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/javascripts/createImagePreview.js"></script>
 </body>
 </html>

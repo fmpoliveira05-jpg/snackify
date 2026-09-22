@@ -4,181 +4,27 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const getMe = async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Não autenticado' });
-  }
-
-  console.log("Req.user no /auth/me:", req.user);
-
-  try {
-    let userData = null;
-
-    if (req.user.userType === 'restaurant') {
-      userData = await Restaurant.findById(req.user._id).select('-password');
-    } else if (req.user.userType === 'customer') {
-      userData = await User.findById(req.user._id).select('-password');
+    if (!req.user) {
+        return res.status(401).json({ message: 'Não autenticado' });
     }
-
-    if (!userData) {
-      return res.status(404).json({ message: 'Utilizador não encontrado' });
-    }
-
-    console.log("Usuário encontrado:", userData);
-
-    res.json(userData);
-
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao obter dados do utilizador', error: error.message });
-  }
-};
-
-const showCustomerRegisterPage = (req, res) => {
-    res.render('auth/customerRegister', {
-        errors: [],
-        oldInput: {}
-    });
-};
-
-const showRestaurantRegisterPage = (req, res) => {
-    res.render('auth/restaurantRegister', {
-        errors: [],
-        oldInput: {}
-    });
-};
-
-const customerRegister = async (req, res) => {
-    const {
-        name,
-        username,
-        email,
-        password,
-        birthDate,
-        phone,
-        nif,
-        address: {
-            street,
-            number,
-            floor,
-            zipCode,
-            place,
-            district,
-            country,
-            coordinates
-        }
-    } = req.body;
-
-    const latitude = coordinates ? coordinates.latitude : null;
-    const longitude = coordinates ? coordinates.longitude : null;
-
-    const profilePicture = req.file ? `/uploads/profilePictures/${req.file.filename}` : null;
-    const userType = "customer";
 
     try {
-        const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-        if (existingUser) {
-            return res.status(400).json({ message: "Email ou username já em uso!" });
+        let userData = null;
+
+        if (req.user.userType === 'restaurant') {
+            userData = await Restaurant.findById(req.user._id).select('-password');
+        } else {
+            userData = await User.findById(req.user._id).select('-password');
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        if (!userData) {
+            return res.status(404).json({ message: 'Utilizador não encontrado' });
+        }
 
-        const newUser = new User({
-            name,
-            username,
-            email,
-            password: hashedPassword,
-            birthDate,
-            phone,
-            nif,
-            profilePicture,
-            userType,
-            address: {
-                street,
-                number,
-                floor,
-                zipCode,
-                place,
-                district,
-                country,
-                coordinates: {
-                    latitude,
-                    longitude
-                }
-            }
-        });
+        res.json(userData);
 
-        await newUser.save();
-        res.redirect('/auth/login');
     } catch (error) {
-        res.status(500).json({ message: "Erro ao registar o utilizador", error: error.message });
-    }
-};
-
-const restaurantRegister = async (req, res) => {
-    const {
-        name,
-        username,
-        email,
-        password,
-        phone,
-        nif,
-        foundedAt,
-        isChecked,
-        address: {
-            street,
-            number,
-            floor,
-            zipCode,
-            place,
-            district,
-            country,
-            coordinates
-        }
-    } = req.body;
-
-    const latitude = coordinates ? coordinates.latitude : null;
-    const longitude = coordinates ? coordinates.longitude : null;
-
-    const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
-
-    try {
-        const existingRestaurant = await Restaurant.findOne({ $or: [{ email }, { username }] });
-        if (existingRestaurant) {
-            return res.status(400).json({ message: "Email ou username já em uso!" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const newRestaurant = new Restaurant({
-            name,
-            username,
-            email,
-            password: hashedPassword,
-            phone,
-            nif,
-            foundedAt,
-            isChecked,
-            logo,
-            address: {
-                street,
-                number,
-                floor,
-                zipCode,
-                place,
-                district,
-                country,
-                coordinates: {
-                    latitude,
-                    longitude
-                }
-            }
-        });
-
-        await newRestaurant.save();
-        res.redirect('/auth/login');
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao registar o restaurante", error: error.message });
+        res.status(500).json({ message: 'Erro ao obter dados do utilizador', error: error.message });
     }
 };
 
@@ -196,10 +42,14 @@ const login = async (req, res) => {
             userType = foundUser.userType;
         }
 
-        if (!foundUser) return res.status(400).json({ message: "Utilizador não encontrado!" });
+        if (!foundUser) {
+            return res.status(400).json({ message: "Utilizador não encontrado!" });
+        }
 
         const isMatch = await bcrypt.compare(password, foundUser.password);
-        if (!isMatch) return res.status(400).json({ message: "Password incorreta!" });
+        if (!isMatch) {
+            return res.status(400).json({ message: "Password incorreta!" });
+        }
 
         const token = jwt.sign(
             { userId: foundUser._id, userType },
@@ -222,20 +72,28 @@ const login = async (req, res) => {
 };
 
 const showLoginPage = (req, res) => {
-    res.render('auth/login');
+    if (req.user) {
+        switch (req.user.userType) {
+            case 'restaurant':
+                return res.redirect('/restaurante/dashboard');
+            case 'customer':
+                return res.redirect('/cliente/dashboard');
+            case 'admin':
+                return res.redirect('/admin/validar-restaurantes');
+            default:
+                return res.redirect('/');
+        }
+    }
+    res.redirect('http://localhost:5000/login');
 };
 
 const logout = (req, res) => {
     res.clearCookie('token');
-    res.redirect('/auth/login');
+    res.status(200).json({ message: 'Logout feito com sucesso' });
 };
 
 module.exports = {
     getMe,
-    showCustomerRegisterPage,
-    showRestaurantRegisterPage,
-    customerRegister,
-    restaurantRegister,
     login,
     logout,
     showLoginPage

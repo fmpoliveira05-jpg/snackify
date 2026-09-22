@@ -12,9 +12,11 @@
   <div class="container mt-5">
     <div class="card">
       <% if (dish.image) { %>
-        <img src="<%= dish.image %>" alt="<%= dish.name %>" class="card-img-top" style="max-height: 400px; object-fit: cover;">
+        <img src="<%= dish.image %>" class="card-img-top" alt="Imagem do prato">
       <% } else { %>
-        <img src="/images/sem-imagem.png" alt="Sem imagem" class="card-img-top" style="max-height: 400px; object-fit: cover;">
+        <div class="card-img-placeholder">
+          Sem imagem disponível
+        </div>
       <% } %>
 
       <div class="card-body">

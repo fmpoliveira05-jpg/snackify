@@ -3,6 +3,27 @@ const Restaurant = require('../models/restaurant');
 const Order = require('../models/order');
 const Review = require('../models/review');
 
+const updateOrderState = async (req, res) => {
+  const { id } = req.params;
+  const { state } = req.body;
+
+  try {
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({ message: 'Encomenda não encontrada.' });
+    }
+
+    order.state = state;
+    await order.save();
+
+    res.status(200).json({ message: 'Estado da encomenda atualizado com sucesso.', order });
+  } catch (error) {
+    console.error('Erro ao atualizar estado da encomenda:', error);
+    res.status(500).json({ message: 'Erro no servidor.' });
+  }
+};
+
 const renderProfilePage = (req, res) => {
   res.render('profile/profile');
 };
@@ -20,8 +41,16 @@ const getProfile = async (req, res) => {
     if (userType === 'restaurant') {
       userData = await Restaurant.findById(userId).lean();
       delete userData.isChecked;
-    } else {
+      userData.userType = 'restaurant';
+    } else if (userType === 'admin') {
       userData = await User.findById(userId).lean();
+      delete userData.isChecked;
+      userData.userType = 'admin';
+    } else if (userType === 'customer') {
+      userData = await User.findById(userId).lean();
+      if (userData) {
+        userData.userType = 'customer';
+      }
     }
 
     if (!userData) return res.status(404).json({ message: 'Utilizador não encontrado.' });
@@ -75,10 +104,10 @@ const updateProfile = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    res.redirect('/user/perfil');
+    res.status(200).json({ message: 'Perfil atualizado com sucesso.' });
   } catch (error) {
     console.error("Erro no updateProfile:", error);
-    res.status(500).render('profile/updateProfile', {
+    res.status(500).json({
       errors: [{ msg: 'Erro ao atualizar perfil: ' + error.message }]
     });
   }
@@ -127,6 +156,7 @@ const submitReview = async (req, res) => {
   try {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: "Pedido não encontrado." });
+
     if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Sem permissão para avaliar este pedido." });
     }
@@ -154,7 +184,10 @@ const submitReview = async (req, res) => {
     order.reviewed = true;
     await order.save();
 
-    res.redirect('/user/perfil');
+    res.status(201).json({
+      message: "Avaliação enviada com sucesso.",
+      redirectTo: "/user/perfil"
+    });
   } catch (error) {
     console.error('Erro ao enviar avaliação:', error);
     res.status(500).json({ message: "Erro ao enviar avaliação." });
@@ -165,27 +198,45 @@ const renderReviewPage = async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    const order = await Order.findById(orderId).populate('restaurantId').populate('dishes.dishId').lean();
+    const order = await Order.findById(orderId)
+      .populate('restaurantId')
+      .populate('dishes.dishId')
+      .lean();
 
-    if (!order) return res.status(404).render('errors/404', { message: "Pedido não encontrado." });
+    if (!order) {
+      return res.status(404).json({ error: "Pedido não encontrado." });
+    }
 
     if (order.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).render('errors/403', { message: "Sem permissão para avaliar este pedido." });
+      return res.status(403).json({ error: "Sem permissão para avaliar este pedido." });
     }
 
     const existingReview = await Review.findOne({ orderId });
     if (existingReview) {
-      return res.redirect('/user/perfil');
+      return res.status(302).json({ redirect: '/user/perfil' });
     }
 
-    res.render('profile/review', { order });
+    res.json({ order });
   } catch (error) {
     console.error('Erro ao carregar página de avaliação:', error);
-    res.status(500).render('errors/500', { message: "Erro interno ao carregar avaliação." });
+    res.status(500).json({ error: "Erro interno ao carregar avaliação." });
+  }
+};
+
+const loadOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId)
+      .populate('dishes.dishId')
+      .populate('restaurantId');
+    if (!order) return res.status(404).json({ message: 'Encomenda não encontrada.' });
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Erro ao buscar encomenda.' });
   }
 };
 
 module.exports = {
+  updateOrderState,
   renderProfilePage,
   renderUpdateProfilePage,
   getProfile,
@@ -193,5 +244,6 @@ module.exports = {
   updateProfile,
   cancelOrder,
   submitReview,
-  renderReviewPage
+  renderReviewPage,
+  loadOrderDetails
 };

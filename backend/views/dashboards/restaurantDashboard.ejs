@@ -11,6 +11,35 @@
     
     <div class="container mt-5">
         <h4>Aqui poderá gerir os seus produtos, encomendas e informações.</h4>
+        <form class="row g-3 mb-4" method="GET" action="/restaurante/menus">
+            <div class="col-md-4">
+                <label for="searchField" class="form-label">Campo</label>
+                <select class="form-select" id="searchField" name="field">
+                    <option value="title" <%= search?.field === 'title' ? 'selected' : '' %>>Título</option>
+                    <option value="description" <%= search?.field === 'description' ? 'selected' : '' %>>Descrição</option>
+                    <option value="priceFull" <%= search?.field === 'priceFull' ? 'selected' : '' %>>Preço 1 dose</option>
+                    <option value="priceHalf" <%= search?.field === 'priceHalf' ? 'selected' : '' %>>Preço 0.5 dose</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label for="searchValue" class="form-label">Valor</label>
+                <input
+                type="text"
+                class="form-control"
+                id="searchValue"
+                name="value"
+                placeholder="Digite o valor da pesquisa"
+                value="<%= search?.value || '' %>"
+                >
+            </div>
+
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Pesquisar</button>
+            </div>
+        </form>
+
+
         <div id="ordersStateChart" class="my-4"></div>
         <div id="orderStatsData" data-chart='<%- JSON.stringify(orderStats || []) %>'></div>
     
@@ -18,6 +47,7 @@
         <a href="/restaurante/menus/novo" class="btn btn-success mb-2 btn-largo">Criar novo menu</a><br>
         <a href="/restaurante/pratos" class="btn btn-outline-secondary mb-2 btn-largo">Ver pratos criados</a><br>
         <a href="/restaurante/menus" class="btn btn-outline-primary mb-2 btn-largo">Ver menus disponíveis</a>
+        <a href="/restaurante/reviews" class="btn btn-outline-info mb-2 btn-largo">Ver todas as avaliações</a>
     </div>
 
     <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>

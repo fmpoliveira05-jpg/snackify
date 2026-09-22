@@ -20,9 +20,11 @@
           <div class="col-md-4 mb-4">
             <div class="card h-100">
               <% if (dish.image) { %>
-                <img src="<%= dish.image %>" class="card-img-top" alt="<%= dish.name %>">
+                <img src="<%= dish.image %>" class="card-img-top" alt="Imagem do prato">
               <% } else { %>
-                <img src="/images/sem-imagem.png" class="card-img-top" alt="Sem imagem">
+                <div class="card-img-placeholder">
+                  Sem imagem disponível
+                </div>
               <% } %>
               <div class="card-body d-flex flex-column">
                 <h5 class="card-title"><%= dish.name %></h5>
@@ -43,7 +45,7 @@
 
                 <div class="mt-auto d-flex justify-content-start gap-2">
                   <a href="/restaurante/pratos/editar/<%= dish._id %>" class="btn btn-warning btn-sm">Editar Prato</a>
-                  <form action="/restaurante/pratos/remover/<%= dish._id %>" method="POST" onsubmit="return confirm('Remover este prato permanentemente?')">
+                  <form action="/restaurante/pratos/remover/<%= dish._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Remover este prato permanentemente?')">
                     <button class="btn btn-danger btn-sm">Remover Prato</button>
                   </form>
                 </div>

@@ -188,7 +188,7 @@ const addToCart = async (req, res) => {
 };
 
 const removeFromCart = async (req, res) => {
-  const { dishId, dose } = req.body;
+  const { dishId, dose } = req.query;
   const userId = req.user._id;
 
   try {
@@ -221,6 +221,17 @@ const removeFromCart = async (req, res) => {
   } catch (err) {
     console.error('Erro ao remover item do carrinho:', err);
     return res.status(500).json({ message: 'Erro interno ao remover item.' });
+  }
+};
+
+const clearCart = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    await Cart.findOneAndUpdate({ userId }, { items: [], total: 0, timeout: null });
+    res.status(200).json({ message: 'Carrinho limpo.' });
+  } catch (error) {
+    console.error('Erro ao limpar carrinho:', error);
+    res.status(500).json({ message: 'Erro ao limpar carrinho.' });
   }
 };
 
@@ -308,7 +319,7 @@ const createStripeSession = async (req, res) => {
       payment_method_types: ['card'],
       line_items,
       mode: 'payment',
-      success_url: `${req.headers.origin}/cliente/carrinho/pagamento-sucesso?orderId=${orderId}`,
+      success_url: `${req.headers.origin}/cliente/api/carrinho/pagamento-sucesso?orderId=${orderId}`,
       cancel_url: `${req.headers.origin}/user/perfil`,
     });
 
@@ -324,15 +335,15 @@ const handlePaymentSuccess = async (req, res) => {
 
   try {
     const order = await Order.findById(orderId);
-    if (!order) return res.status(404).send("Encomenda não encontrada.");
+    if (!order) return res.status(404).json({ message: "Encomenda não encontrada." });
 
     order.state = 'concluída';
     await order.save();
 
-    res.redirect(`/cliente/dashboard`);
+    res.redirect('http://localhost:4200/cliente/dashboard');
   } catch (err) {
     console.error("Erro ao finalizar pagamento:", err);
-    res.status(500).send("Erro ao concluir o pagamento.");
+    res.status(500).json({ message: "Erro ao concluir o pagamento." });
   }
 };
 
@@ -346,6 +357,7 @@ module.exports = {
     viewCart,
     addToCart,
     removeFromCart,
+    clearCart,
     checkout,
     createOrderFromCart,
     createStripeSession,

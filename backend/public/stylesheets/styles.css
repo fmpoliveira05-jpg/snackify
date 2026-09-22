@@ -177,6 +177,18 @@ form textarea:focus {
   display: block;
 }
 
+.card-img-placeholder {
+  height: 200px;
+  background-color: #f0f0f0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-style: italic;
+  border-bottom: 1px solid #ddd;
+}
+
 /* ---------- DISH CARDS / PRATOS ---------- */
 
 .dish-card {

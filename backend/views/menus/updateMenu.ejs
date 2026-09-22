@@ -22,7 +22,7 @@
       </div>
     <% } %>
 
-    <form action="/restaurante/menus/editar/<%= menu._id %>" method="POST">
+    <form action="/restaurante/menus/editar/<%= menu._id %>?_method=PUT" method="POST">
       <div class="mb-3">
         <label for="title" class="form-label">Título</label>
         <input 
@@ -57,19 +57,13 @@
                   <img src="/uploads/<%= dish.image %>" class="card-img-top" alt="<%= dish.name %>">
                 <% } %>
                 <div class="card-body">
-                  <h5 class="card-title"><%= dish.name %></h5>
-                  <p class="card-text"><%= dish.description || '' %></p>
-                  <p><strong>Categoria:</strong> <%= dish.category %></p>
-                  <% if (dish.pricePerDose && dish.pricePerDose.length) { %>
-                    <p><strong>Preços por tipo de dose:</strong>
-                      <% dish.pricePerDose.forEach(p => { %>
-                        <br> <%= p.dose %> dose: €<%= p.price.toFixed(2) %>
-                      <% }) %>
-                    </p>
+                  <h5 class="card-title"><strong>Nome do prato: </strong><%= dish.name %></h5>
+                  <% if (!dish.description) { %>
+                    <p class="card-text text-muted">Sem descrição.</p>
                   <% } else { %>
-                    <p><strong>Preço:</strong> Não disponível</p>
+                    <p class="card-text"><strong>Descrição do prato: </strong><%= dish.description %></p>
                   <% } %>
-                  <p><strong>Informação nutricional:</strong> <%= dish.nutriInfo.calories %> kcal</p>
+                  <p><strong>Categoria:</strong> <%= dish.category?.name %></p>
                 </div>
                 <input 
                   type="checkbox" 

@@ -1,18 +1,22 @@
 const mongoose = require('mongoose');
+const { titleValidator, descriptionValidator, imageValidator } = require('./backend-validations/reviewValidation');
 
 const reviewSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
         trim: true,
+        validate: titleValidator,
     },
     description: {
         type: String,
         required: true,
         trim: true,
+        validate: descriptionValidator,
     },
     image: {
         type: String,
+        validate: imageValidator,
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,

@@ -5,6 +5,19 @@
   <title>Adicionar Prato</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/stylesheets/styles.css">
+  <style>
+    #imagePreviewContainer {
+      display: none;
+      margin-bottom: 15px;
+      max-width: 300px;
+    }
+    #imagePreview {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+  </style>
 </head>
 <body>
   <%- include('../partials/navbar') %>
@@ -26,7 +39,7 @@
       <input 
         name="name" 
         class="form-control mb-2" 
-        placeholder="Nome do prato" 
+        placeholder="Título do prato" 
         required 
       />
 
@@ -69,7 +82,12 @@
         />
       </div>
 
+      <div id="imagePreviewContainer">
+        <img id="imagePreview" src="" alt="Preview da Imagem do Prato" />
+      </div>
+
       <input 
+        id="imageInput"
         name="image" 
         type="file" 
         class="form-control mb-2" 
@@ -79,5 +97,7 @@
       <button type="submit" class="btn btn-success">Criar prato</button>
     </form>         
   </div>
+
+  <script src="/javascripts/createImagePreview.js"></script>
 </body>
 </html>

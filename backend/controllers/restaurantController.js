@@ -2,7 +2,9 @@ const Order = require('../models/order');
 const Menu = require('../models/menu');
 const Dish = require('../models/dish');
 const Category = require('../models/category');
+const Review = require('../models/review');
 const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
+const { selectedDishesValidator } = require('../models/backend-validations/dishValidations');
 
 const showRestaurantDashboard = async (req, res) => {
   try {
@@ -11,7 +13,7 @@ const showRestaurantDashboard = async (req, res) => {
       { $project: { _id: 0, state: "$_id", count: 1 } }
     ]);
 
-    res.render('dashboards/restaurantDashboard', { orderStats });
+    res.render('dashboards/restaurantDashboard', { orderStats, search: {}});
   } catch (error) {
     console.error(error);
     res.status(500).send('Erro ao carregar dados de encomendas.');
@@ -37,12 +39,85 @@ const listMenus = async (req, res) => {
   }
 };
 
+const searchMenus = async (req, res) => {
+  try {
+    const { field, value } = req.query;
+
+    if (!field || !value || typeof value !== 'string' || value.trim() === '') {
+      return res.status(400).send("Campo ou valor de pesquisa inválido.");
+    }
+
+    const trimmedValue = value.trim();
+    const searchValue = parseFloat(trimmedValue);
+
+    let menus = [];
+
+    if (["title", "description"].includes(field)) {
+      const filter = {
+        [field]: { $regex: trimmedValue, $options: "i" }
+      };
+      menus = await Menu.find(filter);
+    }
+
+    if (["priceFull", "priceHalf"].includes(field)) {
+      const doseTarget = field === "priceFull" ? "1" : "1/2";
+
+      const matchingDishes = await Dish.find({
+        pricePerDose: {
+          $elemMatch: {
+            dose: doseTarget,
+            price: searchValue
+          }
+        }
+      });
+
+      if (!matchingDishes.length) {
+        return res.status(404).send("Nenhum menu encontrado com o preço especificado.");
+      }
+
+      const menuIds = [...new Set(matchingDishes
+        .filter(dish => dish.menuId) 
+        .map(dish => dish.menuId.toString())
+      )];
+
+      if (!menuIds.length) {
+        return res.status(404).send("Menus correspondentes não encontrados.");
+      }
+
+      menus = await Menu.find({ _id: { $in: menuIds } });
+    }
+
+    if (!menus.length) {
+      return res.status(404).send("Nenhum menu encontrado.");
+    }
+
+    const menusWithDishes = await Promise.all(
+      menus.map(async (menu) => {
+        const dishes = await Dish.find({ menuId: menu._id });
+        return {
+          ...menu.toObject(),
+          dishes
+        };
+      })
+    );
+
+    res.render("menus/searchMenu", {
+      menus: menusWithDishes,
+      search: { field, value }
+    });
+
+  } catch (err) {
+    console.error("Erro ao pesquisar menus:", err);
+    res.status(500).send("Erro ao pesquisar menus.");
+  }
+};
+
 const showAddMenuForm = async (req, res) => {
   try {
     const availableDishes = await Dish.find({
       menuId: null,
       restaurantId: req.user._id
-    });
+    }).populate('category', 'name');
 
     res.render('menus/createMenu', { availableDishes: availableDishes, errors: [], oldInput: {} });
   } catch (err) {
@@ -92,12 +167,22 @@ const showEditMenuForm = async (req, res) => {
     const availableDishes = await Dish.find({
       $or: [
         { menuId: { $exists: false } },
-        { menuId: null }
+        { menuId: null },
+        { menuId: menu._id }
       ],
       restaurantId: req.user._id
-    });
+    }).populate('category', 'name');
 
-    res.render('menus/updateMenu', { menu, availableDishes, errors: [], oldInput: {} });
+    const dishesInMenu = await Dish.find({ menuId: menu._id }).select('_id');
+    const selectedDishIds = dishesInMenu.map(d => d._id.toString());
+
+    res.render('menus/updateMenu', {
+      menu,
+      availableDishes,
+      selectedDishIds,
+      errors: [],
+      oldInput: {}
+    });
   } catch (err) {
     console.error('Erro ao carregar formulário de edição:', err);
     res.status(500).send('Erro ao carregar menu.');
@@ -215,7 +300,7 @@ const updateDish = async (req, res) => {
     }));
 
     if (req.file) {
-      dish.image = `/uploads/images/${req.file.filename}`;
+      dish.image = `/uploads/dishes/${req.file.filename}`;
     }
 
     await dish.save();
@@ -251,7 +336,7 @@ const showAddDishForm = async (req, res) => {
 const addDish = async (req, res) => {
   try {
     const { name, description, category, dose, price } = req.body;
-    const image = req.file ? `/uploads/images/${req.file.filename}` : null;
+    const image = req.file ? `/uploads/dishes/${req.file.filename}` : null;
 
     const nutritionData = await fetchOpenFoodData(name);
 
@@ -307,9 +392,20 @@ const showDishDetails = async (req, res) => {
   }
 };
 
+const listReviews = async (req, res) => {
+  try {
+    const reviews = await Review.find({ restaurantId: req.user._id }).populate('userId', 'name');
+    res.render('reviews/readReviews', { reviews });
+  } catch (err) {
+    console.error('Erro ao listar avaliações:', err);
+    res.status(500).send('Erro ao listar avaliações.');
+  }
+};
+
 module.exports = {
   showRestaurantDashboard,
   listMenus,
+  searchMenus,
   showAddMenuForm,
   addMenu,
   showEditMenuForm,
@@ -323,4 +419,5 @@ module.exports = {
   addDish,
   listDishes,
   showDishDetails,
+  listReviews
 };

@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <title>Listagem de Menus</title>
+  <title>Resultados da Pesquisa - Menus</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/stylesheets/styles.css">
 </head>
@@ -10,24 +10,28 @@
   <%- include('../partials/navbar') %>
 
   <div class="container mt-5">
-    <h2>Menus disponíveis</h2>
+    <h2>Resultados da Pesquisa</h2>
+    <p class="text-muted">
+      Pesquisa por: <strong><%= search.field %></strong> contendo "<strong><%= search.value %></strong>"
+    </p>
+    <a href="/restaurante/menus" class="btn btn-secondary mb-4">← Voltar à lista de menus</a>
 
     <% if (menus.length === 0) { %>
-      <p>Nenhum menu encontrado.</p>
+      <div class="alert alert-warning">Nenhum menu encontrado com os critérios fornecidos.</div>
     <% } else { %>
       <% menus.forEach(menu => { %>
         <div class="card mb-4">
           <div class="card-body">
             <h4 class="card-title"><%= menu.title %></h4>
-            <p class="mb-0" class="card-text"><%= menu.description %></p>
+            <p class="mb-0"><%= menu.description %></p>
 
             <div class="d-flex justify-content-end gap-2 mb-2">
               <a href="/restaurante/menus/editar/<%= menu._id %>" class="btn btn-warning btn-sm">Editar menu</a>
-              <form action="/restaurante/menus/remover/<%= menu._id %>" method="POST" class="d-inline">
+              <form action="/restaurante/menus/remover/<%= menu._id %>?_method=DELETE" method="POST" class="d-inline">
                 <input type="hidden" name="_method" value="DELETE">
-                <button class="btn btn-danger btn-sm" onclick="return confirm('Remover este menu?')">Remover <map name=""></map>menu</button>
+                <button class="btn btn-danger btn-sm" onclick="return confirm('Remover este menu?')">Remover menu</button>
               </form>
-            </div>            
+            </div>
 
             <% if (menu.dishes.length === 0) { %>
               <p class="text-muted">Este menu ainda não tem pratos.</p>
@@ -38,12 +42,12 @@
                     <span><%= dish.name %></span>
                     <div class="d-flex gap-2">
                       <a href="/restaurante/pratos/<%= dish._id %>" target="_blank" class="btn btn-primary btn-sm">Ver detalhes</a>
-                      <form action="/restaurante/menus/pratos/remover/<%= dish._id %>" method="POST" class="d-inline">
+                      <form action="/restaurante/menus/pratos/remover/<%= dish._id %>?_method=DELETE" method="POST" class="d-inline">
                         <input type="hidden" name="_method" value="DELETE">
                         <button class="btn btn-outline-secondary btn-sm" onclick="return confirm('Remover este prato do menu?')">Remover do menu</button>
                       </form>
                     </div>
-                  </li>                  
+                  </li>
                 <% }) %>
               </ul>
             <% } %>
