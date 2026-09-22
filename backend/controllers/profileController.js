@@ -2,34 +2,43 @@ const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const Order = require('../models/order');
 const Review = require('../models/review');
+const { wrapAll } = require('../utils/asyncHandler');
+const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
 
+/** Campos que cada tipo de conta pode alterar no próprio perfil (tudo o resto é ignorado). */
+const EDITABLE_FIELDS = {
+  customer: ['name', 'birthDate', 'phone', 'nif', 'address'],
+  admin: ['name', 'birthDate', 'phone', 'nif', 'address'],
+  restaurant: ['name', 'phone', 'foundedAt', 'address'],
+};
+
+const sameId = (a, b) => String(a) === String(b);
+
+/**
+ * Um restaurante avança o estado de uma das SUAS encomendas (pendente → em preparação →
+ * expedida → entregue). Antes, qualquer utilizador autenticado podia pôr qualquer encomenda
+ * em qualquer estado.
+ */
 const updateOrderState = async (req, res) => {
   const { id } = req.params;
   const { state } = req.body;
 
-  try {
-    const order = await Order.findById(id);
-
-    if (!order) {
-      return res.status(404).json({ message: 'Encomenda não encontrada.' });
-    }
-
-    order.state = state;
-    await order.save();
-
-    res.status(200).json({ message: 'Estado da encomenda atualizado com sucesso.', order });
-  } catch (error) {
-    console.error('Erro ao atualizar estado da encomenda:', error);
-    res.status(500).json({ message: 'Erro no servidor.' });
+  const order = await Order.findById(id);
+  if (!order) {
+    return res.status(404).json({ message: 'Encomenda não encontrada.' });
   }
-};
 
-const renderProfilePage = (req, res) => {
-  res.render('profile/profile');
-};
+  const isOwner = req.user.userType === 'restaurant' && sameId(order.restaurantId, req.user._id);
+  if (!isOwner && req.user.userType !== 'admin') {
+    return res.status(403).json({ message: 'Só o restaurante da encomenda pode alterar o seu estado.' });
+  }
+  if (!isValidRestaurantTransition(order.state, state)) {
+    return res.status(400).json({ message: `Não é possível passar de "${order.state}" para "${state}".` });
+  }
 
-const renderUpdateProfilePage = (req, res) => {
-  res.render('profile/updateProfile', { errors: [] });
+  order.state = state;
+  await order.save();
+  res.json({ message: 'Estado da encomenda atualizado com sucesso.', order });
 };
 
 const getProfile = async (req, res) => {
@@ -66,11 +75,11 @@ const getOrderHistory = async (req, res) => {
     let orders;
 
     if (req.user?.userType === 'customer') {
-      orders = await Order.find({ userId: req.user._id }).populate('dishes.dishId').populate('restaurantId');
+      orders = await Order.find({ userId: req.user._id }).populate('dishes.dishId').populate('restaurantId', 'name phone address logo');
     } else if (req.user?.userType === 'admin') {
       return res.status(403).json({ message: "Admins não têm histórico de encomendas." });
     } else {
-      orders = await Order.find({ restaurantId: req.user._id }).populate('dishes.dishId').populate('userId');
+      orders = await Order.find({ restaurantId: req.user._id }).populate('dishes.dishId').populate('userId', 'name username phone address');
     } 
 
     res.json(orders);
@@ -87,16 +96,19 @@ const updateProfile = async (req, res) => {
   try {
     const Model = userType === 'restaurant' ? Restaurant : User;
 
-    const updateFields = { ...req.body };
+    // Só se copiam campos permitidos: antes era possível enviar "userType": "admin" ou
+    // "isChecked": true e ganhar privilégios.
+    const allowed = EDITABLE_FIELDS[userType] || [];
+    const updateFields = {};
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) updateFields[field] = req.body[field];
+    });
 
     if (req.file) {
       const imageField = userType === 'restaurant' ? 'logo' : 'profilePicture';
       const subfolder = userType === 'restaurant' ? 'logos' : 'profilePictures';
       updateFields[imageField] = `/uploads/${subfolder}/${req.file.filename}`;
     }
-
-    const excluded = ['_id', '__v', 'email', 'username', 'password'];
-    excluded.forEach(field => delete updateFields[field]);
 
     await Model.findByIdAndUpdate(
       userId,
@@ -127,16 +139,9 @@ const cancelOrder = async (req, res) => {
       return res.status(403).json({ message: "Não tens permissão para cancelar este pedido." });
     }
 
-    const now = new Date();
-    const orderDate = new Date(order.orderDate);
-    const minutesSinceOrder = (now - orderDate) / (1000 * 60);
-
-    if (minutesSinceOrder > 5) {
-      return res.status(400).json({ message: "O tempo para cancelar este pedido já passou." });
-    }
-
-    if (order.state !== 'pendente') {
-      return res.status(400).json({ message: "O pedido já foi processado e não pode ser cancelado." });
+    const decision = canCustomerCancel(order);
+    if (!decision.allowed) {
+      return res.status(400).json({ message: decision.reason });
     }
 
     order.state = 'cancelada';
@@ -159,6 +164,10 @@ const submitReview = async (req, res) => {
 
     if (order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: "Sem permissão para avaliar este pedido." });
+    }
+
+    if (order.state !== 'entregue') {
+      return res.status(400).json({ message: "Só é possível avaliar encomendas já entregues." });
     }
 
     const existingReview = await Review.findOne({ orderId });
@@ -199,7 +208,7 @@ const renderReviewPage = async (req, res) => {
 
   try {
     const order = await Order.findById(orderId)
-      .populate('restaurantId')
+      .populate('restaurantId', 'name logo')
       .populate('dishes.dishId')
       .lean();
 
@@ -227,18 +236,17 @@ const loadOrderDetails = async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId)
       .populate('dishes.dishId')
-      .populate('restaurantId');
-    if (!order) return res.status(404).json({ message: 'Encomenda não encontrada.' });
+      .populate('restaurantId', 'name phone address logo');
+    const canSee = order && (sameId(order.userId, req.user._id) || req.user.userType === 'admin');
+    if (!canSee) return res.status(404).json({ message: 'Encomenda não encontrada.' });
     res.json(order);
   } catch (err) {
     res.status(500).json({ message: 'Erro ao buscar encomenda.' });
   }
 };
 
-module.exports = {
+module.exports = wrapAll({
   updateOrderState,
-  renderProfilePage,
-  renderUpdateProfilePage,
   getProfile,
   getOrderHistory,
   updateProfile,
@@ -246,4 +254,4 @@ module.exports = {
   submitReview,
   renderReviewPage,
   loadOrderDetails
-};
+});

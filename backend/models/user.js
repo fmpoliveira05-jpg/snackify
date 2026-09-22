@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true, validate: nameValidator },
   username: { type: String, unique: true, required: true, validate: usernameValidator },
   email: { type: String, unique: true, required: true, validate: emailValidator },
-  password: { type: String, required: true },
+  password: { type: String, required: true, select: false },
   birthDate: { type: Date, required: true, validate: birthDateValidator },
   address: {
     street: { type: String, required: true, validate: streetValidator },

@@ -5,10 +5,26 @@ const Category = require('../models/category');
 const Review = require('../models/review');
 const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
 const { selectedDishesValidator } = require('../models/backend-validations/dishValidations');
+const { wrapAll } = require('../utils/asyncHandler');
+const escapeRegex = require('../utils/escapeRegex');
+const { MAX_DISHES_PER_MENU } = require('../services/orderRules');
+
+const toArray = (value) => (value === undefined || value === null ? [] : [].concat(value));
+
+/** Procura um prato do restaurante autenticado; pratos de outros restaurantes "não existem". */
+const findOwnDish = (req, id) => Dish.findOne({ _id: id, restaurantId: req.user._id });
+
+/** Constrói a lista de preços a partir dos campos dose[] e price[] do formulário. */
+const buildPricePerDose = (dose, price) => {
+  const prices = toArray(price);
+  return toArray(dose).map((d, i) => ({ dose: d, price: Number.parseFloat(prices[i]) }));
+};
 
 const showRestaurantDashboard = async (req, res) => {
   try {
+    // Só as encomendas deste restaurante (antes o gráfico mostrava as de todos).
     const orderStats = await Order.aggregate([
+      { $match: { restaurantId: req.user._id } },
       { $group: { _id: "$state", count: { $sum: 1 } } },
       { $project: { _id: 0, state: "$_id", count: 1 } }
     ]);
@@ -54,7 +70,8 @@ const searchMenus = async (req, res) => {
 
     if (["title", "description"].includes(field)) {
       const filter = {
-        [field]: { $regex: trimmedValue, $options: "i" }
+        restaurantId: req.user._id,
+        [field]: { $regex: escapeRegex(trimmedValue), $options: "i" }
       };
       menus = await Menu.find(filter);
     }
@@ -63,6 +80,7 @@ const searchMenus = async (req, res) => {
       const doseTarget = field === "priceFull" ? "1" : "1/2";
 
       const matchingDishes = await Dish.find({
+        restaurantId: req.user._id,
         pricePerDose: {
           $elemMatch: {
             dose: doseTarget,
@@ -130,10 +148,10 @@ const addMenu = async (req, res) => {
   try {
     const { title, description, selectedDishes } = req.body;
 
-    const dishIds = Array.isArray(selectedDishes) ? selectedDishes : [selectedDishes];
+    const dishIds = toArray(selectedDishes);
 
-    if (!dishIds || dishIds.length > 10) {
-      return res.status(400).send('Seleciona no máximo 10 pratos.');
+    if (dishIds.length > MAX_DISHES_PER_MENU) {
+      return res.status(400).send(`Um menu pode ter no máximo ${MAX_DISHES_PER_MENU} pratos.`);
     }
 
     const newMenu = new Menu({
@@ -203,9 +221,18 @@ const updateMenu = async (req, res) => {
     await menu.save();
 
     if (availableDishes) {
-      const selectedDishIds = Array.isArray(availableDishes)
-        ? availableDishes
-        : [availableDishes];
+      const selectedDishIds = toArray(availableDishes);
+
+      // O limite de 10 pratos conta com os que o menu já tem.
+      const alreadyInMenu = await Dish.countDocuments({ menuId: menu._id });
+      const newOnes = await Dish.countDocuments({
+        _id: { $in: selectedDishIds },
+        restaurantId: req.user._id,
+        $or: [{ menuId: null }, { menuId: { $exists: false } }]
+      });
+      if (alreadyInMenu + newOnes > MAX_DISHES_PER_MENU) {
+        return res.status(400).send(`Um menu pode ter no máximo ${MAX_DISHES_PER_MENU} pratos.`);
+      }
 
       await Dish.updateMany(
         {
@@ -265,7 +292,8 @@ const removeDishFromMenu = async (req, res) => {
 
 const showEditDishForm = async (req, res) => {
   try {
-    const dish = await Dish.findById(req.params.id);
+    const dish = await findOwnDish(req, req.params.id);
+    if (!dish) return res.status(404).send('Prato não encontrado.');
     const categories = await Category.find();
     res.render('dishes/updateDish', { categories, dish, errors: [], oldInput: {} });
   } catch (err) {
@@ -276,7 +304,8 @@ const showEditDishForm = async (req, res) => {
 
 const updateDish = async (req, res) => {
   try {
-    const dish = await Dish.findById(req.params.id);
+    const dish = await findOwnDish(req, req.params.id);
+    if (!dish) return res.status(404).send('Prato não encontrado.');
 
     const { name, description, category, dose, price } = req.body;
 
@@ -294,10 +323,7 @@ const updateDish = async (req, res) => {
     dish.description = description;
     dish.category = category;
 
-    dish.pricePerDose = dose.map((d, i) => ({
-      dose: d,
-      price: parseFloat(price[i])
-    }));
+    dish.pricePerDose = buildPricePerDose(dose, price);
 
     if (req.file) {
       dish.image = `/uploads/dishes/${req.file.filename}`;
@@ -313,7 +339,7 @@ const updateDish = async (req, res) => {
 
 const deleteDish = async (req, res) => {
   try {
-    const dish = await Dish.findById(req.params.id);
+    const dish = await findOwnDish(req, req.params.id);
     if (!dish) return res.status(404).send('Prato não encontrado.');
 
     await dish.deleteOne();
@@ -340,10 +366,7 @@ const addDish = async (req, res) => {
 
     const nutritionData = await fetchOpenFoodData(name);
 
-    const pricePerDose = dose.map((d, i) => ({
-      dose: d,
-      price: parseFloat(price[i])
-    }));
+    const pricePerDose = buildPricePerDose(dose, price);
 
     const newDish = new Dish({
       name,
@@ -381,7 +404,8 @@ const listDishes = async (req, res) => {
 
 const showDishDetails = async (req, res) => {
   try {
-    const dish = await Dish.findById(req.params.id).populate('category', 'name');
+    const dish = await Dish.findOne({ _id: req.params.id, restaurantId: req.user._id }).populate('category', 'name');
+    if (!dish) return res.status(404).send('Prato não encontrado.');
 
     const nutriInfo = dish.nutriInfo || null;
 
@@ -402,7 +426,7 @@ const listReviews = async (req, res) => {
   }
 };
 
-module.exports = {
+module.exports = wrapAll({
   showRestaurantDashboard,
   listMenus,
   searchMenus,
@@ -420,4 +444,4 @@ module.exports = {
   listDishes,
   showDishDetails,
   listReviews
-};
+});

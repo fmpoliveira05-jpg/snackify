@@ -20,7 +20,7 @@ const RestaurantSchema = new mongoose.Schema({
   name: { type: String, required: true, validate: nameValidator },
   username: { type: String, unique: true, required: true, validate: usernameValidator },
   email: { type: String, unique: true, required: true, validate: emailValidator },
-  password: { type: String, required: true },
+  password: { type: String, required: true, select: false },
   address: {
     street: { type: String, required: true, validate: streetValidator },
     number: { type: String, required: true, validate: numberValidator },

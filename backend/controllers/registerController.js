@@ -1,6 +1,20 @@
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const bcrypt = require('bcryptjs');
+const { wrapAll } = require('../utils/asyncHandler');
+
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/;
+const PASSWORD_MESSAGE = 'A password deve ter entre 8 e 20 caracteres e conter uma letra maiúscula, uma minúscula, um número e um caractere especial.';
+
+/**
+ * O login procura o username primeiro nos clientes e depois nos restaurantes, por isso
+ * username e email têm de ser únicos nas duas coleções ao mesmo tempo.
+ */
+const isTaken = async ({ username, email }) => {
+  const filter = { $or: [{ email }, { username }] };
+  const [user, restaurant] = await Promise.all([User.exists(filter), Restaurant.exists(filter)]);
+  return Boolean(user || restaurant);
+};
 
 const showCustomerRegisterPage = (req, res) => {
     if (req.user) {
@@ -33,17 +47,9 @@ const customerRegister = async (req, res) => {
     birthDate,
     phone,
     nif,
-    address: {
-      street,
-      number,
-      floor,
-      zipCode,
-      place,
-      district,
-      country,
-      coordinates
-    }
+    address = {}
   } = req.body;
+  const { street, number, floor, zipCode, place, district, country, coordinates } = address;
 
   const latitude = coordinates?.latitude || null;
   const longitude = coordinates?.longitude || null;
@@ -51,13 +57,11 @@ const customerRegister = async (req, res) => {
   const userType = "customer";
 
   try {
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/;
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: 'A password deve ter entre 8 e 20 caracteres e conter uma letra maiúscula, uma minúscula, um número e um caractere especial.' });
+    if (typeof password !== 'string' || !PASSWORD_RULE.test(password)) {
+      return res.status(400).json({ message: PASSWORD_MESSAGE });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
+    if (await isTaken({ username, email })) {
       return res.status(400).json({ message: "Email ou username já em uso!" });
     }
 
@@ -101,31 +105,20 @@ const restaurantRegister = async (req, res) => {
         phone,
         nif,
         foundedAt,
-        isChecked,
-        address: {
-            street,
-            number,
-            floor,
-            zipCode,
-            place,
-            district,
-            country,
-            coordinates
-        }
+        address = {}
     } = req.body;
+    const { street, number, floor, zipCode, place, district, country, coordinates } = address;
 
     const latitude = coordinates?.latitude || null;
     const longitude = coordinates?.longitude || null;
     const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
 
     try {
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/;
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ message: 'A password deve ter entre 8 e 20 caracteres e conter uma letra maiúscula, uma minúscula, um número e um caractere especial.' });
+        if (typeof password !== 'string' || !PASSWORD_RULE.test(password)) {
+            return res.status(400).json({ message: PASSWORD_MESSAGE });
         }
 
-        const existingRestaurant = await Restaurant.findOne({ $or: [{ email }, { username }] });
-        if (existingRestaurant) {
+        if (await isTaken({ username, email })) {
             return res.status(400).json({ message: "Email ou username já em uso!" });
         }
 
@@ -139,7 +132,8 @@ const restaurantRegister = async (req, res) => {
             phone,
             nif,
             foundedAt,
-            isChecked,
+            // Um restaurante novo fica sempre por validar: só um administrador o pode aprovar.
+            isChecked: false,
             logo,
             address: {
                 street,
@@ -160,9 +154,9 @@ const restaurantRegister = async (req, res) => {
     }
 };
 
-module.exports = {
+module.exports = wrapAll({
     showCustomerRegisterPage,
     showRestaurantRegisterPage,
     customerRegister,
     restaurantRegister
-};
+});

@@ -1,5 +1,6 @@
 const Restaurant = require('../models/restaurant');
 const Category = require('../models/category');
+const { wrapAll } = require('../utils/asyncHandler');
 
 const showPendingRestaurants = async (req, res) => {
   try {
@@ -95,7 +96,7 @@ const disableRestaurant = async (req, res) => {
     }
 };
 
-module.exports = {
+module.exports = wrapAll({
     showPendingRestaurants,
     showCheckedRestaurants,
     validateRestaurant,
@@ -105,4 +106,4 @@ module.exports = {
     deleteCategory,
     deleteRestaurant,
     disableRestaurant
-};
+});

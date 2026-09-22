@@ -5,10 +5,9 @@ const auth = require('../middlewares/authMiddleware');
 const userValidator = require('../middlewares/frontend-validations/userValidator');
 const restaurantValidator = require('../middlewares/frontend-validations/restaurantValidator');
 const validateRequest = require('../middlewares/frontend-validations/validateRequest');
-const { isCustomer } = require('../middlewares/roleMiddleware');
+const { isCustomer, isRestaurant } = require('../middlewares/roleMiddleware');
 const {
   updateOrderState,
-  renderUpdateProfilePage,
   getProfile,
   getOrderHistory,
   updateProfile,
@@ -28,21 +27,9 @@ const getValidatorForUser = (userType) => {
   throw new Error(`Tipo de utilizador desconhecido: ${userType}`);
 };
 
-router.patch('/api/orders/:id/state', auth, updateOrderState);
+router.patch('/api/orders/:id/state', auth, isRestaurant, updateOrderState);
 
-/**
- * @swagger
- * /perfil/editar:
- *   get:
- *     summary: Nós criamos esta rota com o objetivo de abrir a página de edição do perfil de utilizador
- *     tags: [Perfil]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Página de edição do perfil.
- */
-router.get('/perfil/editar', auth, renderUpdateProfilePage);
+
 
 /**
  * @swagger
@@ -147,7 +134,7 @@ router.put(
     };
     run();
   },
-  validateRequest('profile/updateProfile'),
+  validateRequest(null),
   updateProfile
 );
 

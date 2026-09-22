@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/uploadMiddleware');
-const checkUser = require('../middlewares/checkUserMiddleware');
+const { redirectIfAuthenticated: checkUser } = require('../middlewares/authMiddleware');
 
 const {
     showCustomerRegisterPage,

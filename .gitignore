@@ -1,0 +1,25 @@
+# Dependências
+node_modules/
+
+# Configuração local (nunca publicar credenciais)
+.env
+.env.*
+!.env.example
+
+# Ficheiros enviados pelos utilizadores
+backend/uploads/*/*
+!backend/uploads/*/.gitkeep
+
+# Build do Angular
+frontend/dist/
+frontend/.angular/
+backend/public/browser/
+
+# Relatórios de testes
+coverage/
+
+# Sistema operativo / IDEs
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/

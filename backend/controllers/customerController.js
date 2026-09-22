@@ -3,363 +3,300 @@ const Dish = require('../models/dish');
 const Menu = require('../models/menu');
 const Order = require('../models/order');
 const Cart = require('../models/cart');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const { config } = require('../config/env');
+const { wrapAll } = require('../utils/asyncHandler');
+const {
+  CART_TIMEOUT_MINUTES,
+  computeBlockedUntil,
+  computeTotal,
+  isCartExpired,
+} = require('../services/orderRules');
+
+// O Stripe é opcional: sem chave configurada o pagamento online fica simplesmente indisponível.
+const stripe = config.stripeSecretKey ? require('stripe')(config.stripeSecretKey) : null;
+
+/** Campos de um restaurante que um cliente pode ver (nunca a password, o NIF ou o estado interno). */
+const PUBLIC_RESTAURANT_FIELDS = 'name email phone address logo foundedAt createdAt';
+const VALID_DOSES = ['1/2', '1'];
+
+const sameId = (a, b) => String(a) === String(b);
+
+/** Carrega o carrinho do cliente, esvaziando-o se o prazo de 10 minutos já tiver passado. */
+async function loadCart(userId) {
+  let cart = await Cart.findOne({ userId }).populate('items.dishId');
+  if (!cart) {
+    cart = await Cart.create({ userId });
+  }
+  if (isCartExpired(cart.timeout)) {
+    cart.items = [];
+    cart.total = 0;
+    cart.timeout = null;
+    await cart.save();
+  }
+  return cart;
+}
+
+/** Datas dos cancelamentos recentes do cliente (os últimos 3 meses chegam para a regra dos 2 meses). */
+async function recentCancellations(userId) {
+  const since = new Date();
+  since.setMonth(since.getMonth() - 3);
+  const cancelled = await Order.find({ userId, state: 'cancelada', orderDate: { $gte: since } }).select('orderDate');
+  return cancelled.map((order) => order.orderDate);
+}
 
 const listRestaurants = async (req, res) => {
-  try {
-    const restaurants = await Restaurant.find();
-    res.json(restaurants);
-  } catch (err) {
-    res.status(500).send('Erro ao carregar os restaurantes.');
-  }
+  const restaurants = await Restaurant.find({ isChecked: true }).select(PUBLIC_RESTAURANT_FIELDS);
+  res.json(restaurants);
 };
 
 const readRestaurant = async (req, res) => {
-  try {
-    const restaurant = await Restaurant.findById(req.params.id);
-    if (!restaurant) return res.status(404).send('Restaurante não encontrado.');
-    res.json(restaurant);
-  } catch (err) {
-    console.error('Erro ao carregar restaurante:', err);
-    res.status(500).send('Erro ao carregar restaurante.');
-  }
+  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true }).select(PUBLIC_RESTAURANT_FIELDS);
+  if (!restaurant) return res.status(404).json({ message: 'Restaurante não encontrado.' });
+  res.json(restaurant);
 };
 
 const readMenu = async (req, res) => {
-  try {
-    const menu = await Menu.findById(req.params.id);
-    if (!menu) {
-      return res.status(404).json({ message: 'Menu não encontrado' });
-    }
-    res.json(menu);
-  } catch (error) {
-    res.status(500).json({ message: 'Erro ao carregar menu', error });
-  }
+  const menu = await Menu.findById(req.params.id);
+  if (!menu) return res.status(404).json({ message: 'Menu não encontrado.' });
+  res.json(menu);
 };
 
 const listMenus = async (req, res) => {
-  try {
-    const restaurant = await Restaurant.findById(req.params.id);
-    if (!restaurant) return res.status(404).send('Restaurante não encontrado.');
+  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true });
+  if (!restaurant) return res.status(404).json({ message: 'Restaurante não encontrado.' });
 
-    const menus = await Menu.find({ restaurantId: restaurant._id });
+  const menus = await Menu.find({ restaurantId: restaurant._id });
+  const menusWithDishes = await Promise.all(menus.map(async (menu) => ({
+    ...menu.toObject(),
+    dishes: await Dish.find({ menuId: menu._id }),
+  })));
 
-    const menusComPratos = await Promise.all(menus.map(async menu => {
-      const pratos = await Dish.find({ menuId: menu._id });
-      return { ...menu.toObject(), dishes: pratos };
-    }));
-
-    res.json(menusComPratos);
-  } catch (err) {
-    console.error('Erro ao carregar os menus:', err);
-    res.status(500).send('Erro ao carregar os menus.');
-  }
+  res.json(menusWithDishes);
 };
 
 const listDishes = async (req, res) => {
-  try {
-    const menu = await Menu.findById(req.params.id);
-    if (!menu) return res.status(404).send('Menu não encontrado.');
-
-    const dishes = await Dish.find({ menuId: menu._id });
-
-    res.json(dishes);
-  } catch (err) {
-    console.error('Erro ao carregar os pratos:', err);
-    res.status(500).send('Erro ao carregar os pratos.');
-  }
+  const menu = await Menu.findById(req.params.id);
+  if (!menu) return res.status(404).json({ message: 'Menu não encontrado.' });
+  res.json(await Dish.find({ menuId: menu._id }));
 };
 
 const showCustomerDashboard = async (req, res) => {
-  try {
-    const userId = req.user._id;
+  const userId = req.user._id;
 
-    const orders = await Order.find({ userId })
-      .sort({ orderDate: -1 })
-      .limit(5)
-      .populate('dishes.dishId');
+  const orders = await Order.find({ userId })
+    .sort({ orderDate: -1 })
+    .limit(5)
+    .populate('dishes.dishId');
 
-    const orderTotals = orders.map(order => {
-      let total = 0;
+  const orderTotals = orders.map((order) => ({
+    orderCode: order.orderCode || order._id.toString().slice(-5),
+    total: computeTotal(order.dishes),
+  }));
 
-      order.dishes.forEach(item => {
-        const dish = item.dishId;
-        const dosePrice = dish.pricePerDose.find(p => p.dose === item.dose);
-        if (dosePrice) {
-          total += dosePrice.price * item.amount;
-        }
-      });
+  const blockedUntil = computeBlockedUntil(await recentCancellations(userId));
 
-      return {
-        orderCode: order.orderCode || order._id.toString().slice(-5),
-        total: total
-      };
-    });
-
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-    const cancelledOrders = await Order.find({
-      userId,
-      state: 'cancelada',
-      orderDate: { $gte: oneMonthAgo }
-    }).sort({ orderDate: 1 });
-
-    let blockedUntil = null;
-
-    if (cancelledOrders.length >= 5) {
-      const fifthCancelDate = cancelledOrders[4].orderDate;
-      blockedUntil = new Date(fifthCancelDate);
-      blockedUntil.setMonth(blockedUntil.getMonth() + 2);
-    }
-
-    res.json({
-      orderTotals,
-      isBlocked: !!blockedUntil,
-      blockedUntil: blockedUntil ? blockedUntil.toLocaleDateString('pt-PT') : null
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Erro ao carregar dados das encomendas.' });
-  }
+  res.json({
+    orderTotals,
+    isBlocked: Boolean(blockedUntil),
+    blockedUntil: blockedUntil ? blockedUntil.toLocaleDateString('pt-PT') : null,
+  });
 };
 
 const viewCart = async (req, res) => {
-    const userId = req.user._id;
-    let cart = await Cart.findOne({ userId }).populate('items.dishId');
-
-    if (!cart) {
-        cart = new Cart({ userId });
-        await cart.save();
-    }
-
-    const isExpired = cart.timeout && new Date() > cart.timeout;
-    if (isExpired) {
-        cart.items = [];
-        cart.total = 0;
-        cart.timeout = null;
-        await cart.save();
-    }
-
-    res.json(cart);
+  const cart = await loadCart(req.user._id);
+  res.json(cart);
 };
 
 const addToCart = async (req, res) => {
-    const { dishId, amount, dose } = req.body;
+  const { dishId, amount, dose } = req.body;
 
-    const userId = req.user._id;
+  const parsedAmount = Number.parseInt(amount, 10);
+  if (!Number.isInteger(parsedAmount) || parsedAmount < 1 || parsedAmount > 50) {
+    return res.status(400).json({ message: 'Quantidade inválida.' });
+  }
+  if (!VALID_DOSES.includes(dose)) {
+    return res.status(400).json({ message: 'Dose inválida.' });
+  }
 
-    const parsedAmount = parseInt(amount, 10);
-    if (!parsedAmount || parsedAmount < 1) {
-        return res.status(400).json({ message: 'Quantidade inválida.' });
-    }
+  // O prato é validado ANTES de mexer no carrinho (antes, um id inválido rebentava o servidor).
+  const dish = await Dish.findById(dishId);
+  if (!dish || !dish.pricePerDose.some((p) => p.dose === dose)) {
+    return res.status(404).json({ message: 'Prato ou dose não disponível.' });
+  }
+  const restaurant = await Restaurant.exists({ _id: dish.restaurantId, isChecked: true });
+  if (!restaurant) {
+    return res.status(404).json({ message: 'O restaurante deste prato não está disponível.' });
+  }
 
-    let cart = await Cart.findOne({ userId });
-    if (!cart) cart = new Cart({ userId });
+  const cart = await loadCart(req.user._id);
+  const otherRestaurant = cart.items.some((item) => item.dishId && !sameId(item.dishId.restaurantId, dish.restaurantId));
+  if (otherRestaurant) {
+    return res.status(400).json({ message: 'O carrinho só pode ter pratos de um restaurante. Esvazie-o primeiro.' });
+  }
 
-    const existingItem = cart.items.find(item =>
-        item.dishId.equals(dishId) && item.dose === dose
-    );
+  const existing = cart.items.find((item) => item.dishId && sameId(item.dishId._id, dish._id) && item.dose === dose);
+  if (existing) {
+    existing.amount += parsedAmount;
+  } else {
+    cart.items.push({ dishId: dish._id, amount: parsedAmount, dose });
+  }
+  if (!cart.timeout) {
+    cart.timeout = new Date(Date.now() + CART_TIMEOUT_MINUTES * 60 * 1000);
+  }
 
-    if (existingItem) {
-        existingItem.amount += parsedAmount;
-    } else {
-        cart.items.push({ dishId, amount: parsedAmount, dose});
-    }
-
-    const dish = await Dish.findById(dishId);
-    const priceEntry = dish.pricePerDose.find(p => p.dose === dose);
-
-    if (!priceEntry) {
-        return res.status(400).json({ message: 'Dose inválida.' });
-    }
-
-    const itemTotal = priceEntry.price * parsedAmount;
-    cart.total += itemTotal;
-
-    if (!cart.timeout) {
-        cart.timeout = new Date(Date.now() + 10 * 60 * 1000);
-    }
-
-    await cart.save();
-    await cart.populate('items.dishId');
-    res.json(cart);
+  await cart.populate('items.dishId');
+  cart.total = computeTotal(cart.items);
+  await cart.save();
+  res.json(cart);
 };
 
 const removeFromCart = async (req, res) => {
   const { dishId, dose } = req.query;
-  const userId = req.user._id;
+  const cart = await loadCart(req.user._id);
 
-  try {
-    let cart = await Cart.findOne({ userId }).populate('items.dishId');
-    if (!cart) return res.status(404).json({ message: 'Carrinho não encontrado.' });
-
-    const index = cart.items.findIndex(item =>
-      item.dishId._id.equals(dishId) && item.dose === dose
-    );
-
-    if (index !== -1) {
-      const item = cart.items[index];
-      const priceInfo = item.dishId.pricePerDose.find(p => p.dose === item.dose);
-      if (priceInfo) {
-        cart.total -= priceInfo.price * item.amount;
-      }
-
-      cart.items.splice(index, 1);
-
-      if (cart.items.length === 0) {
-        cart.total = 0;
-        cart.timeout = null;
-      }
-
-      await cart.save();
-      return res.status(200).json(cart);
-    } else {
-      return res.status(404).json({ message: 'Item não encontrado no carrinho.' });
-    }
-  } catch (err) {
-    console.error('Erro ao remover item do carrinho:', err);
-    return res.status(500).json({ message: 'Erro interno ao remover item.' });
+  const index = cart.items.findIndex((item) => item.dishId && sameId(item.dishId._id, dishId) && item.dose === dose);
+  if (index === -1) {
+    return res.status(404).json({ message: 'Item não encontrado no carrinho.' });
   }
+
+  cart.items.splice(index, 1);
+  cart.total = computeTotal(cart.items);
+  if (cart.items.length === 0) {
+    cart.timeout = null;
+  }
+  await cart.save();
+  res.json(cart);
 };
 
 const clearCart = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    await Cart.findOneAndUpdate({ userId }, { items: [], total: 0, timeout: null });
-    res.status(200).json({ message: 'Carrinho limpo.' });
-  } catch (error) {
-    console.error('Erro ao limpar carrinho:', error);
-    res.status(500).json({ message: 'Erro ao limpar carrinho.' });
-  }
+  await Cart.findOneAndUpdate({ userId: req.user._id }, { items: [], total: 0, timeout: null });
+  res.json({ message: 'Carrinho limpo.' });
 };
 
+/** Devolve uma encomenda do próprio cliente (antes qualquer cliente via qualquer encomenda). */
 const checkout = async (req, res) => {
-  const orderId = req.query.orderId;
-
-  try {
-    const order = await Order.findById(orderId).populate('dishes.dishId');
-    if (!order) {
-      return res.status(404).json({ message: "Encomenda não encontrada." });
-    }
-
-    return res.status(200).json(order);
-  } catch (err) {
-    console.error("Erro no checkout:", err);
-    res.status(500).json({ message: "Erro ao processar o checkout." });
-  }
+  const order = await Order.findOne({ _id: req.query.orderId, userId: req.user._id }).populate('dishes.dishId');
+  if (!order) return res.status(404).json({ message: 'Encomenda não encontrada.' });
+  res.json(order);
 };
 
 const createOrderFromCart = async (req, res) => {
   const userId = req.user._id;
 
-  try {
-    const cart = await Cart.findOne({ userId }).populate('items.dishId');
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({ message: 'Carrinho vazio.' });
-    }
-
-    const uniqueRestaurants = new Set(cart.items.map(item => item.dishId.restaurantId.toString()));
-    if (uniqueRestaurants.size > 1) {
-      return res.status(400).json({ message: 'Todos os pratos da encomenda devem ser do mesmo restaurante.' });
-    }
-
-    const restaurantId = cart.items[0].dishId.restaurantId;
-
-    const order = new Order({
-      userId,
-      restaurantId,
-      dishes: cart.items.map(item => ({
-        dishId: item.dishId._id,
-        amount: item.amount,
-        dose: item.dose
-      })),
-      state: "pendente",
-      orderDate: new Date(),
-      cancelTimeout: new Date(Date.now() + 5 * 60 * 1000),
-      orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`
+  const blockedUntil = computeBlockedUntil(await recentCancellations(userId));
+  if (blockedUntil) {
+    return res.status(403).json({
+      message: `Cancelou 5 encomendas num mês e só pode voltar a encomendar a partir de ${blockedUntil.toLocaleDateString('pt-PT')}.`,
     });
-
-    await order.save();
-
-    cart.items = [];
-    cart.total = 0;
-    cart.timeout = null;
-    await cart.save();
-
-    return res.status(201).json({
-      message: 'Encomenda criada com sucesso.',
-      orderId: order._id,
-      orderCode: order.orderCode
-    });
-  } catch (err) {
-    console.error("Erro ao criar encomenda:", err);
-    res.status(500).json({ message: 'Erro ao criar a encomenda.' });
   }
+
+  const cart = await loadCart(userId);
+  const items = cart.items.filter((item) => item.dishId);
+  if (items.length === 0) {
+    return res.status(400).json({ message: 'O carrinho está vazio ou expirou.' });
+  }
+
+  const restaurants = new Set(items.map((item) => String(item.dishId.restaurantId)));
+  if (restaurants.size > 1) {
+    return res.status(400).json({ message: 'Todos os pratos da encomenda devem ser do mesmo restaurante.' });
+  }
+
+  const order = await Order.create({
+    userId,
+    restaurantId: items[0].dishId.restaurantId,
+    dishes: items.map((item) => ({ dishId: item.dishId._id, amount: item.amount, dose: item.dose })),
+    state: 'pendente',
+    orderDate: new Date(),
+    cancelTimeout: new Date(Date.now() + 5 * 60 * 1000),
+    orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`,
+    identityDoc: typeof req.body?.identityDoc === 'string' ? req.body.identityDoc.trim() : undefined,
+  });
+
+  cart.items = [];
+  cart.total = 0;
+  cart.timeout = null;
+  await cart.save();
+
+  res.status(201).json({
+    message: 'Encomenda criada com sucesso.',
+    orderId: order._id,
+    orderCode: order.orderCode,
+  });
 };
 
+/**
+ * Cria a sessão de pagamento do Stripe a partir da encomenda guardada na base de dados.
+ * Os preços enviados pelo browser são ignorados (antes, o cliente podia alterá-los).
+ */
 const createStripeSession = async (req, res) => {
-  try {
-    console.log(req.body);
-    const { orderId, dishes } = req.body;
+  if (!stripe) {
+    return res.status(503).json({ message: 'O pagamento online não está configurado neste servidor.' });
+  }
 
-    const line_items = dishes.map(item => ({
+  const order = await Order.findOne({ _id: req.body.orderId, userId: req.user._id, state: 'pendente' }).populate('dishes.dishId');
+  if (!order) return res.status(404).json({ message: 'Encomenda não encontrada ou já paga.' });
+
+  const lineItems = order.dishes
+    .filter((item) => item.dishId)
+    .map((item) => ({
       price_data: {
         currency: 'eur',
-        product_data: {
-          name: item.dishId.name,
-        },
-        unit_amount: item.dishId.pricePerDose.find(p => p.dose === item.dose).price * 100,
+        product_data: { name: `${item.dishId.name} (dose ${item.dose})` },
+        unit_amount: Math.round(item.dishId.pricePerDose.find((p) => p.dose === item.dose).price * 100),
       },
       quantity: item.amount,
     }));
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items,
-      mode: 'payment',
-      success_url: `${req.headers.origin}/cliente/api/carrinho/pagamento-sucesso?orderId=${orderId}`,
-      cancel_url: `${req.headers.origin}/user/perfil`,
-    });
+  const session = await stripe.checkout.sessions.create({
+    mode: 'payment',
+    payment_method_types: ['card'],
+    line_items: lineItems,
+    metadata: { orderId: String(order._id) },
+    success_url: `${config.serverUrl}/cliente/api/carrinho/pagamento-sucesso?orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${config.clientUrl}/cliente/dashboard`,
+  });
 
-    res.json({ url: session.url });
-  } catch (err) {
-    console.error("Erro a criar sessão Stripe:", err);
-    res.status(500).json({ error: "Erro ao criar sessão de pagamento." });
-  }
+  res.json({ url: session.url });
 };
 
+/**
+ * O Stripe redireciona para aqui depois do pagamento. A sessão é confirmada junto do Stripe
+ * antes de marcar a encomenda como paga (antes bastava abrir este URL para "pagar").
+ */
 const handlePaymentSuccess = async (req, res) => {
-  const { orderId } = req.query;
+  const { orderId, session_id: sessionId } = req.query;
+  if (!stripe || !sessionId) {
+    return res.status(400).json({ message: 'Pagamento não confirmado.' });
+  }
 
-  try {
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: "Encomenda não encontrada." });
+  const order = await Order.findOne({ _id: orderId, userId: req.user._id });
+  if (!order) return res.status(404).json({ message: 'Encomenda não encontrada.' });
 
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (session.payment_status !== 'paid' || session.metadata?.orderId !== String(order._id)) {
+    return res.status(402).json({ message: 'O pagamento não foi concluído.' });
+  }
+
+  if (order.state === 'pendente') {
     order.state = 'concluída';
     await order.save();
-
-    res.redirect('http://localhost:4200/cliente/dashboard');
-  } catch (err) {
-    console.error("Erro ao finalizar pagamento:", err);
-    res.status(500).json({ message: "Erro ao concluir o pagamento." });
   }
+  res.redirect(`${config.clientUrl}/cliente/dashboard`);
 };
 
-module.exports = {
-    listRestaurants,
-    readRestaurant,
-    readMenu,
-    listMenus,
-    listDishes,
-    showCustomerDashboard,
-    viewCart,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    checkout,
-    createOrderFromCart,
-    createStripeSession,
-    handlePaymentSuccess
-};
+module.exports = wrapAll({
+  listRestaurants,
+  readRestaurant,
+  readMenu,
+  listMenus,
+  listDishes,
+  showCustomerDashboard,
+  viewCart,
+  addToCart,
+  removeFromCart,
+  clearCart,
+  checkout,
+  createOrderFromCart,
+  createStripeSession,
+  handlePaymentSuccess,
+});

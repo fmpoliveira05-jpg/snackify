@@ -2,9 +2,9 @@
   <div class="container">
     <a class="navbar-brand" href="<%= user 
       ? (
-        user.userType === 'customer' ? '/cliente/dashboard' 
+        user.userType === 'customer' ? clientUrl + '/cliente/dashboard' 
         : user.userType === 'restaurant' ? '/restaurante/dashboard'
-        : user.userType === 'admin' ? '/user/perfil'
+        : user.userType === 'admin' ? clientUrl + '/user/perfil'
         : '/'
       )
       : '/'
@@ -19,17 +19,17 @@
       <ul class="navbar-nav ms-auto">
         <% if (!user) { %>
           <li class="nav-item">
-            <a href="/login" class="nav-link">login</a>
+            <a href="<%= clientUrl %>/login" class="nav-link">login</a>
           </li>
         <% } else { %>
           <% if (currentPath !== '/user/perfil') { %>
             <li class="nav-item">
-              <a href="/user/perfil" class="nav-link">perfil</a>
+              <a href="<%= clientUrl %>/user/perfil" class="nav-link">perfil</a>
             </li>
           <% } %>
           <% if ((user.userType === "customer" || user.userType === "admin") && currentPath !== '/carrinho') { %>
             <li class="nav-item">
-              <a href="/cliente/carrinho" class="nav-link">carrinho</a>
+              <a href="<%= clientUrl %>/cliente/carrinho" class="nav-link">carrinho</a>
             </li>
           <% } %>
         <% } %>          
