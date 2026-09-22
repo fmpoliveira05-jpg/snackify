@@ -5,6 +5,9 @@ import { AuthService } from '../../services/auth.service';
 import { filter } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Barra de navegação; mostra as ligações conforme o tipo de conta autenticada.
+ */
 @Component({
   selector: 'app-navbar',
   standalone: true,

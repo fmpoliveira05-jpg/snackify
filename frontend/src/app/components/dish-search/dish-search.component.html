@@ -1,0 +1,50 @@
+<div class="container mt-5">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h2 class="mb-0">Pesquisar pratos</h2>
+    <a routerLink="/cliente/restaurantes" class="btn btn-outline-primary">Ver restaurantes</a>
+  </div>
+
+  <form class="row g-2 mb-4" (ngSubmit)="search()">
+    <div class="col-12 col-md-4">
+      <input type="search" class="form-control" placeholder="Nome ou descrição" name="q" [(ngModel)]="filters.q" />
+    </div>
+    <div class="col-12 col-md-4">
+      <select class="form-select" name="category" [(ngModel)]="filters.category" aria-label="Categoria">
+        <option value="">Todas as categorias</option>
+        <option *ngFor="let c of categories" [value]="c._id">{{ c.name }}</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-4">
+      <input type="search" class="form-control" placeholder="Restaurante" name="restaurant" [(ngModel)]="filters.restaurant" />
+    </div>
+    <div class="col-12 col-md-4">
+      <input type="search" class="form-control" placeholder="Localidade ou distrito" name="location" [(ngModel)]="filters.location" />
+    </div>
+    <div class="col-6 col-md-2">
+      <input type="number" min="0" step="0.5" class="form-control" placeholder="Preço mín. (€)" name="minPrice" [(ngModel)]="filters.minPrice" />
+    </div>
+    <div class="col-6 col-md-2">
+      <input type="number" min="0" step="0.5" class="form-control" placeholder="Preço máx. (€)" name="maxPrice" [(ngModel)]="filters.maxPrice" />
+    </div>
+    <div class="col-12 col-md-2">
+      <select class="form-select" name="sort" [(ngModel)]="filters.sort" (change)="search()" aria-label="Ordenar">
+        <option value="nome">Nome (A-Z)</option>
+        <option value="preco-asc">Preço: mais barato</option>
+        <option value="preco-desc">Preço: mais caro</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-fill">Procurar</button>
+      <button type="button" class="btn btn-outline-secondary" (click)="clear()">Limpar</button>
+    </div>
+  </form>
+
+  <p class="text-muted small">O preço usado nos filtros e na ordenação é o da dose mais barata.</p>
+  <p *ngIf="!isLoading && dishes.length === 0" class="text-muted">Nenhum prato corresponde à pesquisa.</p>
+
+  <div class="row">
+    <div *ngFor="let dish of dishes" class="col-md-4 mb-3">
+      <app-dish-card [dish]="dish" [showRestaurant]="true" (add)="addToCart($event)"></app-dish-card>
+    </div>
+  </div>
+</div>

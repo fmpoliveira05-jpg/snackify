@@ -5,6 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Login; depois de entrar, cada tipo de conta segue para a sua página inicial (o restaurante vai para o back-office EJS).
+ */
 @Component({
   selector: 'app-login',
   standalone: true,

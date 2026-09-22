@@ -10,6 +10,9 @@ const HOME_BY_TYPE = {
   admin: '/user/perfil',
 };
 
+/**
+ * Indica se o pedido veio de uma página do back-office (e não da API), para decidir entre redirecionar e responder em JSON.
+ */
 const wantsHtml = (req) => req.accepts(['json', 'html']) === 'html' && !req.xhr;
 
 /**

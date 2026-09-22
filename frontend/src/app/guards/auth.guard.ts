@@ -8,6 +8,9 @@ import { Observable, of } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 
+/**
+ * Só deixa abrir a página se houver sessão; caso contrário, manda para o login.
+ */
 @Injectable({
   providedIn: 'root'
 })

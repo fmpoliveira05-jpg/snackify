@@ -3,6 +3,9 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CommonModule } from '@angular/common';
 import { ProfileService } from '../../../services/profile.service';
 
+/**
+ * Formulário do administrador para criar categorias de pratos.
+ */
 @Component({
   selector: 'app-create-categories',
   standalone: true,

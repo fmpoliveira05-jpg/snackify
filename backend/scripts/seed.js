@@ -35,6 +35,9 @@ function adminData(passwordHash) {
   };
 }
 
+/**
+ * Cria o administrador inicial e as categorias por omissão (pode correr-se mais do que uma vez).
+ */
 async function seed() {
   assertRequiredConfig();
   await mongoose.connect(config.mongoUri);

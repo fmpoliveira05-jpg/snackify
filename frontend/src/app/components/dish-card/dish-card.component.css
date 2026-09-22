@@ -1,0 +1,11 @@
+.dish-image {
+  height: 180px;
+  object-fit: cover;
+}
+
+.nutri { color: #fff; }
+.nutri-a { background-color: #038141; }
+.nutri-b { background-color: #85bb2f; }
+.nutri-c { background-color: #fecb02; color: #222; }
+.nutri-d { background-color: #ee8100; }
+.nutri-e { background-color: #e63e11; }

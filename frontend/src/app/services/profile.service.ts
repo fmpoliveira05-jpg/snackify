@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+/**
+ * Perfil, histórico e estado das encomendas, e operações de administração (restaurantes e categorias).
+ */
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
   private baseUrl = `${environment.apiUrl}/user/perfil`;

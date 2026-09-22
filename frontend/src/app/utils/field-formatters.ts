@@ -20,7 +20,8 @@ export const fieldLabels = {
   foundedAt: "Data de fundação",
   createdAt: "Data de registo",
   profilePicture: "Foto de perfil",
-  logo: "Logótipo"
+  logo: "Logótipo",
+  settings: "Funcionamento"
 };
 
 export const fieldValueFormat = (key: string, value: any) => {
@@ -32,6 +33,10 @@ export const fieldValueFormat = (key: string, value: any) => {
 
   if (key === "userType") {
     return value === "customer" ? "Cliente" : value === "admin" ? "Administrador" : "Restaurante";
+  }
+
+  if (key === "settings" && typeof value === "object") {
+    return `preparação ${value.preparationMinutes} min, entrega ${value.deliveryMinutes} min, raio de ${value.maxDeliveryKm} km, até ${value.maxActiveOrders} encomendas em curso`;
   }
 
   if (key === "address" && typeof value === "object") {

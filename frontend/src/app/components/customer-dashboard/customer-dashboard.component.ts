@@ -5,6 +5,9 @@ import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { OrderChartComponent } from '../charts/order-chart/order-chart.component';
 
+/**
+ * Página inicial do cliente: gráfico das últimas encomendas e aviso de bloqueio por cancelamentos.
+ */
 @Component({
   selector: 'app-customer-dashboard',
   standalone: true,

@@ -14,7 +14,16 @@ const orderSchema = new mongoose.Schema({
     orderDate: { type: Date, default: Date.now },
     cancelTimeout: { type: Date },
     orderCode: String,
+    // Pagamento no local: o cliente mostra o código da encomenda e este documento.
     identityDoc: String,
+    fulfilment: { type: String, enum: ['entrega', 'levantamento', 'no local'], default: 'entrega' },
+    paymentMethod: { type: String, enum: ['online', 'local'], default: 'online' },
+    total: { type: Number, default: 0 },
+    // Parte do total paga com um vale de refeição (bonificação 6d do enunciado).
+    discount: { type: Number, default: 0 },
+    voucherCode: String,
+    estimatedReadyAt: Date,
+    estimatedDeliveryAt: Date,
     reviewed: { type: Boolean, default: false }
   });
 

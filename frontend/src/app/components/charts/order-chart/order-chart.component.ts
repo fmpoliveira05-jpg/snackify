@@ -2,6 +2,9 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 
 declare var google: any;
 
+/**
+ * Gráfico (Google Charts) com o total das últimas encomendas do cliente.
+ */
 @Component({
   selector: 'app-order-chart',
   standalone: true,

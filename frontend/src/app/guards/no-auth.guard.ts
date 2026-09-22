@@ -9,6 +9,9 @@ import { map } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { environment } from '../../environments/environment';
 
+/**
+ * Impede quem já tem sessão de voltar ao login e encaminha-o para a sua página inicial.
+ */
 @Injectable({
   providedIn: 'root'
 })

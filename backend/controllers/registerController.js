@@ -16,6 +16,9 @@ const isTaken = async ({ username, email }) => {
   return Boolean(user || restaurant);
 };
 
+/**
+ * GET /registar-cliente — formulário de registo de cliente (EJS).
+ */
 const showCustomerRegisterPage = (req, res) => {
     if (req.user) {
         if (req.accepts('html')) return res.redirect('/user/perfil');
@@ -27,6 +30,9 @@ const showCustomerRegisterPage = (req, res) => {
     });
 };
 
+/**
+ * GET /registar-restaurante — formulário de registo de restaurante (EJS).
+ */
 const showRestaurantRegisterPage = (req, res) => {
     if (req.user) {
         if (req.accepts('html')) return res.redirect('/user/perfil');
@@ -38,6 +44,9 @@ const showRestaurantRegisterPage = (req, res) => {
     });
 };
 
+/**
+ * POST /registar-cliente — cria a conta de cliente (password cifrada com bcrypt) depois de validado o formulário.
+ */
 const customerRegister = async (req, res) => {
   const {
     name,
@@ -96,6 +105,9 @@ const customerRegister = async (req, res) => {
   }
 };
 
+/**
+ * POST /registar-restaurante — cria o restaurante, que fica à espera da validação do administrador.
+ */
 const restaurantRegister = async (req, res) => {
     const {
         name,

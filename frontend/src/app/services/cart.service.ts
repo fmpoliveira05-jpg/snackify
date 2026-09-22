@@ -3,6 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+/** Escolhas do cliente ao finalizar a encomenda. */
+export interface CheckoutOptions {
+  fulfilment?: 'entrega' | 'levantamento' | 'no local';
+  paymentMethod?: 'online' | 'local';
+  identityDoc?: string;
+  voucherCode?: string;
+}
+
+/**
+ * Estado do carrinho do cliente (partilhado entre componentes através de `cart$`) e criação
+ * da encomenda.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -44,8 +56,14 @@ export class CartService {
     );
   }
 
-  finalizeOrder(): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/finalizar`, {});
+  /**
+   * Cria a encomenda a partir do carrinho.
+   *
+   * @param options tipo de entrega, forma de pagamento, documento de identificação (pagamento no
+   *        local) e código de um vale de refeição
+   */
+  finalizeOrder(options: CheckoutOptions = {}): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/finalizar`, options);
   }
 
   getOrderDetails(orderId: string): Observable<any> {

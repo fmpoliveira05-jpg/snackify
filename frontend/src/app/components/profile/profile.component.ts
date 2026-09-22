@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { ProfileService } from '../../services/profile.service';
@@ -15,15 +16,26 @@ interface User {
   [key: string]: any;
 }
 
+/**
+ * Perfil do utilizador autenticado e histórico de encomendas.
+ *
+ * - Cliente: cancelar (5 minutos), pagar online e avaliar encomendas entregues.
+ * - Restaurante: avançar o estado das encomendas; a lista é atualizada a cada
+ *   {@link ProfileComponent.POLL_SECONDS} segundos e cada encomenda nova gera uma notificação.
+ * - Administrador: atalhos para validar restaurantes e gerir categorias.
+ */
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, MatSnackBarModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
 
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
+  /** Intervalo entre atualizações da lista de encomendas de um restaurante. */
+  static readonly POLL_SECONDS = 20;
+
   user: User = {};
   orders: any[] = [];
   isAdmin = false;
@@ -33,12 +45,21 @@ export class ProfileComponent implements OnInit {
   constructor(
     private profileService: ProfileService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) {}
+
+  /** Ids das encomendas já mostradas, para detetar as novas. */
+  private knownOrderIds: Set<string> | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
     this.loadProfile();
     this.loadOrders();
+  }
+
+  ngOnDestroy(): void {
+    if (this.pollTimer) clearInterval(this.pollTimer);
   }
 
   loadProfile() {
@@ -47,17 +68,43 @@ export class ProfileComponent implements OnInit {
         this.user = data;
         this.userType = data.userType;
         this.isAdmin = data.userType === 'admin';
-        console.log('Perfil carregado:', this.user);
+        if (this.isRestaurant && !this.pollTimer) {
+          this.pollTimer = setInterval(() => this.loadOrders(), ProfileComponent.POLL_SECONDS * 1000);
+        }
       },
       error: err => this.error = err?.message || 'Erro ao carregar perfil.'
     });
   }
 
+  get isRestaurant(): boolean {
+    return this.user?.userType === 'restaurant';
+  }
+
   loadOrders() {
     this.profileService.getOrderHistory().subscribe({
-      next: orders => this.orders = orders,
+      next: orders => {
+        this.notifyNewOrders(orders);
+        this.orders = orders;
+      },
       error: err => console.error('Erro ao carregar histórico:', err)
     });
+  }
+
+  /**
+   * Mostra uma notificação por cada encomenda que não existia na última atualização.
+   * Na primeira carga não há aviso (são encomendas antigas).
+   */
+  private notifyNewOrders(orders: any[]): void {
+    const ids = new Set(orders.map(o => String(o._id)));
+    if (this.knownOrderIds && this.isRestaurant) {
+      const fresh = orders.filter(o => !this.knownOrderIds!.has(String(o._id)));
+      if (fresh.length === 1) {
+        this.snackBar.open(`Nova encomenda ${fresh[0].orderCode || ''} recebida.`, 'Ver', { duration: 8000, verticalPosition: 'top' });
+      } else if (fresh.length > 1) {
+        this.snackBar.open(`${fresh.length} novas encomendas recebidas.`, 'Ver', { duration: 8000, verticalPosition: 'top' });
+      }
+    }
+    this.knownOrderIds = ids;
   }
 
   cancelOrder(orderId: string) {

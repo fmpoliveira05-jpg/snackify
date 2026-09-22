@@ -14,6 +14,8 @@ Trabalho prático de grupo de **Programação em Ambiente Web** (2.º ano da Lic
 
 O histórico de *commits* do repositório original do grupo foi mantido.
 
+**O meu papel:** montei a estrutura inicial e o modelo de dados, e fiquei com o registo e a autenticação, a gestão de menus e a validação de restaurantes pelo administrador; integrei a Open Food Facts, o pagamento com Stripe e os gráficos dos painéis (Google Charts), e arranquei o cliente Angular. Depois da entrega, em 2026, fiz a revisão de segurança, os testes e as funcionalidades que tinham ficado por fazer (descritas no fim).
+
 ## O enunciado em poucas palavras
 
 Uma plataforma para ajudar restaurantes a gerir pedidos e menus:
@@ -31,11 +33,20 @@ Obrigatório: Node.js + Express, MongoDB, EJS no primeiro *milestone*, Angular n
 
 | Cliente | Restaurante | Administrador |
 |---|---|---|
-| Pesquisa de restaurantes e menus | Criação e edição de pratos e menus | Validação e desativação de restaurantes |
-| Carrinho com contagem decrescente | Informação nutricional automática ([Open Food Facts](https://world.openfoodfacts.org/)) | Gestão de categorias |
-| Encomenda, pagamento no local ou com Stripe (modo de teste) | Pesquisa de menus por texto ou preço | |
-| Cancelamento e avaliação de encomendas | Gráfico de encomendas por estado (Google Charts) | |
-| Histórico e perfil | Gestão do estado das encomendas e leitura de avaliações | |
+| Pesquisa de restaurantes (nome, localidade/distrito) e de pratos (texto, categoria, restaurante, localização, preço) com ordenação | Criação e edição de pratos e menus (máx. 10 pratos) | Validação e desativação de restaurantes |
+| Página de cada prato com imagem, categoria, Nutri-Score, calorias e alergénios | Informação nutricional automática ([Open Food Facts](https://world.openfoodfacts.org/)) | Gestão de categorias |
+| Carrinho com contagem decrescente de 10 minutos | Tempos de preparação e de entrega, raio máximo de entrega e limite de encomendas em curso | |
+| Entrega, levantamento ou consumo no restaurante; pagamento online (Stripe, modo de teste) ou no local com código + documento de identificação | Aviso de novas encomendas (no perfil e no *back-office*) | |
+| Vales de refeição: comprar para si ou oferecer a outro cliente e usar o saldo nas encomendas | Gestão do estado das encomendas e leitura de avaliações | |
+| Cancelamento, avaliação com foto, histórico e perfil | Gráfico de encomendas por estado (Google Charts) | |
+
+Funcionalidades de bonificação do enunciado: gráficos nos *dashboards* ✔, pagamento com API externa (Stripe) ✔, carrinho de 10 minutos com contador ✔, vales de refeição ✔ e Open Food Facts ✔.
+
+### Protótipo
+
+Antes de programar, a interface foi desenhada em protótipo (a aplicação final usa Bootstrap e tem um aspeto mais simples):
+
+![Protótipo da lista de restaurantes com mapa](docs/screenshots/prototipo-restaurantes.png)
 
 ## Arquitetura
 
@@ -55,7 +66,8 @@ backend/
   config/           leitura e validação das variáveis de ambiente
   routes/           rotas + anotações Swagger
   controllers/      lógica de cada rota
-  services/         regras de negócio puras (cancelamento, bloqueio, estados, totais)
+  services/         regras de negócio puras (cancelamento, bloqueio, estados, totais,
+                    regras do restaurante, pesquisa e vales)
   models/           esquemas Mongoose e validações
   middlewares/      autenticação, papéis, uploads, validação e erros
   views/ public/    back-office em EJS
@@ -94,8 +106,8 @@ O [manual de utilização](docs/MANUAL.md) descreve o percurso completo de cada 
 ## Testes
 
 ```bash
-cd backend && npm test          # 47 testes: regras de negócio, uploads, autenticação e autorização
-cd frontend && npm run test:ci  # 27 testes: serviços, guards e criação dos componentes
+cd backend && npm test          # 75 testes: regras de negócio, pesquisa, vales, uploads, autenticação e autorização
+cd frontend && npm run test:ci  # 33 testes: serviços, guards, componentes e cartão de prato
 ```
 
 Os testes do backend não precisam de base de dados: as regras de negócio são funções puras e os testes da API usam *mocks* dos modelos. O GitHub Actions corre os dois conjuntos, compila o Angular em modo de produção e verifica se há dependências com vulnerabilidades conhecidas.
@@ -114,3 +126,11 @@ A versão entregue funcionava, mas uma revisão com foco em segurança encontrou
 - **Estabilidade** – um erro dentro de um controlador assíncrono (por exemplo, um id de prato inválido) terminava o processo Node. Todos os controladores passaram por um `asyncHandler` e há um *middleware* de erros central.
 
 Também foram corrigidas regras de negócio: o bloqueio por cancelamentos desaparecia ao fim de um mês em vez de dois e não impedia novas encomendas; o limite de 10 pratos não era verificado ao editar um menu; era possível avaliar encomendas ainda não entregues e saltar estados da encomenda; o gráfico do restaurante contava as encomendas de todos os restaurantes; e as fotografias enviadas no registo ficavam guardadas numa pasta diferente daquela para onde apontava o link. No cliente Angular, os endereços da API deixaram de estar escritos em nove ficheiros e passaram para a configuração de ambiente.
+
+## O que faltava face ao enunciado (acrescentado em 2026)
+
+- **Definições do restaurante** – tempos de preparação e de entrega, raio máximo de entrega e número máximo de encomendas em curso. São aplicados ao criar a encomenda (o raio é calculado pela fórmula de haversine quando há coordenadas nas moradas) e dão a hora prevista de preparação e de entrega.
+- **Pesquisa, filtros e ordenação** para clientes, por nome, categoria, preço, restaurante e localização.
+- **Pagamento no local** com o código da encomenda e um documento de identificação, que fica associado à encomenda e é visível para o restaurante.
+- **Notificação no lado do restaurante** quando chega uma encomenda nova.
+- **Vales de refeição** (bonificação), com saldo que é devolvido se a encomenda for cancelada.

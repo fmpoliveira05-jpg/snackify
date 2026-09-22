@@ -1,5 +1,11 @@
 const axios = require('axios');
 
+/**
+ * Procura o prato na OpenFoodFacts e devolve calorias, NutriScore e alergénios (ou null se não houver resultados ou a API falhar).
+ *
+ * @param {string} dishName
+ * @returns {Promise<object|null>}
+ */
 const fetchOpenFoodData = async (dishName) => {
   try {
     const url = 'https://world.openfoodfacts.org/cgi/search.pl';

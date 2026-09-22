@@ -4,6 +4,10 @@ const auth = require('../middlewares/authMiddleware');
 const { isCustomer } = require('../middlewares/roleMiddleware');
 const {
     listRestaurants,
+    searchDishes,
+    listCategories,
+    listVouchers,
+    buyVoucher,
     readRestaurant,
     readMenu,
     listMenus,
@@ -32,6 +36,80 @@ const {
  *         description: Lista de restaurantes.
  */
 router.get('/restaurantes', auth, isCustomer, listRestaurants);
+
+/**
+ * @swagger
+ * /cliente/api/pratos:
+ *   get:
+ *     summary: Pesquisa pratos de todos os restaurantes validados, com filtros e ordenação
+ *     tags: [Cliente]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - { in: query, name: q, schema: { type: string }, description: Texto no nome ou na descrição }
+ *       - { in: query, name: category, schema: { type: string }, description: Id da categoria }
+ *       - { in: query, name: restaurant, schema: { type: string }, description: Nome do restaurante }
+ *       - { in: query, name: location, schema: { type: string }, description: Localidade ou distrito }
+ *       - { in: query, name: minPrice, schema: { type: number } }
+ *       - { in: query, name: maxPrice, schema: { type: number } }
+ *       - { in: query, name: sort, schema: { type: string, enum: [nome, preco-asc, preco-desc] } }
+ *     responses:
+ *       200:
+ *         description: Pratos encontrados, com o restaurante e a categoria.
+ */
+router.get('/pratos', auth, isCustomer, searchDishes);
+
+/**
+ * @swagger
+ * /cliente/api/categorias:
+ *   get:
+ *     summary: Lista as categorias de pratos (para os filtros)
+ *     tags: [Cliente]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Categorias ordenadas pelo nome.
+ */
+router.get('/categorias', auth, isCustomer, listCategories);
+
+/**
+ * @swagger
+ * /cliente/api/vales:
+ *   get:
+ *     summary: Lista os vales de refeição do cliente e os valores disponíveis para compra
+ *     tags: [Cliente]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Valores possíveis e vales do cliente.
+ *   post:
+ *     summary: Compra (simulada) um vale de refeição, para o próprio ou para oferecer
+ *     tags: [Cliente]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [value]
+ *             properties:
+ *               value: { type: number, enum: [5, 10, 20, 50] }
+ *               giftTo: { type: string, description: Username do cliente a quem se oferece }
+ *               message: { type: string, maxLength: 140 }
+ *     responses:
+ *       201:
+ *         description: Vale criado.
+ *       400:
+ *         description: Valor inválido.
+ *       404:
+ *         description: O destinatário não existe.
+ */
+router.get('/vales', auth, isCustomer, listVouchers);
+router.post('/vales', auth, isCustomer, buyVoucher);
 
 /**
  * @swagger
@@ -247,9 +325,23 @@ router.delete('/carrinho/limpar', auth, isCustomer, clearCart);
  *     tags: [Cliente]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fulfilment: { type: string, enum: [entrega, levantamento, no local], default: entrega }
+ *               paymentMethod: { type: string, enum: [online, local], default: online }
+ *               identityDoc: { type: string, description: Obrigatório quando o pagamento é no local }
+ *               voucherCode: { type: string, description: Código de um vale de refeição do cliente }
  *     responses:
  *       201:
- *         description: Pedido criado com sucesso.
+ *         description: Pedido criado com sucesso (inclui as horas estimadas e o valor a pagar).
+ *       400:
+ *         description: Carrinho vazio, escolhas inválidas ou vale inválido.
+ *       409:
+ *         description: O restaurante atingiu o limite de encomendas ou a morada está fora do raio de entrega.
  */
 router.post('/carrinho/finalizar', auth, isCustomer, createOrderFromCart);
 

@@ -3,6 +3,9 @@ const mongoose = require('mongoose');
 const { config, assertRequiredConfig } = require('./config/env');
 const createApp = require('./app');
 
+/**
+ * Liga-se ao MongoDB e arranca o servidor HTTP.
+ */
 async function start() {
   assertRequiredConfig();
 

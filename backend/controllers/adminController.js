@@ -2,6 +2,9 @@ const Restaurant = require('../models/restaurant');
 const Category = require('../models/category');
 const { wrapAll } = require('../utils/asyncHandler');
 
+/**
+ * GET /admin/validar-restaurantes — restaurantes registados que aguardam validação.
+ */
 const showPendingRestaurants = async (req, res) => {
   try {
     const restaurantes = await Restaurant.find({ isChecked: false });
@@ -11,6 +14,9 @@ const showPendingRestaurants = async (req, res) => {
   }
 };
 
+/**
+ * GET /admin/listar-restaurantes-validados — restaurantes já validados.
+ */
 const showCheckedRestaurants = async (req, res) => {
   try {
     const restaurantes = await Restaurant.find({ isChecked: true });
@@ -20,6 +26,9 @@ const showCheckedRestaurants = async (req, res) => {
   }
 };
 
+/**
+ * POST /admin/validar-restaurante/:id — aprova o restaurante, que passa a poder entrar e a aparecer aos clientes.
+ */
 const validateRestaurant = async (req, res) => {
   try {
     await Restaurant.findByIdAndUpdate(req.params.id, { isChecked: true });
@@ -29,6 +38,9 @@ const validateRestaurant = async (req, res) => {
   }
 };
 
+/**
+ * POST /admin/rejeitar-restaurante/:id — recusa um pedido de registo (o restaurante é apagado).
+ */
 const rejectRestaurant = async (req, res) => {
     try {
         await Restaurant.findByIdAndDelete(req.params.id);
@@ -38,6 +50,9 @@ const rejectRestaurant = async (req, res) => {
     }
 };
 
+/**
+ * GET /admin/listar-categorias — todas as categorias de pratos.
+ */
 const showCategories = async (req, res) => {
     try {
         const categorias = await Category.find();
@@ -47,6 +62,9 @@ const showCategories = async (req, res) => {
     }
 };
 
+/**
+ * POST /admin/editar-categorias — cria uma categoria de pratos (o nome é único).
+ */
 const createCategory = async (req, res) => {
   const { name } = req.body;
   try {
@@ -60,6 +78,9 @@ const createCategory = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /admin/remover-restaurante/:id — remove definitivamente um restaurante.
+ */
 const deleteRestaurant = async (req, res) => {
     try {
         const restaurant = await Restaurant.findByIdAndDelete(req.params.id);
@@ -72,6 +93,9 @@ const deleteRestaurant = async (req, res) => {
     }
 }
 
+/**
+ * DELETE /admin/remover-categoria/:id — remove uma categoria de pratos.
+ */
 const deleteCategory = async (req, res) => {
     try {
         const category = await Category.findByIdAndDelete(req.params.id);
@@ -84,6 +108,9 @@ const deleteCategory = async (req, res) => {
     }
 }
 
+/**
+ * POST /admin/desativar-restaurante/:id — retira a validação ao restaurante, sem o apagar.
+ */
 const disableRestaurant = async (req, res) => {
     try {
         const restaurant = await Restaurant.findByIdAndUpdate(req.params.id, { isChecked: false });

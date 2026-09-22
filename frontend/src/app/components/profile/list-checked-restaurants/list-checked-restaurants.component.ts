@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProfileService } from '../../../services/profile.service';
 
+/**
+ * Lista de restaurantes validados, onde o administrador os pode desativar ou remover.
+ */
 @Component({
   selector: 'app-list-checked-restaurants',
   standalone: true,

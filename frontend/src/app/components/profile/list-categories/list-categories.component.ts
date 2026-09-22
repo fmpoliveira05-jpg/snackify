@@ -2,6 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProfileService } from '../../../services/profile.service';
 
+/**
+ * Lista de categorias de pratos, com a opção de as remover (administrador).
+ */
 @Component({
   selector: 'app-list-categories',
   standalone: true,

@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProfileService } from '../../../services/profile.service';
 
+/**
+ * Restaurantes à espera de validação: o administrador aprova ou rejeita cada pedido.
+ */
 @Component({
   selector: 'app-validate-restaurants',
   standalone: true,

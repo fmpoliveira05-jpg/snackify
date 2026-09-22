@@ -37,6 +37,9 @@ const storage = multer.diskStorage({
   },
 });
 
+/**
+ * Só aceita imagens (JPEG, PNG, GIF ou WebP).
+ */
 const fileFilter = (req, file, cb) => {
   if (ALLOWED_TYPES[file.mimetype]) return cb(null, true);
   const error = new Error('Só são aceites imagens JPG, PNG, WEBP ou GIF.');

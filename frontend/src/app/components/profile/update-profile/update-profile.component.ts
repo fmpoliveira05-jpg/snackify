@@ -5,6 +5,10 @@ import { CommonModule } from '@angular/common';
 import { ProfileService } from '../../../services/profile.service';
 import { fieldLabels } from '../../../utils/field-formatters';
 
+/**
+ * Edição do perfil. Os restaurantes definem aqui também os tempos de preparação e de entrega,
+ * o raio máximo de entrega e o número máximo de encomendas em curso.
+ */
 @Component({
   selector: 'app-update-profile',
   standalone: true,
@@ -56,6 +60,13 @@ export class UpdateProfileComponent implements OnInit {
         place: [data.address?.place || '', Validators.required],
         district: [data.address?.district || '', Validators.required],
         country: [data.address?.country || '', Validators.required],
+      }),
+      // Só usado pelos restaurantes: regras de funcionamento pedidas no enunciado.
+      settings: this.fb.group({
+        preparationMinutes: [data.settings?.preparationMinutes ?? 20, [Validators.min(1), Validators.max(240)]],
+        deliveryMinutes: [data.settings?.deliveryMinutes ?? 15, [Validators.min(1), Validators.max(240)]],
+        maxDeliveryKm: [data.settings?.maxDeliveryKm ?? 10, [Validators.min(0.5), Validators.max(100)]],
+        maxActiveOrders: [data.settings?.maxActiveOrders ?? 20, [Validators.min(1), Validators.max(500)]],
       })
     });
   }
@@ -75,6 +86,11 @@ export class UpdateProfileComponent implements OnInit {
     Object.keys(address).forEach(key => {
       formData.append(`address[${key}]`, address[key]);
     });
+
+    if (this.userType === 'restaurant') {
+      const settings = rawForm.settings;
+      Object.keys(settings).forEach(key => formData.append(`settings[${key}]`, String(settings[key])));
+    }
 
     if (this.selectedFile) {
       formData.append('image', this.selectedFile);

@@ -9,6 +9,9 @@ const { wrapAll } = require('../utils/asyncHandler');
 const escapeRegex = require('../utils/escapeRegex');
 const { MAX_DISHES_PER_MENU } = require('../services/orderRules');
 
+/**
+ * Converte um valor de formulário (texto, lista ou nada) numa lista.
+ */
 const toArray = (value) => (value === undefined || value === null ? [] : [].concat(value));
 
 /** Procura um prato do restaurante autenticado; pratos de outros restaurantes "não existem". */
@@ -20,6 +23,9 @@ const buildPricePerDose = (dose, price) => {
   return toArray(dose).map((d, i) => ({ dose: d, price: Number.parseFloat(prices[i]) }));
 };
 
+/**
+ * GET /restaurante/dashboard — painel com o número de encomendas por estado (Google Charts).
+ */
 const showRestaurantDashboard = async (req, res) => {
   try {
     // Só as encomendas deste restaurante (antes o gráfico mostrava as de todos).
@@ -36,6 +42,9 @@ const showRestaurantDashboard = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/menus — menus do restaurante autenticado.
+ */
 const listMenus = async (req, res) => {
   try {
     const restaurantId = req.user._id;
@@ -55,6 +64,9 @@ const listMenus = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/menus?field=…&value=… — pesquisa nos menus do restaurante pelo campo e valor indicados.
+ */
 const searchMenus = async (req, res) => {
   try {
     const { field, value } = req.query;
@@ -130,6 +142,9 @@ const searchMenus = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/menus/novo — formulário para criar um menu.
+ */
 const showAddMenuForm = async (req, res) => {
   try {
     const availableDishes = await Dish.find({
@@ -144,6 +159,9 @@ const showAddMenuForm = async (req, res) => {
   }
 };
 
+/**
+ * POST /restaurante/menus/novo — cria um menu do restaurante autenticado.
+ */
 const addMenu = async (req, res) => {
   try {
     const { title, description, selectedDishes } = req.body;
@@ -174,6 +192,9 @@ const addMenu = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/menus/editar/:id — formulário de edição de um menu do restaurante.
+ */
 const showEditMenuForm = async (req, res) => {
   try {
     const menu = await Menu.findById(req.params.id);
@@ -207,6 +228,9 @@ const showEditMenuForm = async (req, res) => {
   }
 };
 
+/**
+ * PUT /restaurante/menus/editar/:id — altera um menu do restaurante autenticado.
+ */
 const updateMenu = async (req, res) => {
   try {
     const { title, description, availableDishes } = req.body;
@@ -254,6 +278,9 @@ const updateMenu = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /restaurante/menus/remover/:id — apaga um menu do restaurante autenticado.
+ */
 const deleteMenu = async (req, res) => {
   try {
     const menu = await Menu.findById(req.params.id);
@@ -272,6 +299,9 @@ const deleteMenu = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /restaurante/menus/pratos/remover/:id — tira um prato do menu sem o apagar.
+ */
 const removeDishFromMenu = async (req, res) => {
   try {
     const dish = await Dish.findById(req.params.id);
@@ -290,6 +320,9 @@ const removeDishFromMenu = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/pratos/editar/:id — formulário de edição de um prato.
+ */
 const showEditDishForm = async (req, res) => {
   try {
     const dish = await findOwnDish(req, req.params.id);
@@ -302,6 +335,9 @@ const showEditDishForm = async (req, res) => {
   }
 };
 
+/**
+ * PUT /restaurante/pratos/editar/:id — altera um prato (preços por dose, categoria, imagem e informação nutricional).
+ */
 const updateDish = async (req, res) => {
   try {
     const dish = await findOwnDish(req, req.params.id);
@@ -337,6 +373,9 @@ const updateDish = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /restaurante/pratos/remover/:id — apaga um prato do restaurante.
+ */
 const deleteDish = async (req, res) => {
   try {
     const dish = await findOwnDish(req, req.params.id);
@@ -350,6 +389,9 @@ const deleteDish = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/pratos/novo — formulário para criar um prato.
+ */
 const showAddDishForm = async (req, res) => {
   try {
     const categories = await Category.find();
@@ -359,6 +401,9 @@ const showAddDishForm = async (req, res) => {
   }
 };
 
+/**
+ * POST /restaurante/pratos/novo — cria um prato; a informação nutricional vem da OpenFoodFacts quando existe.
+ */
 const addDish = async (req, res) => {
   try {
     const { name, description, category, dose, price } = req.body;
@@ -392,6 +437,9 @@ const addDish = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/pratos — pratos do restaurante autenticado.
+ */
 const listDishes = async (req, res) => {
   try {
     const dishes = await Dish.find({ restaurantId: req.user._id }).populate('category', 'name');
@@ -402,6 +450,9 @@ const listDishes = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/pratos/:id — página individual de um prato.
+ */
 const showDishDetails = async (req, res) => {
   try {
     const dish = await Dish.findOne({ _id: req.params.id, restaurantId: req.user._id }).populate('category', 'name');
@@ -416,6 +467,9 @@ const showDishDetails = async (req, res) => {
   }
 };
 
+/**
+ * GET /restaurante/reviews — avaliações deixadas pelos clientes nas encomendas do restaurante.
+ */
 const listReviews = async (req, res) => {
   try {
     const reviews = await Review.find({ restaurantId: req.user._id }).populate('userId', 'name');

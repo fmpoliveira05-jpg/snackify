@@ -5,6 +5,9 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
+/**
+ * Avaliação de uma encomenda entregue: comentário, classificação e foto opcional.
+ */
 @Component({
   selector: 'app-review',
   standalone: true,

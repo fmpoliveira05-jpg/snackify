@@ -5,6 +5,9 @@ import { BehaviorSubject, Observable, of } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+/**
+ * Login, logout e sessão atual (o token fica num cookie httpOnly gerido pelo backend).
+ */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private apiUrl = `${environment.apiUrl}/auth`;

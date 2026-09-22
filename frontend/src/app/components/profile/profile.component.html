@@ -11,6 +11,18 @@
         <h5 class="card-title"><strong>Código da encomenda:</strong> {{ order.orderCode || '(sem código)' }}</h5>
         <p><strong>Data e hora:</strong> {{ order.orderDate | date:'short' }}</p>
         <p><strong>Estado da encomenda:</strong> {{ order.state }}</p>
+        <p *ngIf="order.fulfilment">
+          <strong>Receção:</strong> {{ order.fulfilment }} ·
+          <strong>Pagamento:</strong> {{ order.paymentMethod === 'local' ? 'no local' : 'online' }}
+          <span *ngIf="order.discount > 0"> (vale de €{{ order.discount.toFixed(2) }})</span>
+        </p>
+        <p *ngIf="order.estimatedReadyAt && order.state !== 'entregue' && order.state !== 'cancelada'">
+          <strong>Pronta às</strong> {{ order.estimatedReadyAt | date:'HH:mm' }}
+          <span *ngIf="order.estimatedDeliveryAt"> · <strong>entrega às</strong> {{ order.estimatedDeliveryAt | date:'HH:mm' }}</span>
+        </p>
+        <p *ngIf="user.userType === 'restaurant' && order.paymentMethod === 'local' && order.identityDoc">
+          <strong>Documento de identificação:</strong> {{ order.identityDoc }}
+        </p>
         <p><strong>Itens adquiridos:</strong><br>
           <span *ngFor="let d of order.dishes">
             {{ d.amount }}x {{ d.dishId?.name || 'Prato removido' }} ({{ d.dose }} dose)<br>
@@ -23,7 +35,7 @@
         Cancelar Pedido
         </button>
 
-        <button *ngIf="order.state === 'pendente' && user.userType === 'customer'" 
+        <button *ngIf="order.state === 'pendente' && order.paymentMethod !== 'local' && user.userType === 'customer'" 
               class="btn btn-success mt-2"
               (click)="pay(order._id, order.orderCode, order.dishes)">
         Pagar agora

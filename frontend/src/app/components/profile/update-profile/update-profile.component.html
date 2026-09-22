@@ -75,6 +75,29 @@
       </div>
     </fieldset>
 
+    <fieldset class="border p-3 mb-4" *ngIf="userType === 'restaurant'" formGroupName="settings">
+      <legend class="w-auto px-2">Funcionamento</legend>
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label" for="prep">Preparação (minutos)</label>
+          <input id="prep" type="number" min="1" max="240" formControlName="preparationMinutes" class="form-control" />
+        </div>
+        <div class="col-6">
+          <label class="form-label" for="deliv">Entrega (minutos)</label>
+          <input id="deliv" type="number" min="1" max="240" formControlName="deliveryMinutes" class="form-control" />
+        </div>
+        <div class="col-6">
+          <label class="form-label" for="radius">Raio máximo de entrega (km)</label>
+          <input id="radius" type="number" min="0.5" max="100" step="0.5" formControlName="maxDeliveryKm" class="form-control" />
+        </div>
+        <div class="col-6">
+          <label class="form-label" for="maxOrders">Máximo de encomendas em curso</label>
+          <input id="maxOrders" type="number" min="1" max="500" formControlName="maxActiveOrders" class="form-control" />
+        </div>
+      </div>
+      <div class="form-text">O raio só é verificado quando o restaurante e o cliente têm coordenadas na morada.</div>
+    </fieldset>
+
     <div class="mb-3">
       <label class="form-label">Imagem de Perfil</label>
       <input type="file" class="form-control" (change)="onFileChange($event)" />

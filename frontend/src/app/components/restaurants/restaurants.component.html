@@ -1,12 +1,42 @@
 <div class="container mt-5">
-  <h2>Restaurantes disponíveis</h2>
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h2 class="mb-0">Restaurantes disponíveis</h2>
+    <a routerLink="/cliente/pratos" class="btn btn-outline-primary">Pesquisar pratos</a>
+  </div>
+
+  <form class="row g-2 mb-4" (ngSubmit)="search()">
+    <div class="col-12 col-md-4">
+      <input type="search" class="form-control" placeholder="Nome do restaurante" name="q" [(ngModel)]="filters.q" />
+    </div>
+    <div class="col-12 col-md-3">
+      <input type="search" class="form-control" placeholder="Localidade ou distrito" name="location" [(ngModel)]="filters.location" />
+    </div>
+    <div class="col-6 col-md-2">
+      <select class="form-select" name="sort" [(ngModel)]="filters.sort" (change)="search()" aria-label="Ordenar">
+        <option value="nome">Nome (A-Z)</option>
+        <option value="recentes">Mais recentes</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary flex-fill">Procurar</button>
+      <button type="button" class="btn btn-outline-secondary" (click)="clear()">Limpar</button>
+    </div>
+  </form>
+
+  <p *ngIf="!isLoading && restaurants.length === 0" class="text-muted">Nenhum restaurante corresponde à pesquisa.</p>
+
   <div class="row">
     <div class="col-md-4" *ngFor="let rest of restaurants">
-      <div class="card mb-3">
-        <div class="card-body">
+      <div class="card mb-3 h-100">
+        <img *ngIf="rest.logo" [src]="assetUrl(rest.logo)" class="card-img-top restaurant-logo" [alt]="'Logótipo de ' + rest.name" />
+        <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ rest.name }}</h5>
-          <p class="card-text">{{ rest.description }}</p>
-          <a [routerLink]="['/cliente/restaurantes', rest._id, 'menus']" class="btn btn-primary">Ver menus</a>
+          <p class="card-text text-muted mb-1">{{ rest.address?.place }}, {{ rest.address?.district }}</p>
+          <p class="card-text small mb-3" *ngIf="rest.settings">
+            Preparação ~{{ rest.settings.preparationMinutes }} min · entrega ~{{ rest.settings.deliveryMinutes }} min
+            · até {{ rest.settings.maxDeliveryKm }} km
+          </p>
+          <a [routerLink]="['/cliente/restaurantes', rest._id, 'menus']" class="btn btn-primary mt-auto">Ver menus</a>
         </div>
       </div>
     </div>

@@ -1,0 +1,6 @@
+
+.restaurant-logo {
+  max-height: 160px;
+  object-fit: contain;
+  padding: 0.75rem;
+}

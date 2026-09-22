@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { RestaurantsService } from '../../services/restaurants.service';
 
+/**
+ * Menus de um restaurante, com ligação para os pratos de cada um.
+ */
 @Component({
   selector: 'app-menu-list',
   standalone: true,

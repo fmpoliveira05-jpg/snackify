@@ -1,0 +1,46 @@
+<div class="container mt-5">
+  <h2>Vales de refeição</h2>
+  <p class="text-muted">Compre um vale para si ou ofereça-o a outro cliente. O saldo é descontado no carrinho, ao finalizar a encomenda.</p>
+
+  <form class="card card-body mb-4" (ngSubmit)="buy()">
+    <div class="row g-3">
+      <div class="col-12 col-md-3">
+        <label class="form-label" for="value">Valor</label>
+        <select id="value" class="form-select" name="value" [(ngModel)]="value">
+          <option *ngFor="let v of values" [ngValue]="v">€{{ v }}</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label" for="giftTo">Oferecer a (nome de utilizador)</label>
+        <input id="giftTo" class="form-control" name="giftTo" [(ngModel)]="giftTo" placeholder="Deixe vazio para ser para si" />
+      </div>
+      <div class="col-12 col-md-5">
+        <label class="form-label" for="message">Mensagem (opcional)</label>
+        <input id="message" class="form-control" name="message" [(ngModel)]="message" maxlength="140" />
+      </div>
+    </div>
+    <div class="text-end mt-3">
+      <button type="submit" class="btn btn-success" [disabled]="!value || isSaving">
+        {{ giftTo.trim() ? 'Comprar e oferecer' : 'Comprar vale' }}
+      </button>
+    </div>
+    <div class="form-text">O pagamento dos vales é simulado, como previsto no enunciado.</div>
+  </form>
+
+  <h4>Os meus vales</h4>
+  <p *ngIf="vouchers.length === 0" class="text-muted">Ainda não tem vales.</p>
+  <ul class="list-group">
+    <li *ngFor="let v of vouchers" class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <strong>{{ v.code }}</strong>
+        <span class="text-muted small"> · €{{ v.value }} · {{ v.createdAt | date:'shortDate' }}</span>
+        <div *ngIf="v.buyerId?.username && v.buyerId._id !== v.ownerId" class="small">
+          Oferta de {{ v.buyerId.name || v.buyerId.username }}<span *ngIf="v.message">: “{{ v.message }}”</span>
+        </div>
+      </div>
+      <span class="badge" [class.text-bg-success]="v.balance > 0" [class.text-bg-secondary]="v.balance === 0">
+        Saldo €{{ v.balance.toFixed(2) }}
+      </span>
+    </li>
+  </ul>
+</div>

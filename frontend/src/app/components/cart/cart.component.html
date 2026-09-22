@@ -41,8 +41,41 @@
 
     <h4 class="text-end">Total: €{{ cart?.total ? cart.total.toFixed(2) : '0.00' }}</h4>
 
-    <div class="text-end">
-      <button class="btn btn-success" (click)="finalizeOrder()">Finalizar encomenda</button>
-    </div>
+    <form class="card card-body mb-3" (ngSubmit)="finalizeOrder()">
+      <h5 class="card-title">Como quer receber e pagar?</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="fulfilment">Receção</label>
+          <select id="fulfilment" class="form-select" name="fulfilment" [(ngModel)]="options.fulfilment">
+            <option value="entrega">Entrega na minha morada</option>
+            <option value="levantamento">Levantar no restaurante</option>
+            <option value="no local">Consumir no restaurante</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6">
+          <label class="form-label" for="payment">Pagamento</label>
+          <select id="payment" class="form-select" name="paymentMethod" [(ngModel)]="options.paymentMethod">
+            <option value="online">Online (cartão, através do Stripe)</option>
+            <option value="local">No local, com o código da encomenda</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-6" *ngIf="options.paymentMethod === 'local'">
+          <label class="form-label" for="identityDoc">N.º do documento de identificação</label>
+          <input id="identityDoc" class="form-control" name="identityDoc" [(ngModel)]="options.identityDoc"
+                 placeholder="Ex.: número do Cartão de Cidadão" maxlength="20" required />
+          <div class="form-text">Fica associado à encomenda; vai precisar dele e do código para pagar.</div>
+        </div>
+        <div class="col-12 col-md-6" *ngIf="vouchers.length">
+          <label class="form-label" for="voucher">Vale de refeição</label>
+          <select id="voucher" class="form-select" name="voucherCode" [(ngModel)]="options.voucherCode">
+            <option value="">Não usar</option>
+            <option *ngFor="let v of vouchers" [value]="v.code">{{ v.code }} (saldo €{{ v.balance.toFixed(2) }})</option>
+          </select>
+        </div>
+      </div>
+      <div class="text-end mt-3">
+        <button type="submit" class="btn btn-success">Finalizar encomenda</button>
+      </div>
+    </form>
   </div>
 </div>

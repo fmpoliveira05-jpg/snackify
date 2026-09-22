@@ -1,15 +1,21 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CartService } from '../../services/cart.service';
+import { FormsModule } from '@angular/forms';
+import { CartService, CheckoutOptions } from '../../services/cart.service';
+import { VoucherService } from '../../services/voucher.service';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
+/**
+ * Carrinho do cliente: contador dos 10 minutos, remoção de pratos e finalização da encomenda
+ * (tipo de entrega, forma de pagamento, documento de identificação e vale de refeição).
+ */
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatSnackBarModule],
   templateUrl: './cart.component.html',
   styleUrls: ['./cart.component.css']
 })
@@ -23,14 +29,24 @@ export class CartComponent implements OnInit, OnDestroy {
   expired: boolean = false;
   private timerInterval: any;
 
+  /** Escolhas feitas no formulário de finalização. */
+  options: CheckoutOptions = { fulfilment: 'entrega', paymentMethod: 'online', identityDoc: '', voucherCode: '' };
+  /** Vales do cliente com saldo, para usar nesta encomenda. */
+  vouchers: any[] = [];
+
   constructor(
     private cartService: CartService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private voucherService: VoucherService
   ) {}
 
   ngOnInit(): void {
     this.loadCartAndStartTimer();
+    this.voucherService.getVouchers().subscribe({
+      next: data => this.vouchers = (data?.vouchers || []).filter((v: any) => v.balance > 0),
+      error: err => console.error('Erro ao carregar vales:', err)
+    });
 
     this.cartService.cart$.subscribe(cart => {
       this.cart = cart;
@@ -120,7 +136,19 @@ export class CartComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.cartService.finalizeOrder().subscribe({
+    if (this.options.paymentMethod === 'local' && !this.options.identityDoc?.trim()) {
+      this.snackBar.open('Para pagar no local indique o número de um documento de identificação.', 'Fechar', { duration: 4000 });
+      return;
+    }
+
+    const options: CheckoutOptions = {
+      fulfilment: this.options.fulfilment,
+      paymentMethod: this.options.paymentMethod,
+      identityDoc: this.options.paymentMethod === 'local' ? this.options.identityDoc?.trim() : undefined,
+      voucherCode: this.options.voucherCode || undefined,
+    };
+
+    this.cartService.finalizeOrder(options).subscribe({
       next: (res: any) => {
         const orderId = res.orderId || this.extractOrderIdFromRedirect(res);
 
@@ -139,7 +167,7 @@ export class CartComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Erro ao finalizar encomenda:', err);
-        alert('Erro ao finalizar a encomenda.');
+        this.snackBar.open(err?.error?.message || 'Erro ao finalizar a encomenda.', 'Fechar', { duration: 5000 });
       }
     });
   }

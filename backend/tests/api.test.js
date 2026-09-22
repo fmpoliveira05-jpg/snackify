@@ -132,6 +132,32 @@ describe('perfil', () => {
   });
 });
 
+describe('encomendas e vales', () => {
+  const asCustomer = () => {
+    jest.spyOn(User, 'findById').mockResolvedValue({ _id: 'c1', userType: 'customer' });
+    return bearer('c1', 'customer');
+  };
+
+  test('pagar no local sem documento de identificação é recusado', async () => {
+    const headers = asCustomer();
+    jest.spyOn(Order, 'find').mockReturnValue({ select: jest.fn().mockResolvedValue([]) });
+    const res = await request(app).post('/cliente/api/carrinho/finalizar').set(headers).send({ paymentMethod: 'local' });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/documento de identificação/);
+  });
+
+  test('não se compram vales com valores inventados', async () => {
+    const res = await request(app).post('/cliente/api/vales').set(asCustomer()).send({ value: 1000 });
+    expect(res.status).toBe(400);
+  });
+
+  test('um restaurante não compra vales', async () => {
+    jest.spyOn(Restaurant, 'findById').mockResolvedValue({ _id: 'r1', isChecked: true });
+    const res = await request(app).post('/cliente/api/vales').set(bearer('r1', 'restaurant')).send({ value: 10 });
+    expect(res.status).toBe(403);
+  });
+});
+
 describe('documentação', () => {
   test('o Swagger está disponível', async () => {
     const res = await request(app).get('/api-docs/');

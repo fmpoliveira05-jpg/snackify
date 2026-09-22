@@ -3,6 +3,9 @@ import { RouterModule, Router } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
 
+/**
+ * Componente raiz: barra de navegação e zona onde o router mostra cada página.
+ */
 @Component({
   selector: 'app-root',
   standalone: true,

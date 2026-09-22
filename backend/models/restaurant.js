@@ -39,6 +39,13 @@ const RestaurantSchema = new mongoose.Schema({
   logo: { type: String },
   foundedAt: { type: Date, required: true, validate: foundedAtValidator },
   isChecked: { type: Boolean, default: false },
+  // Regras de funcionamento definidas pelo restaurante (ver services/restaurantRules.js).
+  settings: {
+    preparationMinutes: { type: Number, default: 20, min: 1, max: 240 },
+    deliveryMinutes: { type: Number, default: 15, min: 1, max: 240 },
+    maxDeliveryKm: { type: Number, default: 10, min: 0.5, max: 100 },
+    maxActiveOrders: { type: Number, default: 20, min: 1, max: 500 }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 

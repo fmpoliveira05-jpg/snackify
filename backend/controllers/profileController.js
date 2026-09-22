@@ -2,16 +2,21 @@ const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const Order = require('../models/order');
 const Review = require('../models/review');
+const Voucher = require('../models/voucher');
 const { wrapAll } = require('../utils/asyncHandler');
 const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
+const { DEFAULT_SETTINGS } = require('../services/restaurantRules');
 
 /** Campos que cada tipo de conta pode alterar no próprio perfil (tudo o resto é ignorado). */
 const EDITABLE_FIELDS = {
   customer: ['name', 'birthDate', 'phone', 'nif', 'address'],
   admin: ['name', 'birthDate', 'phone', 'nif', 'address'],
-  restaurant: ['name', 'phone', 'foundedAt', 'address'],
+  restaurant: ['name', 'phone', 'foundedAt', 'address', 'settings'],
 };
 
+/**
+ * Compara dois ids do MongoDB (ObjectId ou texto).
+ */
 const sameId = (a, b) => String(a) === String(b);
 
 /**
@@ -41,6 +46,9 @@ const updateOrderState = async (req, res) => {
   res.json({ message: 'Estado da encomenda atualizado com sucesso.', order });
 };
 
+/**
+ * GET /user/perfil/dados — dados da conta autenticada, sem a password.
+ */
 const getProfile = async (req, res) => {
   const userId = req.user._id;
   const userType = req.user.userType;
@@ -70,6 +78,9 @@ const getProfile = async (req, res) => {
   }
 };
 
+/**
+ * GET /user/perfil/encomendas — histórico de encomendas: as do cliente ou as recebidas pelo restaurante.
+ */
 const getOrderHistory = async (req, res) => {
   try {
     let orders;
@@ -89,6 +100,9 @@ const getOrderHistory = async (req, res) => {
   }
 };
 
+/**
+ * PUT /user/perfil/editar — atualiza o perfil. Só se aceitam os campos de EDITABLE_FIELDS; os restaurantes podem também mudar as definições de funcionamento.
+ */
 const updateProfile = async (req, res) => {
   const userType = req.user.userType;
   const userId = req.user._id;
@@ -101,7 +115,16 @@ const updateProfile = async (req, res) => {
     const allowed = EDITABLE_FIELDS[userType] || [];
     const updateFields = {};
     allowed.forEach((field) => {
-      if (req.body[field] !== undefined) updateFields[field] = req.body[field];
+      if (req.body[field] === undefined) return;
+      if (field === 'settings') {
+        // Cada definição é gravada à parte ("settings.x") para não apagar as que não vieram no pedido.
+        Object.keys(DEFAULT_SETTINGS).forEach((key) => {
+          const value = req.body.settings?.[key];
+          if (value !== undefined && value !== '') updateFields[`settings.${key}`] = Number(value);
+        });
+      } else {
+        updateFields[field] = req.body[field];
+      }
     });
 
     if (req.file) {
@@ -125,6 +148,9 @@ const updateProfile = async (req, res) => {
   }
 };
 
+/**
+ * POST /user/perfil/encomendas/:orderId/cancelar — cancela uma encomenda do cliente se ainda estiver dentro dos 5 minutos e por preparar.
+ */
 const cancelOrder = async (req, res) => {
   const { orderId } = req.params;
 
@@ -146,6 +172,10 @@ const cancelOrder = async (req, res) => {
 
     order.state = 'cancelada';
     await order.save();
+    // A parte paga com vale volta para o saldo do vale.
+    if (order.voucherCode && order.discount > 0) {
+      await Voucher.updateOne({ code: order.voucherCode }, { $inc: { balance: order.discount } });
+    }
 
     res.json({ message: "Pedido cancelado com sucesso." });
   } catch (error) {
@@ -154,6 +184,9 @@ const cancelOrder = async (req, res) => {
   }
 };
 
+/**
+ * POST /user/perfil/encomendas/:orderId/avaliar — comentário, classificação e foto opcional sobre uma encomenda entregue (uma avaliação por encomenda).
+ */
 const submitReview = async (req, res) => {
   const { orderId } = req.params;
   const { title, description } = req.body;
@@ -203,6 +236,9 @@ const submitReview = async (req, res) => {
   }
 };
 
+/**
+ * GET /user/perfil/encomendas/:orderId/avaliar — dados da encomenda a avaliar, se for do cliente e ainda não tiver avaliação.
+ */
 const renderReviewPage = async (req, res) => {
   const { orderId } = req.params;
 
@@ -232,6 +268,9 @@ const renderReviewPage = async (req, res) => {
   }
 };
 
+/**
+ * GET /user/perfil/encomendas/:orderId — detalhe de uma encomenda do próprio cliente.
+ */
 const loadOrderDetails = async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId)

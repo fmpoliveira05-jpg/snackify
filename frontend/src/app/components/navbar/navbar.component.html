@@ -16,6 +16,11 @@
           <li class="nav-item" *ngIf="user && (user && currentPath !== '/user/perfil')">
             <a href="/user/perfil" class="nav-link">perfil</a>
           </li>
+          <ng-container *ngIf="user.userType === 'customer'">
+            <li class="nav-item"><a class="nav-link" routerLink="/cliente/restaurantes">restaurantes</a></li>
+            <li class="nav-item"><a class="nav-link" routerLink="/cliente/pratos">pratos</a></li>
+            <li class="nav-item"><a class="nav-link" routerLink="/cliente/vales">vales</a></li>
+          </ng-container>
           <li class="nav-item" *ngIf="(user.userType === 'customer') && currentPath !== '/cliente/carrinho'">
             <a class="nav-link" routerLink="/cliente/carrinho">carrinho</a>
           </li>

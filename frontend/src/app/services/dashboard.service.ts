@@ -9,6 +9,9 @@ interface DashboardData {
   blockedUntil: string | null;
 }
 
+/**
+ * Dados do painel do cliente (totais das últimas encomendas e estado de bloqueio).
+ */
 @Injectable({
   providedIn: 'root'
 })

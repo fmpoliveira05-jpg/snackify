@@ -1,3 +1,9 @@
+/**
+ * Valida um NIF português pelo dígito de controlo.
+ *
+ * @param {string} nif
+ * @returns {boolean}
+ */
 function nifIsValid(nif) {
   if (!/^\d{9}$/.test(nif)) return false;
 

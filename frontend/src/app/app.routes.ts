@@ -15,6 +15,8 @@ import { AuthGuard } from './guards/auth.guard';
 import { ListCheckedRestaurantsComponent } from './components/profile/list-checked-restaurants/list-checked-restaurants.component';
 import { ListCategoriesComponent } from './components/profile/list-categories/list-categories.component';
 import { ReviewComponent } from './components/review/review.component';
+import { DishSearchComponent } from './components/dish-search/dish-search.component';
+import { VouchersComponent } from './components/vouchers/vouchers.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [NoAuthGuard] },
@@ -31,6 +33,8 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: CustomerDashboardComponent },
       { path: 'restaurantes', component: RestaurantsComponent },
+      { path: 'pratos', component: DishSearchComponent },
+      { path: 'vales', component: VouchersComponent },
       { path: 'restaurantes/:id/menus', component: MenuListComponent },
       { path: 'menus/:id/pratos', component: DishListComponent },
       { path: 'carrinho', component: CartComponent },

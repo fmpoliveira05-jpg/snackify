@@ -5,6 +5,10 @@ import { CartService } from '../../services/cart.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 
+/**
+ * Resumo da encomenda acabada de criar: código, pratos, estado, horas estimadas e instruções
+ * de pagamento. Mostra o aviso (toast) de encomenda concluída.
+ */
 @Component({
   selector: 'app-checkout',
   standalone: true,

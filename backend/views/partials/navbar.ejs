@@ -37,3 +37,36 @@
     </div>
   </div>
 </nav>
+<% if (user && user.userType === 'restaurant') { %>
+  <!-- Aviso de novas encomendas no back-office do restaurante (verifica a cada 20 segundos). -->
+  <div id="new-order-toast" class="alert alert-success shadow position-fixed top-0 end-0 m-3 d-none" role="status" style="z-index: 1080;">
+    <span id="new-order-text"></span>
+    <a href="<%= clientUrl %>/user/perfil" class="alert-link ms-2">ver encomendas</a>
+    <button type="button" class="btn-close ms-2" aria-label="Fechar" onclick="this.parentElement.classList.add('d-none')"></button>
+  </div>
+  <script>
+    (function () {
+      var known = null;
+      function check() {
+        fetch('/user/perfil/encomendas', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+          .then(function (res) { return res.ok ? res.json() : []; })
+          .then(function (orders) {
+            var ids = orders.map(function (o) { return o._id; });
+            if (known) {
+              var fresh = orders.filter(function (o) { return known.indexOf(o._id) === -1; });
+              if (fresh.length) {
+                document.getElementById('new-order-text').textContent = fresh.length === 1
+                  ? 'Nova encomenda ' + (fresh[0].orderCode || '') + ' recebida.'
+                  : fresh.length + ' novas encomendas recebidas.';
+                document.getElementById('new-order-toast').classList.remove('d-none');
+              }
+            }
+            known = ids;
+          })
+          .catch(function () { /* sem ligação: tenta na próxima volta */ });
+      }
+      check();
+      setInterval(check, 20000);
+    })();
+  </script>
+<% } %>
