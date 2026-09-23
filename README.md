@@ -42,11 +42,11 @@ Obrigatório: Node.js + Express, MongoDB, EJS no primeiro *milestone*, Angular n
 
 Funcionalidades de bonificação do enunciado: gráficos nos *dashboards* ✔, pagamento com API externa (Stripe) ✔, carrinho de 10 minutos com contador ✔, vales de refeição ✔ e Open Food Facts ✔.
 
-### Protótipo
+### Capturas de ecrã
 
-Antes de programar, a interface foi desenhada em protótipo (a aplicação final usa Bootstrap e tem um aspeto mais simples):
-
-![Protótipo da lista de restaurantes com mapa](docs/screenshots/prototipo-restaurantes.png)
+| Criar um prato (*back-office* do restaurante) | Avaliações recebidas pelo restaurante |
+|---|---|
+| ![Formulário de novo prato com pré-visualização da imagem](docs/screenshots/novo-prato.png) | ![Lista de avaliações deixadas pelos clientes](docs/screenshots/avaliacoes.png) |
 
 ## Arquitetura
 
