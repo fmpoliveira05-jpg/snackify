@@ -10,7 +10,7 @@ const showPendingRestaurants = async (req, res) => {
     const restaurantes = await Restaurant.find({ isChecked: false });
     res.json(restaurantes);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao obter restaurantes por validar", error: error.message });
+    res.status(500).json({ message: "Erro ao obter restaurantes por validar." });
   }
 };
 
@@ -22,7 +22,7 @@ const showCheckedRestaurants = async (req, res) => {
     const restaurantes = await Restaurant.find({ isChecked: true });
     res.json(restaurantes);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao obter restaurantes validados", error: error.message });
+    res.status(500).json({ message: "Erro ao obter restaurantes validados." });
   }
 };
 
@@ -34,7 +34,7 @@ const validateRestaurant = async (req, res) => {
     await Restaurant.findByIdAndUpdate(req.params.id, { isChecked: true });
     res.json({ message: "Restaurante validado com sucesso" });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao validar restaurante", error: error.message });
+    res.status(500).json({ message: "Erro ao validar restaurante." });
   }
 };
 
@@ -46,7 +46,7 @@ const rejectRestaurant = async (req, res) => {
         await Restaurant.findByIdAndDelete(req.params.id);
         res.json({ message: "Restaurante rejeitado com sucesso." });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao rejeitar restaurante", error: error.message });
+        res.status(500).json({ message: "Erro ao rejeitar restaurante." });
     }
 };
 
@@ -58,7 +58,7 @@ const showCategories = async (req, res) => {
         const categorias = await Category.find();
         res.json(categorias); 
     } catch (error) {
-        res.status(500).json({ message: "Erro ao obter categorias", error: error.message });
+        res.status(500).json({ message: "Erro ao obter categorias." });
     }
 };
 
@@ -74,7 +74,7 @@ const createCategory = async (req, res) => {
     await Category.create({ name });
     res.status(201).json({ message: "Categoria criada com sucesso" });
   } catch (error) {
-    res.status(500).json({ message: "Erro ao criar categoria", error: error.message });
+    res.status(500).json({ message: "Erro ao criar categoria." });
   }
 };
 
@@ -89,7 +89,7 @@ const deleteRestaurant = async (req, res) => {
         }
         res.json({ message: "Restaurante removido com sucesso" });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao remover restaurante", error: error.message });
+        res.status(500).json({ message: "Erro ao remover restaurante." });
     }
 }
 
@@ -104,7 +104,7 @@ const deleteCategory = async (req, res) => {
         }
         res.json({ message: "Categoria removida com sucesso" });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao remover categoria", error: error.message });
+        res.status(500).json({ message: "Erro ao remover categoria." });
     }
 }
 
@@ -119,7 +119,7 @@ const disableRestaurant = async (req, res) => {
         }
         res.json({ message: "Restaurante desativado com sucesso" });
     } catch (error) {
-        res.status(500).json({ message: "Erro ao desativar restaurante", error: error.message });
+        res.status(500).json({ message: "Erro ao desativar restaurante." });
     }
 };
 

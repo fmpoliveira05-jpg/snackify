@@ -74,7 +74,7 @@ const getProfile = async (req, res) => {
 
     res.json(userData);
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao carregar perfil', error: error.message });
+    res.status(500).json({ message: 'Erro ao carregar perfil.' });
   }
 };
 
@@ -142,8 +142,11 @@ const updateProfile = async (req, res) => {
     res.status(200).json({ message: 'Perfil atualizado com sucesso.' });
   } catch (error) {
     console.error("Erro no updateProfile:", error);
-    res.status(500).json({
-      errors: [{ msg: 'Erro ao atualizar perfil: ' + error.message }]
+    if (error.name === 'ValidationError' || error.name === 'CastError') {
+      return res.status(400).json({ errors: [{ msg: 'Dados do perfil inválidos.' }] });
+    }
+    return res.status(500).json({
+      errors: [{ msg: 'Erro ao atualizar perfil.' }]
     });
   }
 };

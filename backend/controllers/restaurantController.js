@@ -399,7 +399,7 @@ const showAddDishForm = async (req, res) => {
     const categories = await Category.find();
     res.render('dishes/createDish', { categories, errors: [], oldInput: {} });
   } catch (error) {
-    res.status(500).json({ message: 'Erro ao carregar formulário', error: error.message });
+    res.status(500).json({ message: 'Erro ao carregar formulário.' });
   }
 };
 
