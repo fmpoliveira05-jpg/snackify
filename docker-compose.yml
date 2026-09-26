@@ -1,11 +1,21 @@
 # MongoDB local para desenvolvimento: `docker compose up -d`
-# Depois, no backend/.env: MONGODB_URI=mongodb://localhost:27017/snackify
+#
+# 1. Copie ".env.example" (nesta pasta) para ".env" e defina MONGO_ROOT_PASSWORD.
+# 2. No backend/.env use:
+#    MONGODB_URI=mongodb://<MONGO_ROOT_USERNAME>:<MONGO_ROOT_PASSWORD>@127.0.0.1:27017/snackify?authSource=admin
+#
+# A porta só fica acessível no próprio computador (127.0.0.1) e a base de dados exige autenticação.
+# Nota: o utilizador só é criado quando o volume está vazio. Se já tinha um volume antigo sem
+# autenticação, apague-o com `docker compose down -v` (perde os dados) antes de voltar a arrancar.
 services:
   mongo:
     image: mongo:7
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-snackify}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Defina MONGO_ROOT_PASSWORD no ficheiro .env ao lado do docker-compose.yml}
     volumes:
       - mongo-data:/data/db
 
