@@ -1,0 +1,10 @@
+<%# Campo "armadilha" (honeypot): escondido das pessoas; se vier preenchido, o pedido é ignorado. %>
+<div class="visually-hidden" aria-hidden="true">
+    <label for="website">Não preencha este campo</label>
+    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" value="">
+</div>
+<% if (typeof turnstileSiteKey !== 'undefined' && turnstileSiteKey) { %>
+    <%# Desafio Cloudflare Turnstile (só aparece quando TURNSTILE_SITE_KEY está configurada). %>
+    <div class="cf-turnstile mb-3" data-sitekey="<%= turnstileSiteKey %>" data-language="pt-PT"></div>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="<%= cspNonce %>"></script>
+<% } %>
