@@ -16,9 +16,11 @@ const options = {
     ],
     components: {
       securitySchemes: {
-        bearerAuth: {
-          type: "http",
-          scheme: "bearer"
+        // A sessão vive apenas num cookie httpOnly ("token" em desenvolvimento, "__Host-snackify" em produção).
+        cookieAuth: {
+          type: "apiKey",
+          in: "cookie",
+          name: "token"
         }
       }
     },

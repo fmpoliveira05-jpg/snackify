@@ -21,7 +21,7 @@ const {
  *     summary: Nós criamos esta rota com o objetivo de carregar a página que permite ao administrador validar os restaurantes que ainda não foram validados
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de restaurantes pendentes.
@@ -37,7 +37,7 @@ router.get('/validar-restaurantes', authMiddleware, isAdmin, showPendingRestaura
  *     summary: Nós criamos esta rota com o objetivo de listar os restaurantes que já foram validados pelo administrador
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de restaurantes validados.
@@ -53,7 +53,7 @@ router.get('/listar-restaurantes-validados', authMiddleware, isAdmin, showChecke
  *     summary: Nós criamos esta rota com o objetivo de listar todas as categorias disponíveis
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de categorias.
@@ -69,7 +69,7 @@ router.get('/listar-categorias', authMiddleware, isAdmin, showCategories);
  *     summary: Nós criamos esta rota com o objetivo de validar o restaurante selecionado pelo administrador
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -94,7 +94,7 @@ router.post('/validar-restaurante/:id', authMiddleware, isAdmin, validateRestaur
  *     summary: Nós criamos esta rota com o objetivo de rejeitar um restaurante pendente de validação
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -119,7 +119,7 @@ router.post('/rejeitar-restaurante/:id', authMiddleware, isAdmin, rejectRestaura
  *     summary: Nós criamos esta rota com o objetivo de desativar temporariamente um restaurante já existente
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -144,7 +144,7 @@ router.post('/desativar-restaurante/:id', authMiddleware, isAdmin, disableRestau
  *     summary: Nós criamos esta rota com o objetivo de retornar todas as categorias disponíveis (rota duplicada de listar-categorias)
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de categorias.
@@ -160,7 +160,7 @@ router.get('/categorias', authMiddleware, isAdmin, showCategories);
  *     summary: Nós criamos esta rota com o objetivo de criar ou editar categorias de restaurantes
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -188,7 +188,7 @@ router.post('/editar-categorias', authMiddleware, isAdmin, createCategory);
  *     summary: Nós criamos esta rota com o objetivo de remover uma categoria existente
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -213,7 +213,7 @@ router.delete('/remover-categoria/:id', authMiddleware, isAdmin, deleteCategory)
  *     summary: Nós criamos esta rota com o objetivo de remover permanentemente um restaurante do sistema
  *     tags: [Admin]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path

@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const { config } = require('../config/env');
+const { readSessionToken, verifySessionToken, endSession } = require('../services/session');
 
 /** Página inicial de cada tipo de utilizador, usada nos redirecionamentos. */
 const HOME_BY_TYPE = {
@@ -16,8 +16,12 @@ const HOME_BY_TYPE = {
 const wantsHtml = (req) => req.accepts(['json', 'html']) === 'html' && !req.xhr;
 
 /**
- * Middleware global: se o pedido trouxer um JWT válido (cookie "token" ou cabeçalho
- * Authorization), carrega o utilizador da base de dados e coloca-o em req.user.
+ * Middleware global: se o pedido trouxer um JWT válido no cookie da sessão, carrega o
+ * utilizador da base de dados e coloca-o em req.user.
+ *
+ * O cabeçalho Authorization deixou de ser aceite: a sessão vive só no cookie httpOnly.
+ * O token tem de ter sido assinado com HS256, pelo emissor e para o público esperados, e a
+ * sua versão ("tv") tem de coincidir com a da conta (senão foi revogado).
  *
  * Um restaurante só conta como autenticado depois de validado por um administrador,
  * e um restaurante desativado perde o acesso de imediato (o token não chega).
@@ -26,27 +30,32 @@ const loadUser = async (req, res, next) => {
   req.user = null;
   res.locals.user = null;
 
-  const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+  const token = readSessionToken(req);
   if (!token) return next();
 
   let decoded;
   try {
-    decoded = jwt.verify(token, config.jwtSecret);
+    decoded = verifySessionToken(token);
   } catch (err) {
-    res.clearCookie('token');
+    endSession(res);
     return next();
   }
 
   try {
-    const user = decoded.userType === 'restaurant'
-      ? await Restaurant.findById(decoded.userId)
-      : await User.findById(decoded.userId);
+    const Model = decoded.userType === 'restaurant' ? Restaurant : User;
+    const user = await Model.findById(decoded.userId).select('+tokenVersion');
 
     if (!user || (decoded.userType === 'restaurant' && !user.isChecked)) {
       return next();
     }
+    if ((user.tokenVersion || 0) !== decoded.tv) {
+      // Sessão revogada (password redefinida ou "terminar todas as sessões").
+      endSession(res);
+      return next();
+    }
 
-    user.userType = decoded.userType;
+    // Nos clientes/administradores manda o tipo guardado na base de dados (uma despromoção vale logo).
+    user.userType = decoded.userType === 'restaurant' ? 'restaurant' : (user.userType || decoded.userType);
     req.user = user;
     res.locals.user = user;
     return next();

@@ -38,7 +38,7 @@ router.patch('/api/orders/:id/state', auth, isRestaurant, updateOrderState);
  *     summary: Nós criamos esta rota com o objetivo de abrir a página com os dados do utilizador em JSON
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Dados do perfil.
@@ -52,7 +52,7 @@ router.get('/perfil/dados', auth, getProfile);
  *     summary: Nós criamos esta rota com o objetivo de abrir a página com o histórico das encomendas do utilizador em JSON
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de encomendas.
@@ -66,7 +66,7 @@ router.get('/perfil/encomendas/', auth, getOrderHistory);
  *     summary: Nós criamos esta rota com o objetivo de abrir a página que permite ao cliente avaliar a encomenda após ter sido entregue
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: orderId
@@ -87,7 +87,7 @@ router.get('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, renderReview
  *     summary: Nós criamos esta rota com o objetivo de enviar os dados do utilizador atualizados para a rota
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -145,7 +145,7 @@ router.put(
  *     summary: Nós criamos esta rota com o objetivo de permitir ao utilizador cancelar uma encomenda cumprindo as regras de negócio da empresa
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: orderId
@@ -168,7 +168,7 @@ router.post('/perfil/encomendas/:orderId/cancelar', auth, isCustomer, cancelOrde
  *     summary: Nós criamos esta rota com o objetivo de submeter a avaliação do cliente
  *     tags: [Perfil]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: orderId
@@ -205,7 +205,7 @@ router.post('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, upload.sing
  *     summary: Nós criamos esta rota com o objetivo de carregar os detalhes de uma encomenda específica feita pelo cliente
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: orderId
  *         in: path

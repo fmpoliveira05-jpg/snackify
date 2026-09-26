@@ -38,7 +38,7 @@ const Category = require('../models/category');
  *     summary: Nós criamos esta rota com o objetivo de listar todos os menus criados pelo restaurante autenticado na página
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de menus.
@@ -57,7 +57,7 @@ router.get('/menus', auth, isRestaurant, (req, res) => {
  *     summary: Nós criamos esta rota com o objetivo de carregar o formulário que permite ao restaurante criar um menu na página
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Formulário para novo menu.
@@ -71,7 +71,7 @@ router.get('/menus/novo', auth, isRestaurant, showAddMenuForm);
  *     summary: Nós criamos esta rota com o objetivo de carregar a página que permite ao restaurante autenticado editar um menu existente
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -92,7 +92,7 @@ router.get('/menus/editar/:id', auth, isRestaurant, showEditMenuForm);
  *     summary: Nós criamos esta rota com o objetivo de submeter o menu criado pelo restaurante autenticado
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -128,7 +128,7 @@ router.post(
  *     summary: Nós criamos esta rota com o objetivo de submeter as alterações efetuadas ao menu por parte do restaurante autenticado
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -163,7 +163,7 @@ router.put(
  *     summary: Nós criamos esta rota com o objetivo de remover um menu da BD
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -184,7 +184,7 @@ router.delete('/menus/remover/:id', auth, isRestaurant, deleteMenu);
  *     summary: Nós criamos esta rota com o objetivo de remover um prato de um menu (o prato continua a existir na BD)
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -205,7 +205,7 @@ router.delete('/menus/pratos/remover/:id', auth, isRestaurant, removeDishFromMen
  *     summary: Nós criamos esta rota com o objetivo de carregar todos os pratos criados pelo restaurante na página
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de pratos.
@@ -219,7 +219,7 @@ router.get('/pratos', auth, isRestaurant, listDishes);
  *     summary: Nós criamos esta rota com o objetivo de carregar o formulário que permite ao restaurante criar um prato na página
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Formulário de novo prato.
@@ -233,7 +233,7 @@ router.get('/pratos/novo', auth, isRestaurant, showAddDishForm);
  *     summary: Nós criamos esta rota com o objetivo de carregar a página que permite ao restaurante consultar um dos seus pratos
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -254,7 +254,7 @@ router.get('/pratos/:id', auth, isRestaurant, showDishDetails);
  *     summary: Nós criamos esta rota com o objetivo de carregar a página que permite ao restaurante editar os dados de um determinado prato
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -275,7 +275,7 @@ router.get('/pratos/editar/:id', auth, isRestaurant, showEditDishForm);
  *     summary: Nós criamos esta rota com o objetivo de submeter o prato criado pelo restaurante
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -314,7 +314,7 @@ router.post(
  *     summary: Nós criamos esta rota com o objetivo de submeter as alterações efetuadas ao prato por parte do restaurante
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -361,7 +361,7 @@ router.put(
  *     summary: Nós criamos esta rota com o objetivo de remover o prato da BD
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -382,7 +382,7 @@ router.delete('/pratos/remover/:id', auth, isRestaurant, deleteDish);
  *     summary: Nós criamos esta rota com o objetivo de carregar a área de acesso do restaurante
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Página de gestão do restaurante.
@@ -396,7 +396,7 @@ router.get('/dashboard', auth, isRestaurant, showRestaurantDashboard);
  *     summary: Nós criamos esta rota com o objetivo de permitir que um restaurante veja as avaliações feitas pelos clientes
  *     tags: [Restaurante]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de avaliações retornada com sucesso.
