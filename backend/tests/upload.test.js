@@ -13,8 +13,8 @@ describe('upload de imagens', () => {
     expect(chooseFolder(url, userType)).toBe(folder);
   });
 
-  const check = (mimetype) => new Promise((resolve) => {
-    fileFilter({}, { mimetype }, (err, accepted) => resolve({ err, accepted }));
+  const check = (mimetype, originalname = 'foto.png') => new Promise((resolve) => {
+    fileFilter({}, { mimetype, originalname }, (err, accepted) => resolve({ err, accepted }));
   });
 
   test('aceita imagens', async () => {
@@ -25,6 +25,11 @@ describe('upload de imagens', () => {
     const { err } = await check(mimetype);
     expect(err).toBeInstanceOf(Error);
     expect(err.name).toBe('UploadError');
+  });
+
+  test.each(['pagina.html', 'imagem.svg', 'script.php', 'sem-extensao'])('rejeita a extensão de %s', async (name) => {
+    const { err } = await check('image/png', name);
+    expect(err?.name).toBe('UploadError');
   });
 });
 
