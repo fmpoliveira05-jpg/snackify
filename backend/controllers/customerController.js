@@ -1,3 +1,5 @@
+// Operadores construídos pelo servidor são marcados como confiáveis; o sanitizeFilter só neutraliza os que vêm do pedido.
+const { trusted } = require('mongoose');
 const Restaurant = require('../models/restaurant');
 const Dish = require('../models/dish');
 const Menu = require('../models/menu');
@@ -54,7 +56,7 @@ async function loadCart(userId) {
 async function recentCancellations(userId) {
   const since = new Date();
   since.setMonth(since.getMonth() - 3);
-  const cancelled = await Order.find({ userId, state: 'cancelada', orderDate: { $gte: since } }).select('orderDate');
+  const cancelled = await Order.find({ userId, state: 'cancelada', orderDate: trusted({ $gte: since }) }).select('orderDate');
   return cancelled.map((order) => order.orderDate);
 }
 
@@ -79,7 +81,7 @@ const listRestaurants = async (req, res) => {
  */
 const searchDishes = async (req, res) => {
   const restaurantIds = await Restaurant.find({ isChecked: true }).distinct('_id');
-  const dishes = await Dish.find({ restaurantId: { $in: restaurantIds } })
+  const dishes = await Dish.find({ restaurantId: trusted({ $in: restaurantIds }) })
     .populate('restaurantId', 'name address')
     .populate('category', 'name')
     .lean();
@@ -288,7 +290,7 @@ const createOrderFromCart = async (req, res) => {
   if (!restaurant) {
     return res.status(404).json({ message: 'O restaurante deixou de estar disponível.' });
   }
-  const activeOrders = await Order.countDocuments({ restaurantId: restaurant._id, state: { $in: ACTIVE_STATES } });
+  const activeOrders = await Order.countDocuments({ restaurantId: restaurant._id, state: trusted({ $in: ACTIVE_STATES }) });
   const customer = await User.findById(userId).select('address');
   const decision = checkOrderAllowed({
     settings: restaurant.settings,
@@ -305,7 +307,7 @@ const createOrderFromCart = async (req, res) => {
   let discount = 0;
   let voucher = null;
   if (typeof req.body?.voucherCode === 'string' && req.body.voucherCode.trim()) {
-    voucher = await Voucher.findOne({ code: req.body.voucherCode.trim().toUpperCase(), ownerId: userId, balance: { $gt: 0 } });
+    voucher = await Voucher.findOne({ code: req.body.voucherCode.trim().toUpperCase(), ownerId: userId, balance: trusted({ $gt: 0 }) });
     if (!voucher) {
       return res.status(400).json({ message: 'Vale inválido, sem saldo ou de outro utilizador.' });
     }

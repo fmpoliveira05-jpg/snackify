@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { trusted } = require('mongoose');
 const {
   listMenus,
   searchMenus,
@@ -147,7 +148,7 @@ router.put(
   validateRequest('menus/updateMenu', async (req) => {
     const menu = await Menu.findById(req.params.id);
     const availableDishes = await Dish.find({
-      $or: [{ menuId: null }, { menuId: { $exists: false } }],
+      $or: [{ menuId: null }, { menuId: trusted({ $exists: false }) }],
       restaurantId: req.user._id
     });
     return { menu, availableDishes };

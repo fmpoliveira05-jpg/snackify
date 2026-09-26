@@ -1,3 +1,5 @@
+// Operadores construídos pelo servidor são marcados como confiáveis; o sanitizeFilter só neutraliza os que vêm do pedido.
+const { trusted } = require('mongoose');
 const Order = require('../models/order');
 const Menu = require('../models/menu');
 const Dish = require('../models/dish');
@@ -83,7 +85,7 @@ const searchMenus = async (req, res) => {
     if (["title", "description"].includes(field)) {
       const filter = {
         restaurantId: req.user._id,
-        [field]: { $regex: escapeRegex(trimmedValue), $options: "i" }
+        [field]: trusted({ $regex: escapeRegex(trimmedValue), $options: "i" })
       };
       menus = await Menu.find(filter);
     }
@@ -93,12 +95,12 @@ const searchMenus = async (req, res) => {
 
       const matchingDishes = await Dish.find({
         restaurantId: req.user._id,
-        pricePerDose: {
+        pricePerDose: trusted({
           $elemMatch: {
             dose: doseTarget,
             price: searchValue
           }
-        }
+        })
       });
 
       if (!matchingDishes.length) {
@@ -114,7 +116,7 @@ const searchMenus = async (req, res) => {
         return res.status(404).send("Menus correspondentes não encontrados.");
       }
 
-      menus = await Menu.find({ _id: { $in: menuIds } });
+      menus = await Menu.find({ _id: trusted({ $in: menuIds }) });
     }
 
     if (!menus.length) {
@@ -181,7 +183,7 @@ const addMenu = async (req, res) => {
     await newMenu.save();
 
     await Dish.updateMany(
-      { _id: { $in: dishIds }, restaurantId: req.user._id },
+      { _id: trusted({ $in: dishIds }), restaurantId: req.user._id },
       { $set: { menuId: newMenu._id } }
     );
 
@@ -205,7 +207,7 @@ const showEditMenuForm = async (req, res) => {
 
     const availableDishes = await Dish.find({
       $or: [
-        { menuId: { $exists: false } },
+        { menuId: trusted({ $exists: false }) },
         { menuId: null },
         { menuId: menu._id }
       ],
@@ -250,9 +252,9 @@ const updateMenu = async (req, res) => {
       // O limite de 10 pratos conta com os que o menu já tem.
       const alreadyInMenu = await Dish.countDocuments({ menuId: menu._id });
       const newOnes = await Dish.countDocuments({
-        _id: { $in: selectedDishIds },
+        _id: trusted({ $in: selectedDishIds }),
         restaurantId: req.user._id,
-        $or: [{ menuId: null }, { menuId: { $exists: false } }]
+        $or: [{ menuId: null }, { menuId: trusted({ $exists: false }) }]
       });
       if (alreadyInMenu + newOnes > MAX_DISHES_PER_MENU) {
         return res.status(400).send(`Um menu pode ter no máximo ${MAX_DISHES_PER_MENU} pratos.`);
@@ -260,10 +262,10 @@ const updateMenu = async (req, res) => {
 
       await Dish.updateMany(
         {
-          _id: { $in: selectedDishIds },
+          _id: trusted({ $in: selectedDishIds }),
           $or: [
             { menuId: null },
-            { menuId: { $exists: false } }
+            { menuId: trusted({ $exists: false }) }
           ],
           restaurantId: req.user._id
         },
