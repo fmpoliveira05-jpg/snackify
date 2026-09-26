@@ -3,14 +3,17 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const helmet = require('helmet');
 const methodOverride = require('method-override');
 
 const { config } = require('./config/env');
 const { swaggerUi, swaggerSpec } = require('./swagger');
 const { loadUser, redirectIfAuthenticated } = require('./middlewares/authMiddleware');
 const errorHandler = require('./middlewares/errorHandler');
+const { verifyOrigin } = require('./middlewares/csrfMiddleware');
+const { apiLimiter } = require('./middlewares/rateLimiters');
+const { cspNonce, helmetMiddleware, permissionsPolicy, forceHttps } = require('./middlewares/securityHeaders');
 
+const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
@@ -22,6 +25,16 @@ const registerRoutes = require('./routes/registerRoutes');
 // (ex.: {"username": {"$ne": null}} no login), o que previne injeção NoSQL.
 mongoose.set('sanitizeFilter', true);
 
+const BODY_LIMIT = '100kb';
+const API_PREFIXES = ['/auth', '/user', '/admin', '/cliente/api', '/restaurante', '/register', '/api'];
+
+/** Ficheiros enviados pelos utilizadores: nunca são interpretados como página nem executados. */
+const setUploadHeaders = (res) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  res.setHeader('Content-Disposition', 'inline');
+};
+
 /**
  * Cria a aplicação Express sem a pôr à escuta nem ligar à base de dados,
  * o que permite testá-la com o supertest.
@@ -29,36 +42,57 @@ mongoose.set('sanitizeFilter', true);
 function createApp() {
   const app = express();
 
-  // As páginas EJS usam scripts inline e o Google Charts; a CSP fica desligada para não os bloquear.
-  app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  app.disable('x-powered-by');
+  // Número de proxies de confiança (req.ip e req.secure corretos atrás de um proxy).
+  app.set('trust proxy', config.trustProxy);
+
+  app.use(forceHttps);
+  app.use(cspNonce);
+  app.use(helmetMiddleware());
+  app.use(permissionsPolicy);
   app.use(cors({ origin: config.clientUrl, credentials: true }));
 
-  app.use(express.static(path.join(__dirname, 'public')));
-  app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  if (config.env === 'development') {
+    // Só o caminho: a query string pode ter tokens (ex.: links de verificação).
+    app.use((req, res, next) => {
+      console.log(`[${req.method}] ${req.path}`);
+      next();
+    });
+  }
+
+  app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'ignore' }));
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+    dotfiles: 'deny',
+    index: false,
+    redirect: false,
+    setHeaders: setUploadHeaders,
+  }));
+  if (config.enableApiDocs) {
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  }
 
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
-  app.use(express.urlencoded({ extended: true }));
-  app.use(express.json());
-  app.use(methodOverride('_method'));
+  app.use(API_PREFIXES, apiLimiter);
+
+  // O webhook do Stripe precisa do corpo em bruto para verificar a assinatura: vem antes do express.json.
+  app.use(stripeWebhookRoutes);
+
+  app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT, parameterLimit: 200 }));
+  app.use(express.json({ limit: BODY_LIMIT }));
   app.use(cookieParser());
+  app.use(verifyOrigin);
+  app.use(methodOverride('_method'));
   app.use(loadUser);
 
   app.use((req, res, next) => {
     res.locals.currentPath = req.path;
     // As páginas EJS apontam para o cliente Angular, que em desenvolvimento corre noutra porta.
     res.locals.clientUrl = config.clientUrl;
+    res.locals.turnstileSiteKey = config.turnstileSiteKey;
     next();
   });
-
-  if (config.env === 'development') {
-    app.use((req, res, next) => {
-      console.log(`[${req.method}] ${req.originalUrl}`);
-      next();
-    });
-  }
 
   app.get('/', redirectIfAuthenticated, (req, res) => res.render('index'));
 
@@ -70,13 +104,15 @@ function createApp() {
   app.use('/register', registerRoutes);
 
   // Em produção, o cliente Angular compilado pode ser servido pelo próprio Express.
+  // O build não tem scripts inline (ver angular.json), por isso funciona com a CSP "script-src 'self'".
   const angularDist = path.join(__dirname, '..', 'frontend', 'dist', 'angular', 'browser');
-  app.use(express.static(angularDist));
-  const apiPrefixes = ['/auth', '/user/api', '/admin', '/cliente/api', '/restaurante', '/uploads', '/register', '/api-docs'];
+  app.use(express.static(angularDist, { index: false, dotfiles: 'ignore' }));
+  const spaExcluded = ['/auth', '/user/api', '/admin', '/cliente/api', '/restaurante', '/uploads', '/register', '/api-docs', '/api/'];
   app.get('*', (req, res, next) => {
-    if (/\.[^/]+$/.test(req.path) || apiPrefixes.some((prefix) => req.path.startsWith(prefix))) {
+    if (/\.[^/]+$/.test(req.path) || spaExcluded.some((prefix) => req.path.startsWith(prefix))) {
       return next();
     }
+    res.setHeader('Cache-Control', 'no-cache');
     return res.sendFile(path.join(angularDist, 'index.html'), (err) => {
       if (err) next();
     });

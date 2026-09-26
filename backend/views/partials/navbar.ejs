@@ -42,9 +42,9 @@
   <div id="new-order-toast" class="alert alert-success shadow position-fixed top-0 end-0 m-3 d-none" role="status" style="z-index: 1080;">
     <span id="new-order-text"></span>
     <a href="<%= clientUrl %>/user/perfil" class="alert-link ms-2">ver encomendas</a>
-    <button type="button" class="btn-close ms-2" aria-label="Fechar" onclick="this.parentElement.classList.add('d-none')"></button>
+    <button type="button" class="btn-close ms-2" aria-label="Fechar" data-dismiss-parent></button>
   </div>
-  <script>
+  <script nonce="<%= cspNonce %>">
     (function () {
       var known = null;
       function check() {
@@ -70,3 +70,4 @@
     })();
   </script>
 <% } %>
+<script src="/javascripts/confirmActions.js" nonce="<%= cspNonce %>"></script>

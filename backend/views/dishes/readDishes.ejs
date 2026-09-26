@@ -45,7 +45,7 @@
 
                 <div class="mt-auto d-flex justify-content-start gap-2">
                   <a href="/restaurante/pratos/editar/<%= dish._id %>" class="btn btn-warning btn-sm">Editar Prato</a>
-                  <form action="/restaurante/pratos/remover/<%= dish._id %>?_method=DELETE" method="POST" onsubmit="return confirm('Remover este prato permanentemente?')">
+                  <form action="/restaurante/pratos/remover/<%= dish._id %>?_method=DELETE" method="POST" data-confirm="Remover este prato permanentemente?">
                     <button class="btn btn-danger btn-sm">Remover Prato</button>
                   </form>
                 </div>
