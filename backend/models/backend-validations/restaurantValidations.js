@@ -1,3 +1,4 @@
+const { PASSWORD_RULE, PASSWORD_MESSAGE } = require('../../utils/passwordPolicy');
 const nifIsValid = require('../../utils/nifValidator');
 
 module.exports = {
@@ -21,8 +22,8 @@ module.exports = {
 
   passwordValidator: {
     validator: (value) =>
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/.test(value),
-    message: 'A password deve ter entre 8 e 20 caracteres e conter uma letra maiúscula, uma minúscula, um número e um caractere especial.'
+      PASSWORD_RULE.test(value),
+    message: PASSWORD_MESSAGE
   },
 
   foundedAtValidator: {

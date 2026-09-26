@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const upload = require('../middlewares/uploadMiddleware');
 const { redirectIfAuthenticated: checkUser } = require('../middlewares/authMiddleware');
+const { registerLimiter } = require('../middlewares/rateLimiters');
+const { honeypot, turnstile } = require('../middlewares/botProtection');
 
 const {
     showCustomerRegisterPage,
@@ -64,14 +66,17 @@ router.get('/registar-restaurante', checkUser, showRestaurantRegisterPage);
  *                 format: binary
  *     responses:
  *       201:
- *         description: Cliente registado com sucesso.
+ *         description: Cliente registado; é enviado um email para confirmar a conta (formulário EJS é redirecionado para /verificar-email/pendente).
  *       400:
  *         description: Dados inválidos ou erro de validação.
  */
 router.post(
     '/registar-cliente',
     checkUser,
+    registerLimiter,
     upload.single('profilePicture'),
+    honeypot(),
+    turnstile,
     customerValidator.customerRegisterValidator,
     validateRequest('auth/customerRegister'),
     customerRegister
@@ -105,14 +110,17 @@ router.post(
  *                 format: binary
  *     responses:
  *       201:
- *         description: Restaurante registado com sucesso.
+ *         description: Restaurante registado; é enviado um email para confirmar a conta e fica à espera da validação do administrador.
  *       400:
  *         description: Dados inválidos ou erro de validação.
  */
 router.post(
     '/registar-restaurante',
     checkUser,
+    registerLimiter,
     upload.single('logo'),
+    honeypot(),
+    turnstile,
     restaurantValidator.restaurantRegisterValidator,
     validateRequest('auth/restaurantRegister'),
     restaurantRegister

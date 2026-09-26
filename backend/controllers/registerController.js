@@ -2,9 +2,21 @@ const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const bcrypt = require('bcryptjs');
 const { wrapAll } = require('../utils/asyncHandler');
+const { config } = require('../config/env');
+const { BCRYPT_COST, PASSWORD_MESSAGE, isStrongPassword } = require('../utils/passwordPolicy');
+const { issueEmailVerification } = require('./authController');
+const { discardUpload } = require('../middlewares/uploadMiddleware');
 
-const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,20}$/;
-const PASSWORD_MESSAGE = 'A password deve ter entre 8 e 20 caracteres e conter uma letra maiúscula, uma minúscula, um número e um caractere especial.';
+/** Depois do registo, o utilizador é enviado para a página que lhe pede para confirmar o email. */
+const CHECK_EMAIL_URL = () => `${config.clientUrl}/verificar-email/pendente`;
+const REGISTERED_MESSAGE = 'Conta criada. Enviámos um email com o link para a confirmar.';
+
+/** Resposta de sucesso: redireciona o formulário EJS; responde em JSON aos pedidos da API. */
+const registered = (req, res) => {
+  const wantsJson = req.accepts(['html', 'json']) === 'json' || req.xhr;
+  if (wantsJson) return res.status(201).json({ message: REGISTERED_MESSAGE });
+  return res.redirect(303, CHECK_EMAIL_URL());
+};
 
 /**
  * O login procura o username primeiro nos clientes e depois nos restaurantes, por isso
@@ -66,15 +78,17 @@ const customerRegister = async (req, res) => {
   const userType = "customer";
 
   try {
-    if (typeof password !== 'string' || !PASSWORD_RULE.test(password)) {
+    if (!isStrongPassword(password)) {
+      await discardUpload(req);
       return res.status(400).json({ message: PASSWORD_MESSAGE });
     }
 
     if (await isTaken({ username, email })) {
+      await discardUpload(req);
       return res.status(400).json({ message: "Email ou username já em uso!" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
 
     const newUser = new User({
       name,
@@ -99,9 +113,13 @@ const customerRegister = async (req, res) => {
     });
 
     await newUser.save();
-    res.redirect('/auth/login');
+    await issueEmailVerification(User, newUser);
+    return registered(req, res);
   } catch (error) {
-    res.status(500).json({ message: "Erro ao registar o utilizador", error: error.message });
+    await discardUpload(req);
+    if (error.name === 'ValidationError') return res.status(400).json({ message: 'Dados inválidos.' });
+    console.error('[registo] Erro ao registar o cliente:', error.name);
+    return res.status(500).json({ message: "Erro ao registar o utilizador." });
   }
 };
 
@@ -126,15 +144,17 @@ const restaurantRegister = async (req, res) => {
     const logo = req.file ? `/uploads/logos/${req.file.filename}` : null;
 
     try {
-        if (typeof password !== 'string' || !PASSWORD_RULE.test(password)) {
+        if (!isStrongPassword(password)) {
+            await discardUpload(req);
             return res.status(400).json({ message: PASSWORD_MESSAGE });
         }
 
         if (await isTaken({ username, email })) {
+            await discardUpload(req);
             return res.status(400).json({ message: "Email ou username já em uso!" });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, BCRYPT_COST);
 
         const newRestaurant = new Restaurant({
             name,
@@ -160,9 +180,13 @@ const restaurantRegister = async (req, res) => {
         });
 
         await newRestaurant.save();
-        res.redirect('/auth/login');
+        await issueEmailVerification(Restaurant, newRestaurant);
+        return registered(req, res);
     } catch (error) {
-        res.status(500).json({ message: "Erro ao registar o restaurante", error: error.message });
+        await discardUpload(req);
+        if (error.name === 'ValidationError') return res.status(400).json({ message: 'Dados inválidos.' });
+        console.error('[registo] Erro ao registar o restaurante:', error.name);
+        return res.status(500).json({ message: "Erro ao registar o restaurante." });
     }
 };
 

@@ -1,3 +1,4 @@
+const { PASSWORD_RULE, PASSWORD_MESSAGE, PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } = require('../../utils/passwordPolicy');
 const { body } = require('express-validator');
 const nifIsValid = require('../../utils/nifValidator');
 
@@ -88,9 +89,9 @@ const registrationOnlyValidations = [
 
   body('password')
     .notEmpty().withMessage('A password é obrigatória.')
-    .isLength({ min: 8, max: 20 }).withMessage('A password deve ter entre 8 e 20 caracteres.')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/)
-    .withMessage('A password deve conter pelo menos uma letra maiúscula, uma minúscula, um número e um caractere especial.'),
+    .isLength({ min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH }).withMessage(PASSWORD_MESSAGE)
+    .matches(PASSWORD_RULE)
+    .withMessage(PASSWORD_MESSAGE),
 ];
 
 const customerRegisterValidator = [...commonValidations, ...registrationOnlyValidations];

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { accountSecurityPlugin } = require('./accountSecurity');
 const {
   nameValidator,
   usernameValidator,
@@ -40,5 +41,8 @@ const UserSchema = new mongoose.Schema({
   profilePicture: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
+
+// Verificação do email, bloqueio por tentativas falhadas, recuperação da password e versão da sessão.
+UserSchema.plugin(accountSecurityPlugin);
 
 module.exports = mongoose.model('User', UserSchema);
