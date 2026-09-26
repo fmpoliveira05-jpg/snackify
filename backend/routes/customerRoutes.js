@@ -8,6 +8,7 @@ const {
     listCategories,
     listVouchers,
     buyVoucher,
+    handleVoucherPaymentSuccess,
     readRestaurant,
     readMenu,
     listMenus,
@@ -30,7 +31,7 @@ const {
  *     summary: Nós criamos esta rota com o objetivo de carregar os restaurantes disponíveis para encomendar comida na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Lista de restaurantes.
@@ -44,7 +45,7 @@ router.get('/restaurantes', auth, isCustomer, listRestaurants);
  *     summary: Pesquisa pratos de todos os restaurantes validados, com filtros e ordenação
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - { in: query, name: q, schema: { type: string }, description: Texto no nome ou na descrição }
  *       - { in: query, name: category, schema: { type: string }, description: Id da categoria }
@@ -66,7 +67,7 @@ router.get('/pratos', auth, isCustomer, searchDishes);
  *     summary: Lista as categorias de pratos (para os filtros)
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Categorias ordenadas pelo nome.
@@ -80,15 +81,15 @@ router.get('/categorias', auth, isCustomer, listCategories);
  *     summary: Lista os vales de refeição do cliente e os valores disponíveis para compra
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Valores possíveis e vales do cliente.
  *   post:
- *     summary: Compra (simulada) um vale de refeição, para o próprio ou para oferecer
+ *     summary: Compra um vale de refeição (Stripe Checkout), para o próprio ou para oferecer
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -102,7 +103,9 @@ router.get('/categorias', auth, isCustomer, listCategories);
  *               message: { type: string, maxLength: 140 }
  *     responses:
  *       201:
- *         description: Vale criado.
+ *         description: Vale pendente criado; devolve o URL do Stripe Checkout. O vale só é ativado depois do pagamento confirmado.
+ *       503:
+ *         description: Pagamento online não configurado.
  *       400:
  *         description: Valor inválido.
  *       404:
@@ -113,12 +116,24 @@ router.post('/vales', auth, isCustomer, buyVoucher);
 
 /**
  * @swagger
+ * /cliente/api/vales/pagamento-sucesso:
+ *   get:
+ *     summary: Regresso do Stripe depois de pagar um vale (ativa o vale se o pagamento for confirmado)
+ *     tags: [Cliente]
+ *     responses:
+ *       303:
+ *         description: Redireciona para a página de vales do cliente.
+ */
+router.get('/vales/pagamento-sucesso', handleVoucherPaymentSuccess);
+
+/**
+ * @swagger
  * /cliente/api/restaurantes/{id}:
  *   get:
  *     summary: Nós criamos esta rota com o objetivo de carregar um restaurante específico na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -139,7 +154,7 @@ router.get('/restaurantes/:id', auth, isCustomer, readRestaurant);
  *     summary: Nós criamos esta rota com o objetivo de carregar um menu específico de um determinado restaurante na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -160,7 +175,7 @@ router.get('/menus/:id', auth, isCustomer, readMenu);
  *     summary: Nós criamos esta rota com o objetivo de carregar os menus de um determinado restaurante na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -181,7 +196,7 @@ router.get('/restaurantes/:id/menus', auth, isCustomer, listMenus);
  *     summary: Nós criamos esta rota com o objetivo de carregar os pratos de um menu de um determinado restaurante na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -202,7 +217,7 @@ router.get('/menus/:id/pratos', auth, isCustomer, listDishes);
  *     summary: Nós criamos esta rota com o objetivo de carregar a área de acesso do cliente na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Painel com informações do cliente.
@@ -216,7 +231,7 @@ router.get('/dashboard', auth, isCustomer, showCustomerDashboard);
  *     summary: Nós criamos esta rota com o objetivo de carregar o carrinho de compras na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Conteúdo do carrinho.
@@ -230,7 +245,7 @@ router.get('/carrinho', auth, isCustomer, viewCart);
  *     summary: Nós criamos esta rota com o objetivo de carregar a página que exibe a encomenda registada após o cliente finalizar o seu pedido (ainda antes do pagamento) na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Dados para checkout.
@@ -244,12 +259,14 @@ router.get('/carrinho/checkout', auth, isCustomer, checkout);
  *     summary: Nós criamos esta rota com o objetivo de confirmar o pagamento da encomenda e a encomenda passar ao estado de “concluída” na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Confirmação de pagamento.
  */
-router.get('/carrinho/pagamento-sucesso', auth, isCustomer, handlePaymentSuccess);
+// Sem "auth": o cookie SameSite=Strict não acompanha o regresso a partir do Stripe; a
+// confirmação é feita junto do Stripe (ver handlePaymentSuccess).
+router.get('/carrinho/pagamento-sucesso', handlePaymentSuccess);
 
 /**
  * @swagger
@@ -258,7 +275,7 @@ router.get('/carrinho/pagamento-sucesso', auth, isCustomer, handlePaymentSuccess
  *     summary: Nós criamos esta rota com o objetivo de adicionar um prato ao carrinho de compras do cliente na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -283,7 +300,7 @@ router.post('/carrinho/adicionar', auth, isCustomer, addToCart);
  *     summary: Nós criamos esta rota com o objetivo de remover um prato do carrinho de compras do cliente na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -306,7 +323,7 @@ router.delete('/carrinho/remover', auth, isCustomer, removeFromCart);
  *     summary: Nós criamos esta rota com o objetivo de limpar todos os itens do carrinho de compras do cliente na página quando o tempo limite para concluir a encomenda (10 min) é excedido através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Carrinho limpo com sucesso.
@@ -324,7 +341,7 @@ router.delete('/carrinho/limpar', auth, isCustomer, clearCart);
  *     summary: Nós criamos esta rota com o objetivo de criar a encomenda propriamente dita após o cliente finalizar a sua encomenda (ainda antes do pagamento) na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       content:
  *         application/json:
@@ -352,7 +369,7 @@ router.post('/carrinho/finalizar', auth, isCustomer, createOrderFromCart);
  *     summary: Nós criamos esta rota com o objetivo de criar uma sessão de pagamento da Stripe API no site para o cliente na página através do Angular
  *     tags: [Cliente]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Sessão de pagamento criada.

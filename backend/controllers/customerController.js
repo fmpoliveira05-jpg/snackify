@@ -25,8 +25,7 @@ const {
 const { filterRestaurants, filterDishes } = require('../services/search');
 const { VOUCHER_VALUES, generateVoucherCode, applyVoucher } = require('../services/vouchers');
 
-// O Stripe é opcional: sem chave configurada o pagamento online fica simplesmente indisponível.
-const stripe = config.stripeSecretKey ? require('stripe')(config.stripeSecretKey) : null;
+const payments = require('../services/payments');
 
 /** Campos de um restaurante que um cliente pode ver (nunca a password, o NIF ou o estado interno). */
 const PUBLIC_RESTAURANT_FIELDS = 'name email phone address logo foundedAt createdAt settings';
@@ -307,7 +306,13 @@ const createOrderFromCart = async (req, res) => {
   let discount = 0;
   let voucher = null;
   if (typeof req.body?.voucherCode === 'string' && req.body.voucherCode.trim()) {
-    voucher = await Voucher.findOne({ code: req.body.voucherCode.trim().toUpperCase(), ownerId: userId, balance: trusted({ $gt: 0 }) });
+    // Só vales ativos (pagos) contam: um vale pendente ainda não tem saldo utilizável.
+    voucher = await Voucher.findOne({
+      code: req.body.voucherCode.trim().toUpperCase(),
+      ownerId: userId,
+      status: 'active',
+      balance: trusted({ $gt: 0 }),
+    });
     if (!voucher) {
       return res.status(400).json({ message: 'Vale inválido, sem saldo ou de outro utilizador.' });
     }
@@ -353,16 +358,28 @@ const createOrderFromCart = async (req, res) => {
   });
 };
 
-/** GET /cliente/api/vales — vales do cliente (recebidos ou comprados para si). */
+/**
+ * GET /cliente/api/vales — vales ativos do cliente (recebidos ou comprados para si) e os
+ * vales que comprou e ainda aguardam a confirmação do pagamento.
+ */
 const listVouchers = async (req, res) => {
-  const vouchers = await Voucher.find({ ownerId: req.user._id }).sort({ createdAt: -1 }).populate('buyerId', 'name username');
+  const vouchers = await Voucher.find({
+    $or: [
+      { ownerId: req.user._id, status: 'active' },
+      { buyerId: req.user._id, status: 'pending' },
+    ],
+  }).sort({ createdAt: -1 }).populate('buyerId', 'name username');
   res.json({ values: VOUCHER_VALUES, vouchers });
 };
 
 /**
- * POST /cliente/api/vales — compra (simulada) de um vale de refeição.
+ * POST /cliente/api/vales — compra de um vale de refeição com o Stripe Checkout.
  * Corpo: `value` (um de VOUCHER_VALUES), `giftTo` (username de outro cliente, opcional) e
  * `message` (opcional, até 140 caracteres).
+ *
+ * O vale é criado como pendente, sem saldo, e só é ativado quando o Stripe confirma o
+ * pagamento (regresso ao success_url ou webhook). A compra simulada (vale ativo de imediato)
+ * só existe fora de produção e com ALLOW_SIMULATED_PAYMENTS=true.
  */
 const buyVoucher = async (req, res) => {
   const value = Number(req.body?.value);
@@ -381,15 +398,65 @@ const buyVoucher = async (req, res) => {
   }
 
   const message = typeof req.body?.message === 'string' ? req.body.message.trim().slice(0, 140) : undefined;
-  const voucher = await Voucher.create({
-    code: generateVoucherCode(),
-    buyerId: req.user._id,
-    ownerId,
-    value,
-    balance: value,
-    message,
-  });
-  res.status(201).json({ message: giftTo ? `Vale oferecido a ${giftTo}.` : 'Vale comprado.', code: voucher.code });
+  const base = { code: generateVoucherCode(), buyerId: req.user._id, ownerId, value, message };
+
+  if (config.allowSimulatedPayments) {
+    const voucher = await Voucher.create({ ...base, balance: value, status: 'active', paymentMethod: 'simulado', paidAt: new Date() });
+    return res.status(201).json({
+      message: giftTo ? `Vale oferecido a ${giftTo} (pagamento simulado).` : 'Vale comprado (pagamento simulado).',
+      code: voucher.code,
+      simulated: true,
+    });
+  }
+
+  const stripe = payments.getStripe();
+  if (!stripe) {
+    return res.status(503).json({ message: 'O pagamento online não está configurado neste servidor.' });
+  }
+
+  const voucher = await Voucher.create({ ...base, balance: 0, status: 'pending' });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: { name: `Vale de refeição Snackify (${value} €)` },
+          unit_amount: Math.round(value * 100),
+        },
+        quantity: 1,
+      }],
+      client_reference_id: String(voucher._id),
+      metadata: { type: 'voucher', voucherId: String(voucher._id), userId: String(req.user._id) },
+      success_url: `${config.serverUrl}/cliente/api/vales/pagamento-sucesso?voucherId=${voucher._id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${config.clientUrl}/cliente/vales?pagamento=cancelado`,
+    });
+    await Voucher.updateOne({ _id: voucher._id }, { $set: { stripeSessionId: session.id, paymentMethod: 'stripe' } });
+    return res.status(201).json({ message: 'Vale reservado. Conclua o pagamento para o ativar.', url: session.url });
+  } catch (err) {
+    await Voucher.deleteOne({ _id: voucher._id, status: 'pending' });
+    throw err;
+  }
+};
+
+/**
+ * GET /cliente/api/vales/pagamento-sucesso — regresso do Stripe depois de pagar um vale.
+ *
+ * Não exige sessão: o cookie é SameSite=Strict e não vem num regresso a partir do Stripe.
+ * A segurança está na confirmação junto do Stripe (sessão paga, do vale indicado e do
+ * montante certo); a ativação é idempotente, por isso o webhook pode chegar antes ou depois.
+ */
+const handleVoucherPaymentSuccess = async (req, res) => {
+  const { voucherId, session_id: sessionId } = req.query;
+  const stripe = payments.getStripe();
+  if (!stripe || typeof sessionId !== 'string' || typeof voucherId !== 'string') {
+    return res.redirect(303, `${config.clientUrl}/cliente/vales?pagamento=falhou`);
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const confirmed = await payments.confirmVoucherPayment(session, voucherId);
+  return res.redirect(303, `${config.clientUrl}/cliente/vales?pagamento=${confirmed ? 'sucesso' : 'falhou'}`);
 };
 
 /**
@@ -397,6 +464,7 @@ const buyVoucher = async (req, res) => {
  * Os preços enviados pelo browser são ignorados (antes, o cliente podia alterá-los).
  */
 const createStripeSession = async (req, res) => {
+  const stripe = payments.getStripe();
   if (!stripe) {
     return res.status(503).json({ message: 'O pagamento online não está configurado neste servidor.' });
   }
@@ -434,7 +502,8 @@ const createStripeSession = async (req, res) => {
     mode: 'payment',
     payment_method_types: ['card'],
     line_items: lineItems,
-    metadata: { orderId: String(order._id) },
+    client_reference_id: String(order._id),
+    metadata: { type: 'order', orderId: String(order._id), userId: String(req.user._id) },
     success_url: `${config.serverUrl}/cliente/api/carrinho/pagamento-sucesso?orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${config.clientUrl}/cliente/dashboard`,
   });
@@ -444,27 +513,23 @@ const createStripeSession = async (req, res) => {
 
 /**
  * O Stripe redireciona para aqui depois do pagamento. A sessão é confirmada junto do Stripe
- * antes de marcar a encomenda como paga (antes bastava abrir este URL para "pagar").
+ * antes de marcar a encomenda como paga (abrir este URL sem pagar não tem efeito).
+ *
+ * Não exige sessão: o cookie é SameSite=Strict e não é enviado num regresso a partir do
+ * Stripe. A sessão de pagamento tem de estar paga e pertencer a esta encomenda (e ao seu cliente).
  */
 const handlePaymentSuccess = async (req, res) => {
   const { orderId, session_id: sessionId } = req.query;
-  if (!stripe || !sessionId) {
+  const stripe = payments.getStripe();
+  if (!stripe || typeof sessionId !== 'string' || typeof orderId !== 'string') {
     return res.status(400).json({ message: 'Pagamento não confirmado.' });
   }
 
-  const order = await Order.findOne({ _id: orderId, userId: req.user._id });
-  if (!order) return res.status(404).json({ message: 'Encomenda não encontrada.' });
-
   const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (session.payment_status !== 'paid' || session.metadata?.orderId !== String(order._id)) {
+  if (!(await payments.confirmOrderPayment(session, orderId))) {
     return res.status(402).json({ message: 'O pagamento não foi concluído.' });
   }
-
-  if (order.state === 'pendente') {
-    order.state = 'concluída';
-    await order.save();
-  }
-  res.redirect(`${config.clientUrl}/cliente/dashboard`);
+  return res.redirect(303, `${config.clientUrl}/cliente/dashboard`);
 };
 
 module.exports = wrapAll({
@@ -473,6 +538,7 @@ module.exports = wrapAll({
   listCategories,
   listVouchers,
   buyVoucher,
+  handleVoucherPaymentSuccess,
   readRestaurant,
   readMenu,
   listMenus,
