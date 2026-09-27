@@ -17,7 +17,11 @@ let cached = { key: null, client: null };
 const getStripe = () => {
   if (!config.stripeSecretKey) return null;
   if (cached.key !== config.stripeSecretKey) {
-    cached = { key: config.stripeSecretKey, client: Stripe(config.stripeSecretKey, { timeout: 10000, maxNetworkRetries: 1 }) };
+    cached = { key: config.stripeSecretKey, client: Stripe(config.stripeSecretKey, {
+      timeout: config.timeouts.stripe,
+      // Os POST repetidos levam a mesma chave de idempotência (gerada pela biblioteca ou por nós).
+      maxNetworkRetries: config.stripeMaxNetworkRetries,
+    }) };
   }
   return cached.client;
 };

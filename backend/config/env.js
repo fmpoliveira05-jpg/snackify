@@ -18,6 +18,12 @@ const port = Number(process.env.PORT) || 5000;
 /** Interpreta "true"/"1"/"sim" como verdadeiro; tudo o resto é falso. */
 const flag = (value) => ['true', '1', 'sim', 'yes'].includes(String(value || '').trim().toLowerCase());
 
+/** Número inteiro positivo lido do ambiente, ou o valor por omissão se faltar ou for inválido. */
+const int = (value, fallback) => {
+  const n = Number.parseInt(value, 10);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+};
+
 const config = {
   env,
   isTest,
@@ -65,6 +71,26 @@ const config = {
     ? flag(process.env.RATE_LIMIT_ENABLED)
     : !isTest,
 
+  // Tempos máximos (milissegundos). Um pedido, uma consulta ou um serviço externo lento não
+  // pode prender recursos indefinidamente.
+  timeouts: {
+    // Tempo total para receber um pedido (cabeçalhos + corpo).
+    request: int(process.env.HTTP_REQUEST_TIMEOUT_MS, 30000),
+    // Tempo para receber os cabeçalhos; tem de ser maior do que o keep-alive.
+    headers: int(process.env.HTTP_HEADERS_TIMEOUT_MS, 66000),
+    // Ligações keep-alive inativas. Atrás de um proxy deve ser maior do que o timeout do proxy.
+    keepAlive: int(process.env.HTTP_KEEP_ALIVE_TIMEOUT_MS, 65000),
+    // Tempo para terminar os pedidos em curso ao desligar (SIGTERM) antes de fechar à força.
+    shutdown: int(process.env.SHUTDOWN_TIMEOUT_MS, 10000),
+    mongoServerSelection: int(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS, 5000),
+    mongoSocket: int(process.env.MONGO_SOCKET_TIMEOUT_MS, 30000),
+    // maxTimeMS das consultas mais pesadas (listas e pesquisas).
+    query: int(process.env.MONGO_QUERY_MAX_TIME_MS, 5000),
+    stripe: int(process.env.STRIPE_TIMEOUT_MS, 10000),
+  },
+  mongoMaxPoolSize: int(process.env.MONGO_MAX_POOL_SIZE, 20),
+  stripeMaxNetworkRetries: int(process.env.STRIPE_MAX_NETWORK_RETRIES, 2),
+
   // Documentação Swagger: pública só fora de produção, salvo se for ativada explicitamente.
   enableApiDocs: !isProduction || flag(process.env.ENABLE_API_DOCS),
 };
@@ -90,4 +116,4 @@ function assertRequiredConfig() {
   }
 }
 
-module.exports = { config, assertRequiredConfig, MIN_JWT_SECRET_LENGTH };
+module.exports = { config, assertRequiredConfig, MIN_JWT_SECRET_LENGTH, flag, int };
