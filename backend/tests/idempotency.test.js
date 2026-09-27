@@ -116,7 +116,7 @@ describe('Stripe: uma sessão de pagamento por encomenda', () => {
     const res = await asCustomer(request(app).post('/cliente/api/carrinho/create-checkout-session')).send({ orderId: 'o1' });
 
     expect(res.status).toBe(200);
-    expect(stripe.checkout.sessions.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'snackify-encomenda-o1-inicial' });
+    expect(stripe.checkout.sessions.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'snackify-encomenda-o1-inicial' }); // gitleaks:allow (chave de teste)
     const [filter, update] = save.mock.calls[0];
     expect(filter).toMatchObject({ _id: 'o1', state: 'pendente' });
     expect(filter.stripeSessionId.$exists).toBe(false);
@@ -131,7 +131,7 @@ describe('Stripe: uma sessão de pagamento por encomenda', () => {
 
     await asCustomer(request(app).post('/cliente/api/vales')).send({ value: 10 });
 
-    expect(stripe.checkout.sessions.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'snackify-vale-v1' });
+    expect(stripe.checkout.sessions.create.mock.calls[0][1]).toEqual({ idempotencyKey: 'snackify-vale-v1' }); // gitleaks:allow (chave de teste)
   });
 
   test('uma compra de vale repetida (mesmo Idempotency-Key) devolve a mesma sessão', async () => {

@@ -1,0 +1,82 @@
+# Monitorização da disponibilidade: pede /health/ready a cada 15 minutos.
+#
+# Configuração: Settings → Secrets and variables → Actions → Variables → SNACKIFY_HEALTH_URL
+# (ex.: https://snackify.exemplo.pt/health/ready). Sem a variável, o workflow não faz nada.
+#
+# Se a aplicação não responder 200 em 3 tentativas, o job falha (o GitHub avisa por email quem
+# ativou o workflow) e é aberta uma issue "Snackify indisponível"; quando volta, a issue é fechada.
+#
+# Limites do cron do GitHub Actions: intervalo mínimo de 5 minutos, atrasos frequentes (de minutos,
+# por vezes mais) em horas de muito uso, só corre no ramo principal e, em repositórios públicos,
+# é desativado ao fim de 60 dias sem atividade no repositório. Para alertas fiáveis e ao minuto,
+# use também um serviço externo (UptimeRobot, Better Stack): ver docs/OPERACAO.md.
+name: Disponibilidade
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: disponibilidade
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sem SNACKIFY_HEALTH_URL, não há nada a verificar
+        if: ${{ vars.SNACKIFY_HEALTH_URL == '' }}
+        run: echo "::notice title=Disponibilidade::A variável SNACKIFY_HEALTH_URL não está definida; verificação ignorada."
+
+      - name: Pedir /health/ready (3 tentativas)
+        id: check
+        if: ${{ vars.SNACKIFY_HEALTH_URL != '' }}
+        env:
+          HEALTH_URL: ${{ vars.SNACKIFY_HEALTH_URL }}
+        run: |
+          code=000
+          for attempt in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$HEALTH_URL" || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "Disponível (tentativa $attempt)."
+              exit 0
+            fi
+            echo "Tentativa $attempt: HTTP $code"
+            sleep 20
+          done
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          echo "::error title=Snackify indisponível::$HEALTH_URL respondeu HTTP $code"
+          exit 1
+
+      - name: Abrir (ou comentar) a issue de indisponibilidade
+        if: ${{ failure() && steps.check.outcome == 'failure' }}
+        uses: actions/github-script@v7
+        env:
+          STATUS: ${{ steps.check.outputs.status }}
+        with:
+          script: |
+            const title = 'Snackify indisponível';
+            const body = `A verificação de ${new Date().toISOString()} falhou (HTTP ${process.env.STATUS || '000'}). Execução: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'indisponibilidade' });
+            if (open.length) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: open[0].number, body });
+            } else {
+              await github.rest.issues.create({ ...context.repo, title, body, labels: ['indisponibilidade'] });
+            }
+
+      - name: Fechar a issue quando a aplicação volta
+        if: ${{ success() && steps.check.outcome == 'success' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: open } = await github.rest.issues.listForRepo({ ...context.repo, state: 'open', labels: 'indisponibilidade' });
+            for (const issue of open) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: `Disponível outra vez em ${new Date().toISOString()}.` });
+              await github.rest.issues.update({ ...context.repo, issue_number: issue.number, state: 'closed' });
+            }

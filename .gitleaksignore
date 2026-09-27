@@ -1,0 +1,6 @@
+# Falsos positivos do gitleaks já no histórico (valores de teste, não são segredos):
+# chaves de idempotência esperadas nos testes e um segredo JWT descartável do teste de carga
+# (substituído por um valor aleatório gerado em cada execução).
+630bc5d823dc741722bda58807beb7b00713758f:backend/scripts/carga.js:generic-api-key:86
+9d3d97b175705e6cc305265e68fca9d6f315c557:backend/tests/idempotency.test.js:generic-api-key:119
+9d3d97b175705e6cc305265e68fca9d6f315c557:backend/tests/idempotency.test.js:generic-api-key:134

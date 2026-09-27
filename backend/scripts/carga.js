@@ -83,7 +83,8 @@ const summary = (name, r) => ({
   Object.assign(process.env, {
     NODE_ENV: 'production',
     MONGODB_URI: url.toString(),
-    JWT_SECRET: 'segredo-do-teste-de-carga-com-mais-de-32-caracteres',
+    // Segredo aleatório só para esta execução.
+    JWT_SECRET: require('crypto').randomBytes(32).toString('hex'),
     RATE_LIMIT_ENABLED: 'true',
     RATE_LIMIT_API_MAX: '100000000',
     RETENTION_JOB_ENABLED: 'false',
