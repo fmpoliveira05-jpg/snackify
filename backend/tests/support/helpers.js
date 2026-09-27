@@ -33,6 +33,9 @@ const fakeQuery = (value) => {
     lean: () => query,
     sort: () => query,
     limit: () => query,
+    skip: () => query,
+    maxTimeMS: () => query,
+    collation: () => query,
     then: (resolve, reject) => Promise.resolve(typeof value === 'function' ? value() : value).then(resolve, reject),
     catch: (reject) => Promise.resolve(value).catch(reject),
   };

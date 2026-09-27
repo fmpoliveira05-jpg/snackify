@@ -91,6 +91,13 @@ const config = {
   mongoMaxPoolSize: int(process.env.MONGO_MAX_POOL_SIZE, 20),
   stripeMaxNetworkRetries: int(process.env.STRIPE_MAX_NETWORK_RETRIES, 2),
 
+  // Cache em memória do catálogo público e das consultas à OpenFoodFacts.
+  cache: {
+    ttlSeconds: int(process.env.CACHE_TTL_SECONDS, 60),
+    maxEntries: int(process.env.CACHE_MAX_ENTRIES, 500),
+    openFoodFactsTtlSeconds: int(process.env.OFF_CACHE_TTL_SECONDS, 24 * 60 * 60),
+  },
+
   // Documentação Swagger: pública só fora de produção, salvo se for ativada explicitamente.
   enableApiDocs: !isProduction || flag(process.env.ENABLE_API_DOCS),
 };

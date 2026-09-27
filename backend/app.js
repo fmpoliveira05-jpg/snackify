@@ -10,6 +10,8 @@ const { swaggerUi, swaggerSpec } = require('./swagger');
 const { loadUser, redirectIfAuthenticated } = require('./middlewares/authMiddleware');
 const errorHandler = require('./middlewares/errorHandler');
 const { notFound, blockSourceMaps } = require('./middlewares/notFound');
+const { invalidateCatalogOnSuccess } = require('./services/catalogCache');
+const { noStore, staticCacheHeaders } = require('./middlewares/cacheHeaders');
 const { verifyOrigin } = require('./middlewares/csrfMiddleware');
 const { apiLimiter } = require('./middlewares/rateLimiters');
 const { cspNonce, helmetMiddleware, permissionsPolicy, forceHttps } = require('./middlewares/securityHeaders');
@@ -28,10 +30,13 @@ const registerRoutes = require('./routes/registerRoutes');
 mongoose.set('sanitizeFilter', true);
 
 const BODY_LIMIT = '100kb';
+/** Build de produção do cliente Angular (servido pelo próprio Express). */
+const DEFAULT_ANGULAR_DIST = path.join(__dirname, '..', 'frontend', 'dist', 'angular', 'browser');
 const API_PREFIXES = ['/auth', '/user', '/admin', '/cliente/api', '/restaurante', '/register', '/api'];
 
 /** Ficheiros enviados pelos utilizadores: nunca são interpretados como página nem executados. */
-const setUploadHeaders = (res) => {
+const setUploadHeaders = (res, filePath) => {
+  staticCacheHeaders('uploads')(res, filePath);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
   res.setHeader('Content-Disposition', 'inline');
@@ -41,7 +46,7 @@ const setUploadHeaders = (res) => {
  * Cria a aplicação Express sem a pôr à escuta nem ligar à base de dados,
  * o que permite testá-la com o supertest.
  */
-function createApp() {
+function createApp({ angularDist = DEFAULT_ANGULAR_DIST } = {}) {
   const app = express();
 
   app.disable('x-powered-by');
@@ -67,7 +72,7 @@ function createApp() {
     });
   }
 
-  app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'ignore' }));
+  app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'ignore', setHeaders: staticCacheHeaders('public') }));
   app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     dotfiles: 'deny',
     index: false,
@@ -81,6 +86,8 @@ function createApp() {
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, 'views'));
 
+  // Nada da API nem do back-office fica em cache (dados pessoais e da sessão).
+  app.use(API_PREFIXES, noStore);
   app.use(API_PREFIXES, apiLimiter);
 
   // O webhook do Stripe precisa do corpo em bruto para verificar a assinatura: vem antes do express.json.
@@ -92,6 +99,10 @@ function createApp() {
   app.use(verifyOrigin);
   app.use(methodOverride('_method'));
   app.use(loadUser);
+  // Escritas no back-office, na administração ou no perfil podem mudar o catálogo público em cache.
+  app.use(['/restaurante', '/admin', '/user'], (req, res, next) => (
+    ['GET', 'HEAD', 'OPTIONS'].includes(req.method) ? next() : invalidateCatalogOnSuccess(req, res, next)
+  ));
 
   app.use((req, res, next) => {
     res.locals.currentPath = req.path;
@@ -112,9 +123,8 @@ function createApp() {
 
   // Em produção, o cliente Angular compilado pode ser servido pelo próprio Express.
   // O build não tem scripts inline (ver angular.json), por isso funciona com a CSP "script-src 'self'".
-  const angularDist = path.join(__dirname, '..', 'frontend', 'dist', 'angular', 'browser');
-  app.use(express.static(angularDist, { index: false, dotfiles: 'ignore' }));
-  const spaExcluded = ['/auth', '/user/api', '/admin', '/cliente/api', '/restaurante', '/uploads', '/register', '/api-docs', '/api/'];
+  app.use(express.static(angularDist, { index: false, dotfiles: 'ignore', setHeaders: staticCacheHeaders('angular') }));
+  const spaExcluded = ['/auth', '/user/api', '/admin', '/cliente/api', '/restaurante', '/uploads', '/register', '/api-docs', '/api/', '/health'];
   app.get('*', (req, res, next) => {
     if (/\.[^/]+$/.test(req.path) || spaExcluded.some((prefix) => req.path.startsWith(prefix))) {
       return next();

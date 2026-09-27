@@ -26,6 +26,7 @@ const { filterRestaurants, filterDishes } = require('../services/search');
 const { VOUCHER_VALUES, generateVoucherCode, applyVoucher } = require('../services/vouchers');
 
 const payments = require('../services/payments');
+const { catalogCache, KEYS } = require('../services/catalogCache');
 
 /** Campos de um restaurante que um cliente pode ver (nunca a password, o NIF ou o estado interno). */
 const PUBLIC_RESTAURANT_FIELDS = 'name email phone address logo foundedAt createdAt settings';
@@ -69,9 +70,23 @@ const textParams = (query, names) => Object.fromEntries(
  * localidade ou distrito (`location`) e ordenação (`sort`: nome | recentes).
  */
 const listRestaurants = async (req, res) => {
-  const restaurants = await Restaurant.find({ isChecked: true }).select(PUBLIC_RESTAURANT_FIELDS).lean();
+  const restaurants = await catalogCache.wrap(KEYS.restaurants, () => Restaurant.find({ isChecked: true })
+    .select(PUBLIC_RESTAURANT_FIELDS)
+    .lean()
+    .maxTimeMS(config.timeouts.query));
   res.json(filterRestaurants(restaurants, textParams(req.query, ['q', 'location', 'sort'])));
 };
+
+/** Pratos de todos os restaurantes validados, com o restaurante e a categoria (em cache). */
+const loadCatalogDishes = () => catalogCache.wrap(KEYS.dishes, async () => {
+  const restaurantIds = await Restaurant.find({ isChecked: true }).distinct('_id');
+  return Dish.find({ restaurantId: trusted({ $in: restaurantIds }) })
+    .select('name description category image nutriInfo pricePerDose restaurantId menuId')
+    .populate('restaurantId', 'name address')
+    .populate('category', 'name')
+    .lean()
+    .maxTimeMS(config.timeouts.query);
+});
 
 /**
  * GET /cliente/api/pratos — pesquisa de pratos em todos os restaurantes validados.
@@ -79,25 +94,21 @@ const listRestaurants = async (req, res) => {
  * (nome | preco-asc | preco-desc).
  */
 const searchDishes = async (req, res) => {
-  const restaurantIds = await Restaurant.find({ isChecked: true }).distinct('_id');
-  const dishes = await Dish.find({ restaurantId: trusted({ $in: restaurantIds }) })
-    .populate('restaurantId', 'name address')
-    .populate('category', 'name')
-    .lean();
+  const dishes = await loadCatalogDishes();
   const query = textParams(req.query, ['q', 'category', 'restaurant', 'location', 'minPrice', 'maxPrice', 'sort']);
   res.json(filterDishes(dishes, query));
 };
 
 /** GET /cliente/api/categorias — categorias de pratos, para os filtros de pesquisa. */
 const listCategories = async (req, res) => {
-  res.json(await Category.find().sort({ name: 1 }));
+  res.json(await catalogCache.wrap(KEYS.categories, () => Category.find().sort({ name: 1 }).lean()));
 };
 
 /**
  * GET /cliente/api/restaurantes/:id — dados públicos de um restaurante validado.
  */
 const readRestaurant = async (req, res) => {
-  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true }).select(PUBLIC_RESTAURANT_FIELDS);
+  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true }).select(PUBLIC_RESTAURANT_FIELDS).lean();
   if (!restaurant) return res.status(404).json({ message: 'Restaurante não encontrado.' });
   res.json(restaurant);
 };
@@ -106,7 +117,7 @@ const readRestaurant = async (req, res) => {
  * GET /cliente/api/menus/:id — um menu.
  */
 const readMenu = async (req, res) => {
-  const menu = await Menu.findById(req.params.id);
+  const menu = await Menu.findById(req.params.id).lean();
   if (!menu) return res.status(404).json({ message: 'Menu não encontrado.' });
   res.json(menu);
 };
@@ -115,25 +126,36 @@ const readMenu = async (req, res) => {
  * GET /cliente/api/restaurantes/:id/menus — menus de um restaurante validado, cada um com os seus pratos.
  */
 const listMenus = async (req, res) => {
-  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true });
+  const restaurant = await Restaurant.findOne({ _id: req.params.id, isChecked: true }).select('_id').lean();
   if (!restaurant) return res.status(404).json({ message: 'Restaurante não encontrado.' });
 
-  const menus = await Menu.find({ restaurantId: restaurant._id });
-  const menusWithDishes = await Promise.all(menus.map(async (menu) => ({
-    ...menu.toObject(),
-    dishes: await Dish.find({ menuId: menu._id }),
-  })));
-
+  const menusWithDishes = await catalogCache.wrap(KEYS.menus(restaurant._id), async () => {
+    const menus = await Menu.find({ restaurantId: restaurant._id }).lean();
+    return withDishes(menus);
+  });
   res.json(menusWithDishes);
 };
+
+/**
+ * Junta a cada menu os seus pratos com UMA consulta (antes era uma consulta por menu: N+1).
+ *
+ * @param {Array<object>} menus menus em objetos simples (lean)
+ */
+async function withDishes(menus) {
+  if (menus.length === 0) return [];
+  const dishes = await Dish.find({ menuId: trusted({ $in: menus.map((m) => m._id) }) }).lean();
+  const byMenu = new Map(menus.map((m) => [String(m._id), []]));
+  dishes.forEach((dish) => byMenu.get(String(dish.menuId))?.push(dish));
+  return menus.map((menu) => ({ ...menu, dishes: byMenu.get(String(menu._id)) }));
+}
 
 /**
  * GET /cliente/api/menus/:id/pratos — pratos de um menu, com a categoria.
  */
 const listDishes = async (req, res) => {
-  const menu = await Menu.findById(req.params.id);
+  const menu = await Menu.findById(req.params.id).select('_id').lean();
   if (!menu) return res.status(404).json({ message: 'Menu não encontrado.' });
-  res.json(await Dish.find({ menuId: menu._id }).populate('category', 'name'));
+  res.json(await Dish.find({ menuId: menu._id }).populate('category', 'name').lean());
 };
 
 /**
