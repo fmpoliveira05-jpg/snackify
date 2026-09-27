@@ -13,6 +13,7 @@ const { verifyOrigin } = require('./middlewares/csrfMiddleware');
 const { apiLimiter } = require('./middlewares/rateLimiters');
 const { cspNonce, helmetMiddleware, permissionsPolicy, forceHttps } = require('./middlewares/securityHeaders');
 
+const healthRoutes = require('./routes/healthRoutes');
 const stripeWebhookRoutes = require('./routes/stripeWebhookRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
@@ -45,6 +46,9 @@ function createApp() {
   app.disable('x-powered-by');
   // Número de proxies de confiança (req.ip e req.secure corretos atrás de um proxy).
   app.set('trust proxy', config.trustProxy);
+
+  // Verificações de saúde: antes do HTTPS obrigatório, dos limites de pedidos e dos registos.
+  app.use(healthRoutes);
 
   app.use(forceHttps);
   app.use(cspNonce);
