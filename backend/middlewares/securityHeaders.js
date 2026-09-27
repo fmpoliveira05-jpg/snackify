@@ -29,15 +29,15 @@ const cspDirectives = () => ({
   scriptSrc: [
     "'self'",
     (req, res) => `'nonce-${res.locals.cspNonce}'`,
-    'https://cdn.jsdelivr.net', // Bootstrap
-    'https://www.gstatic.com', // Google Charts
+    'https://www.gstatic.com', // Google Charts (só nas páginas com gráficos)
     'https://js.stripe.com',
     'https://challenges.cloudflare.com', // Turnstile
   ],
   scriptSrcAttr: ["'none'"],
   // 'unsafe-inline' só nos estilos: o Angular e o Google Charts aplicam estilos inline.
-  styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://fonts.googleapis.com', 'https://www.gstatic.com'],
-  fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+  // Bootstrap e tipos de letra são servidos pelo próprio servidor (sem CDN).
+  styleSrc: ["'self'", "'unsafe-inline'", 'https://www.gstatic.com'],
+  fontSrc: ["'self'", 'data:'],
   imgSrc: ["'self'", 'data:', 'blob:', ...appOrigins()],
   connectSrc: ["'self'", ...appOrigins(), 'https://www.gstatic.com', 'https://challenges.cloudflare.com'],
   frameSrc: ['https://challenges.cloudflare.com', 'https://js.stripe.com', 'https://checkout.stripe.com'],

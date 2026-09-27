@@ -30,6 +30,7 @@ const registerRoutes = require('./routes/registerRoutes');
 mongoose.set('sanitizeFilter', true);
 
 const BODY_LIMIT = '100kb';
+const BOOTSTRAP_DIST = path.join(path.dirname(require.resolve('bootstrap/package.json')), 'dist');
 /** Build de produção do cliente Angular (servido pelo próprio Express). */
 const DEFAULT_ANGULAR_DIST = path.join(__dirname, '..', 'frontend', 'dist', 'angular', 'browser');
 const API_PREFIXES = ['/auth', '/user', '/admin', '/cliente/api', '/restaurante', '/register', '/api'];
@@ -73,6 +74,8 @@ function createApp({ angularDist = DEFAULT_ANGULAR_DIST } = {}) {
   }
 
   app.use(express.static(path.join(__dirname, 'public'), { dotfiles: 'ignore', setHeaders: staticCacheHeaders('public') }));
+  // Bootstrap servido pelo próprio servidor (sem CDN de terceiros: nenhum IP dos utilizadores sai para fora).
+  app.use('/vendor/bootstrap', express.static(BOOTSTRAP_DIST, { dotfiles: 'ignore', index: false, setHeaders: staticCacheHeaders('public') }));
   app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     dotfiles: 'deny',
     index: false,
