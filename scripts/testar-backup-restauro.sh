@@ -13,11 +13,11 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 NAME="snackify-backup-teste-$$"
 PASS="teste-$(openssl rand -hex 12)"
-cleanup() { docker rm -f "$NAME" >/dev/null 2>&1 || true; rm -rf "$WORK"; }
+cleanup() { docker rm -f -v "$NAME" >/dev/null 2>&1 || true; rm -rf "$WORK"; }
 trap cleanup EXIT
 
 echo "» A arrancar o MongoDB de teste ($NAME)..."
-docker run -d --rm --name "$NAME" -e MONGO_INITDB_ROOT_USERNAME=snackify -e MONGO_INITDB_ROOT_PASSWORD="$PASS" mongo:7 --quiet >/dev/null
+docker run -d --rm --name "$NAME" --tmpfs /data/db --tmpfs /data/configdb -e MONGO_INITDB_ROOT_USERNAME=snackify -e MONGO_INITDB_ROOT_PASSWORD="$PASS" mongo:7 --quiet >/dev/null
 for _ in $(seq 1 60); do
   docker exec "$NAME" mongosh --quiet -u snackify -p "$PASS" --authenticationDatabase admin --eval 'db.runCommand({ping:1}).ok' 2>/dev/null | grep -q 1 && break
   sleep 1

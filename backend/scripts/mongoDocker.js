@@ -2,7 +2,8 @@
  * Arranca e pára um MongoDB descartável em Docker (mongo:7) para os testes de integração,
  * o teste de carga e o teste do navegador.
  *
- * O contentor fica só em 127.0.0.1, numa porta livre escolhida ao acaso, e é removido no fim.
+ * O contentor fica só em 127.0.0.1, numa porta livre escolhida ao acaso, guarda os dados em memória
+ * (tmpfs) e é removido no fim, sem deixar volumes.
  */
 const { execFileSync } = require('child_process');
 const net = require('net');
@@ -31,10 +32,16 @@ const sleep = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
 async function startMongo(prefix = 'snackify-teste') {
   const port = await freePort();
   const name = `${prefix}-${process.pid}-${Date.now().toString(36)}`;
-  docker(['run', '-d', '--rm', '--name', name, '-p', `127.0.0.1:${port}:27017`, IMAGE, '--quiet']);
+  // Dados em tmpfs (memória): mais rápido e não deixa volumes do Docker para trás.
+  docker([
+    'run', '-d', '--rm', '--name', name, '-p', `127.0.0.1:${port}:27017`,
+    '--tmpfs', '/data/db', '--tmpfs', '/data/configdb',
+    IMAGE, '--quiet', '--wiredTigerCacheSizeGB', '0.25',
+  ]);
   const stop = () => {
     try {
-      docker(['rm', '-f', name]);
+      // -v: remove também volumes anónimos (senão ficam ~300 MB por execução no disco).
+      docker(['rm', '-f', '-v', name]);
     } catch {
       // já não existe
     }
