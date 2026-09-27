@@ -76,6 +76,11 @@ const commonValidations = [
 ];
 
 const registrationOnlyValidations = [
+  // RGPD: a caixa da Política de Privacidade nunca vem marcada e tem de ser marcada pela pessoa.
+  body('acceptPrivacy')
+    .custom((value) => value === 'on' || value === 'true' || value === true)
+    .withMessage('Tem de ler e aceitar a Política de Privacidade para criar a conta.'),
+
   body('username')
     .trim()
     .notEmpty().withMessage('O username é obrigatório.')

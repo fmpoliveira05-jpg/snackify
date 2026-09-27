@@ -100,6 +100,8 @@ const customerRegister = async (req, res) => {
       nif,
       profilePicture,
       userType,
+      privacyPolicyVersion: config.privacyPolicyVersion,
+      privacyAcceptedAt: new Date(),
       address: {
         street,
         number,
@@ -167,6 +169,8 @@ const restaurantRegister = async (req, res) => {
             // Um restaurante novo fica sempre por validar: só um administrador o pode aprovar.
             isChecked: false,
             logo,
+            privacyPolicyVersion: config.privacyPolicyVersion,
+            privacyAcceptedAt: new Date(),
             address: {
                 street,
                 number,

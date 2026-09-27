@@ -16,6 +16,19 @@ const SECURITY_FIELDS = {
   tokenVersion: { type: Number, default: 0, select: false },
 };
 
+/** Registo da aceitação da Política de Privacidade (RGPD, art. 7.º, n.º 1: prova do conhecimento). */
+const PRIVACY_FIELDS = {
+  privacyPolicyVersion: { type: String },
+  privacyAcceptedAt: { type: Date },
+};
+
+/**
+ * Rede de segurança do RGPD: contas que nunca confirmaram o email são apagadas pelo MongoDB
+ * (índice TTL) ao fim de 8 dias. A tarefa de limpeza (services/retention.js) apaga-as antes,
+ * ao fim de UNVERIFIED_ACCOUNT_DAYS (7 por omissão), e remove também as imagens enviadas.
+ */
+const UNVERIFIED_TTL_SECONDS = 8 * 24 * 60 * 60;
+
 /** Campos que nunca podem aparecer numa resposta JSON, mesmo que tenham sido selecionados. */
 const HIDDEN_FIELDS = [
   'password',
@@ -44,9 +57,16 @@ const stripSensitive = (obj) => {
  */
 function accountSecurityPlugin(schema) {
   schema.add(SECURITY_FIELDS);
+  schema.add(PRIVACY_FIELDS);
+  schema.index(
+    { createdAt: 1 },
+    { name: 'contas_por_confirmar_ttl', expireAfterSeconds: UNVERIFIED_TTL_SECONDS, partialFilterExpression: { emailVerified: false } },
+  );
   const transform = (doc, ret) => stripSensitive(ret);
   schema.set('toJSON', { transform });
   schema.set('toObject', { transform });
 }
 
-module.exports = { accountSecurityPlugin, stripSensitive, SECURITY_FIELDS, HIDDEN_FIELDS };
+module.exports = {
+  accountSecurityPlugin, stripSensitive, SECURITY_FIELDS, HIDDEN_FIELDS, PRIVACY_FIELDS, UNVERIFIED_TTL_SECONDS,
+};
