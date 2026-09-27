@@ -2,6 +2,7 @@ const http = require('http');
 const mongoose = require('mongoose');
 const { config, assertRequiredConfig } = require('./config/env');
 const createApp = require('./app');
+const { startRetentionJob } = require('./services/retention');
 
 /**
  * Opções da ligação ao MongoDB: sem servidor disponível, os pedidos falham ao fim de poucos
@@ -82,7 +83,8 @@ async function start() {
     if (config.enableApiDocs) console.log(`Documentação da API em ${config.serverUrl}/api-docs`);
   });
 
-  const shutdown = createShutdown(server);
+  const stopJobs = startRetentionJob();
+  const shutdown = createShutdown(server, { stopJobs });
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
   return server;

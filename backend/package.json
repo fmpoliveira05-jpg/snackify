@@ -8,7 +8,8 @@
     "test": "jest",
     "seed": "node scripts/seed.js",
     "indices": "node scripts/syncIndexes.js",
-    "test:integracao": "node scripts/testesIntegracao.js"
+    "test:integracao": "node scripts/testesIntegracao.js",
+    "limpeza": "node scripts/limpeza.js"
   },
   "keywords": [],
   "author": "",

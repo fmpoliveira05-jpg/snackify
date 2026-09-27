@@ -118,6 +118,16 @@ const config = {
     emailsPerAddressPerDay: int(process.env.MAIL_MAX_PER_ADDRESS_PER_DAY, 5),
   },
 
+  // RGPD: versão da Política de Privacidade aceite no registo e prazos de conservação.
+  privacyPolicyVersion: process.env.PRIVACY_POLICY_VERSION || '2026-09-27',
+  retention: {
+    enabled: process.env.RETENTION_JOB_ENABLED ? flag(process.env.RETENTION_JOB_ENABLED) : !isTest,
+    intervalMinutes: int(process.env.RETENTION_INTERVAL_MINUTES, 60),
+    unverifiedAccountDays: int(process.env.UNVERIFIED_ACCOUNT_DAYS, 7),
+    identityDocDays: int(process.env.IDENTITY_DOC_RETENTION_DAYS, 30),
+    pendingVoucherDays: int(process.env.PENDING_VOUCHER_DAYS, 2),
+  },
+
   // Documentação Swagger: pública só fora de produção, salvo se for ativada explicitamente.
   enableApiDocs: !isProduction || flag(process.env.ENABLE_API_DOCS),
 };
