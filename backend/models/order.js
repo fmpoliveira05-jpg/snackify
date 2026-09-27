@@ -33,6 +33,8 @@ const orderSchema = new mongoose.Schema({
     idempotencyKey: String,
     // Encomenda acabada de gravar, ainda à espera de lugar no limite do restaurante (uso interno).
     slotPending: Boolean,
+    // O cliente apagou a conta: a encomenda fica pseudonimizada (sem userId nem documento).
+    customerDeleted: Boolean,
   });
 
 /** Índice único que ignora os documentos em que o campo não existe (ou não é texto). */

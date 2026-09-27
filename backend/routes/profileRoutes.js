@@ -6,8 +6,10 @@ const userValidator = require('../middlewares/frontend-validations/userValidator
 const restaurantValidator = require('../middlewares/frontend-validations/restaurantValidator');
 const validateRequest = require('../middlewares/frontend-validations/validateRequest');
 const { isCustomer, isRestaurant } = require('../middlewares/roleMiddleware');
-const { uploadQuota } = require('../middlewares/rateLimiters');
+const { uploadQuota, exportQuota, deleteAccountQuota } = require('../middlewares/rateLimiters');
 const {
+  exportData,
+  deleteAccount,
   updateOrderState,
   getProfile,
   getOrderHistory,
@@ -45,6 +47,46 @@ router.patch('/api/orders/:id/state', auth, isRestaurant, updateOrderState);
  *         description: Dados do perfil.
  */
 router.get('/perfil/dados', auth, getProfile);
+
+/**
+ * @swagger
+ * /user/perfil/exportar:
+ *   get:
+ *     summary: Exporta todos os dados pessoais da conta em JSON (RGPD, acesso e portabilidade)
+ *     tags: [Perfil]
+ *     responses:
+ *       200:
+ *         description: Ficheiro JSON (Content-Disposition attachment).
+ *       401:
+ *         description: Sem sessão.
+ *       429:
+ *         description: Limite diário de exportações atingido.
+ */
+router.get('/perfil/exportar', auth, exportQuota, exportData);
+
+/**
+ * @swagger
+ * /user/perfil/eliminar:
+ *   post:
+ *     summary: Apaga a conta (RGPD, direito ao apagamento). Pede a password.
+ *     tags: [Perfil]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Conta apagada; o cookie da sessão é removido.
+ *       401:
+ *         description: Password incorreta.
+ *       409:
+ *         description: Há encomendas em curso.
+ */
+router.post('/perfil/eliminar', auth, deleteAccountQuota, deleteAccount);
 
 /**
  * @swagger

@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const Order = require('../models/order');
@@ -5,6 +6,8 @@ const Review = require('../models/review');
 const Voucher = require('../models/voucher');
 const { wrapAll } = require('../utils/asyncHandler');
 const { logError } = require('../utils/logger');
+const accountData = require('../services/accountData');
+const { endSession } = require('../services/session');
 const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
 const { DEFAULT_SETTINGS, ACTIVE_STATES } = require('../services/restaurantRules');
 const { releaseOrderSlot } = require('../services/orderSlots');
@@ -323,7 +326,43 @@ const loadOrderDetails = async (req, res) => {
   }
 };
 
+/**
+ * GET /user/perfil/exportar — todos os dados pessoais da conta num ficheiro JSON
+ * (direito de acesso e portabilidade, RGPD art. 15.º e 20.º).
+ */
+const exportData = async (req, res) => {
+  const data = await accountData.exportAccountData(req.user);
+  const date = new Date().toISOString().slice(0, 10);
+  res.set('Content-Disposition', `attachment; filename="snackify-dados-${date}.json"`);
+  res.type('application/json').send(JSON.stringify(data, null, 2));
+};
+
+/**
+ * POST /user/perfil/eliminar — apaga a conta (direito ao apagamento, RGPD art. 17.º).
+ * Corpo: `password` (confirmação). Ver services/accountData.js para o que é apagado e o que
+ * fica pseudonimizado por obrigação legal.
+ */
+const deleteAccount = async (req, res) => {
+  const { password } = req.body || {};
+  if (typeof password !== 'string' || !password || password.length > 128) {
+    return res.status(400).json({ message: 'Confirme com a sua password.' });
+  }
+  const Model = req.user.userType === 'restaurant' ? Restaurant : User;
+  const account = await Model.findById(req.user._id).select('+password');
+  if (!account || !(await bcrypt.compare(password, account.password))) {
+    return res.status(401).json({ message: 'Password incorreta.' });
+  }
+
+  const result = await accountData.deleteAccountData(req.user);
+  if (!result.ok) return res.status(result.status).json({ message: result.message });
+
+  endSession(res);
+  return res.json({ message: 'A sua conta foi apagada.', resumo: result.summary });
+};
+
 module.exports = wrapAll({
+  exportData,
+  deleteAccount,
   updateOrderState,
   getProfile,
   getOrderHistory,

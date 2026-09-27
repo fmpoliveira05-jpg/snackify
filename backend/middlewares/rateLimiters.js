@@ -81,4 +81,6 @@ module.exports = {
   uploadQuota: createAccountLimiter(ONE_HOUR, limits.uploadsPerHour, QUOTA, (req) => !req.is('multipart/form-data')),
   dishWriteQuota: createAccountLimiter(ONE_HOUR, limits.dishWritesPerHour, QUOTA),
   exportQuota: createAccountLimiter(ONE_DAY, limits.exportsPerDay, QUOTA),
+  // Apagar a conta pede a password: poucas tentativas por hora.
+  deleteAccountQuota: createAccountLimiter(ONE_HOUR, 5, QUOTA),
 };
