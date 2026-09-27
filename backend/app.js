@@ -9,6 +9,7 @@ const { config } = require('./config/env');
 const { swaggerUi, swaggerSpec } = require('./swagger');
 const { loadUser, redirectIfAuthenticated } = require('./middlewares/authMiddleware');
 const errorHandler = require('./middlewares/errorHandler');
+const { notFound, blockSourceMaps } = require('./middlewares/notFound');
 const { verifyOrigin } = require('./middlewares/csrfMiddleware');
 const { apiLimiter } = require('./middlewares/rateLimiters');
 const { cspNonce, helmetMiddleware, permissionsPolicy, forceHttps } = require('./middlewares/securityHeaders');
@@ -51,6 +52,8 @@ function createApp() {
   app.use(healthRoutes);
 
   app.use(forceHttps);
+  // Em produção não se publicam source maps (nem do Angular nem de outra coisa qualquer).
+  app.use(blockSourceMaps);
   app.use(cspNonce);
   app.use(helmetMiddleware());
   app.use(permissionsPolicy);
@@ -122,7 +125,7 @@ function createApp() {
     });
   });
 
-  app.use((req, res) => res.status(404).json({ message: 'Recurso não encontrado.' }));
+  app.use(notFound);
   app.use(errorHandler);
 
   return app;

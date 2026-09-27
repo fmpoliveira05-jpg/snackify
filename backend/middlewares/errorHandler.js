@@ -1,5 +1,6 @@
 const multer = require('multer');
 const { config } = require('../config/env');
+const { wantsPage } = require('./notFound');
 
 /** Mensagens do multer traduzidas e sem pormenores internos. */
 const MULTER_MESSAGES = {
@@ -17,6 +18,8 @@ const MULTER_MESSAGES = {
  */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
+  // A resposta já começou a ser enviada: só o Express a pode terminar (fecha a ligação).
+  if (res.headersSent) return next(err);
   if (err instanceof multer.MulterError) {
     return res.status(400).json({ message: MULTER_MESSAGES[err.code] || 'Não foi possível processar o ficheiro enviado.' });
   }
@@ -39,6 +42,13 @@ const errorHandler = (err, req, res, next) => {
     console.error(`[erro] ${req.method} ${req.path}: ${err.name}`);
   } else {
     console.error(`[erro] ${req.method} ${req.path}:`, err);
+  }
+  if (status >= 500 && wantsPage(req) && !res.headersSent) {
+    // Página de erro do back-office, sem mensagens, nomes de ficheiros nem stack traces.
+    return res.status(status).render('errors/500', { status }, (renderErr, html) => {
+      if (renderErr) return res.status(status).type('text/plain').send('Erro interno do servidor.');
+      return res.send(html);
+    });
   }
   return res.status(status).json({ message: status >= 500 ? 'Erro interno do servidor.' : 'Pedido inválido.' });
 };
