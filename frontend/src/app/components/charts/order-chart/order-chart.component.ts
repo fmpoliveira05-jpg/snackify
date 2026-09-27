@@ -1,6 +1,29 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { CommonModule } from '@angular/common';
 
 declare var google: any;
+
+const LOADER_URL = 'https://www.gstatic.com/charts/loader.js';
+let loaderPromise: Promise<void> | null = null;
+
+/** Injeta o script do Google Charts uma única vez. */
+function loadGoogleChartsScript(): Promise<void> {
+  if (typeof google !== 'undefined' && google.charts?.load) return Promise.resolve();
+  if (!loaderPromise) {
+    loaderPromise = new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = LOADER_URL;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        loaderPromise = null;
+        reject(new Error('Google Charts indisponível'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return loaderPromise;
+}
 
 /**
  * Gráfico (Google Charts) com o total das últimas encomendas do cliente.
@@ -8,6 +31,7 @@ declare var google: any;
 @Component({
   selector: 'app-order-chart',
   standalone: true,
+  imports: [CommonModule],
   templateUrl: './order-chart.component.html',
 })
 export class OrderChartComponent implements OnChanges {
@@ -15,6 +39,8 @@ export class OrderChartComponent implements OnChanges {
 
   private chartLoaded = false;
   private pendingDraw = false;
+  /** O script do Google Charts não carregou (sem rede ou bloqueado). */
+  unavailable = false;
 
   constructor() {
     this.loadGoogleCharts();
@@ -30,21 +56,25 @@ export class OrderChartComponent implements OnChanges {
     }
   }
 
+  /**
+   * Carrega o Google Charts só quando o gráfico é mostrado (antes era carregado em todas as
+   * páginas, pelo index.html). Assim o browser só contacta o Google nesta página.
+   */
   private loadGoogleCharts() {
-    // typeof evita um ReferenceError quando o script do Google Charts não foi carregado.
-    if (typeof google === 'undefined' || !google.charts?.load) {
-      console.error('Google Charts não está disponível. Verifique se o script está incluído no index.html');
-      return;
-    }
-
-    google.charts.load('current', { packages: ['corechart'] });
-    google.charts.setOnLoadCallback(() => {
-      this.chartLoaded = true;
-      if (this.pendingDraw) {
-        this.drawChart();
-        this.pendingDraw = false;
-      }
-    });
+    loadGoogleChartsScript()
+      .then(() => {
+        google.charts.load('current', { packages: ['corechart'] });
+        google.charts.setOnLoadCallback(() => {
+          this.chartLoaded = true;
+          if (this.pendingDraw) {
+            this.drawChart();
+            this.pendingDraw = false;
+          }
+        });
+      })
+      .catch(() => {
+        this.unavailable = true;
+      });
   }
 
   private drawChart() {
