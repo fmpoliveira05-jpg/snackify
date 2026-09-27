@@ -1,14 +1,29 @@
 const Restaurant = require('../models/restaurant');
 const Category = require('../models/category');
 const { wrapAll } = require('../utils/asyncHandler');
+const { parsePagination, setPaginationHeaders } = require('../utils/pagination');
+
+/** Campos de um restaurante que o administrador precisa de ver para o validar. */
+const ADMIN_RESTAURANT_FIELDS = 'name username email phone nif address logo foundedAt isChecked createdAt emailVerified';
+
+/** Lista paginada de restaurantes com o estado de validação indicado. */
+const listRestaurantsByState = async (req, res, isChecked) => {
+  const pagination = parsePagination(req.query);
+  const filter = { isChecked };
+  const [restaurants, total] = await Promise.all([
+    Restaurant.find(filter).select(ADMIN_RESTAURANT_FIELDS).sort({ name: 1 }).skip(pagination.skip).limit(pagination.limit).lean(),
+    Restaurant.countDocuments(filter),
+  ]);
+  setPaginationHeaders(res, { total, ...pagination });
+  return res.json(restaurants);
+};
 
 /**
  * GET /admin/validar-restaurantes — restaurantes registados que aguardam validação.
  */
 const showPendingRestaurants = async (req, res) => {
   try {
-    const restaurantes = await Restaurant.find({ isChecked: false });
-    res.json(restaurantes);
+    return await listRestaurantsByState(req, res, false);
   } catch (error) {
     res.status(500).json({ message: "Erro ao obter restaurantes por validar." });
   }
@@ -19,8 +34,7 @@ const showPendingRestaurants = async (req, res) => {
  */
 const showCheckedRestaurants = async (req, res) => {
   try {
-    const restaurantes = await Restaurant.find({ isChecked: true });
-    res.json(restaurantes);
+    return await listRestaurantsByState(req, res, true);
   } catch (error) {
     res.status(500).json({ message: "Erro ao obter restaurantes validados." });
   }
@@ -55,8 +69,8 @@ const rejectRestaurant = async (req, res) => {
  */
 const showCategories = async (req, res) => {
     try {
-        const categorias = await Category.find();
-        res.json(categorias); 
+        const categorias = await Category.find().sort({ name: 1 }).limit(500).lean();
+        res.json(categorias);
     } catch (error) {
         res.status(500).json({ message: "Erro ao obter categorias." });
     }

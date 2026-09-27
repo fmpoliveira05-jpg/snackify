@@ -143,7 +143,7 @@ describe('encomendas e vales', () => {
   };
 
   test('pagar no local sem documento de identificação é recusado', async () => {
-    jest.spyOn(Order, 'find').mockReturnValue({ select: jest.fn().mockResolvedValue([]) });
+    mockQuery(Order, 'find', []);
     const res = await asCustomer(request(app).post('/cliente/api/carrinho/finalizar')).send({ paymentMethod: 'local' });
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/documento de identificação/);

@@ -268,7 +268,7 @@ describe('vales de refeição', () => {
   });
 
   test('só vales ativos servem para pagar encomendas', async () => {
-    jest.spyOn(Order, 'find').mockReturnValue({ select: jest.fn().mockResolvedValue([]) });
+    mockQuery(Order, 'find', []);
     mockQuery(Cart, 'findOne', {
       items: [{ dishId: { _id: 'd1', restaurantId: 'r1', pricePerDose: [{ dose: '1', price: 10 }] }, amount: 1, dose: '1' }],
       timeout: new Date(Date.now() + 60000),

@@ -25,4 +25,7 @@ const menuSchema = new mongoose.Schema({
   }
 });
 
+// Menus de um restaurante; a pesquisa por título/descrição do back-office filtra dentro destes.
+menuSchema.index({ restaurantId: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Menu', menuSchema);

@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const cartSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Um só carrinho por cliente (o índice único impede carrinhos duplicados em pedidos simultâneos).
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     items: [
         {
           dishId: { type: mongoose.Schema.Types.ObjectId, ref: "Dish" },

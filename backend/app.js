@@ -62,7 +62,7 @@ function createApp({ angularDist = DEFAULT_ANGULAR_DIST } = {}) {
   app.use(cspNonce);
   app.use(helmetMiddleware());
   app.use(permissionsPolicy);
-  app.use(cors({ origin: config.clientUrl, credentials: true }));
+  app.use(cors({ origin: config.clientUrl, credentials: true, exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Page-Size'] }));
 
   if (config.env === 'development') {
     // Só o caminho: a query string pode ter tokens (ex.: links de verificação).

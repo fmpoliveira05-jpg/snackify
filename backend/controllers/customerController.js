@@ -27,6 +27,8 @@ const { VOUCHER_VALUES, generateVoucherCode, applyVoucher } = require('../servic
 
 const payments = require('../services/payments');
 const { catalogCache, KEYS } = require('../services/catalogCache');
+const { withDishes } = require('../services/menus');
+const { parsePagination, paginateArray, setPaginationHeaders } = require('../utils/pagination');
 
 /** Campos de um restaurante que um cliente pode ver (nunca a password, o NIF ou o estado interno). */
 const PUBLIC_RESTAURANT_FIELDS = 'name email phone address logo foundedAt createdAt settings';
@@ -41,7 +43,13 @@ const sameId = (a, b) => String(a) === String(b);
 async function loadCart(userId) {
   let cart = await Cart.findOne({ userId }).populate('items.dishId');
   if (!cart) {
-    cart = await Cart.create({ userId });
+    try {
+      cart = await Cart.create({ userId });
+    } catch (err) {
+      // Dois pedidos simultâneos tentaram criar o carrinho: o índice único deixa passar só um.
+      if (err?.code !== 11000) throw err;
+      cart = await Cart.findOne({ userId }).populate('items.dishId');
+    }
   }
   if (isCartExpired(cart.timeout)) {
     cart.items = [];
@@ -56,7 +64,9 @@ async function loadCart(userId) {
 async function recentCancellations(userId) {
   const since = new Date();
   since.setMonth(since.getMonth() - 3);
-  const cancelled = await Order.find({ userId, state: 'cancelada', orderDate: trusted({ $gte: since }) }).select('orderDate');
+  const cancelled = await Order.find({ userId, state: 'cancelada', orderDate: trusted({ $gte: since }) })
+    .select('orderDate')
+    .lean();
   return cancelled.map((order) => order.orderDate);
 }
 
@@ -74,7 +84,8 @@ const listRestaurants = async (req, res) => {
     .select(PUBLIC_RESTAURANT_FIELDS)
     .lean()
     .maxTimeMS(config.timeouts.query));
-  res.json(filterRestaurants(restaurants, textParams(req.query, ['q', 'location', 'sort'])));
+  const filtered = filterRestaurants(restaurants, textParams(req.query, ['q', 'location', 'sort']));
+  res.json(paginateArray(res, filtered, parsePagination(req.query)));
 };
 
 /** Pratos de todos os restaurantes validados, com o restaurante e a categoria (em cache). */
@@ -96,7 +107,7 @@ const loadCatalogDishes = () => catalogCache.wrap(KEYS.dishes, async () => {
 const searchDishes = async (req, res) => {
   const dishes = await loadCatalogDishes();
   const query = textParams(req.query, ['q', 'category', 'restaurant', 'location', 'minPrice', 'maxPrice', 'sort']);
-  res.json(filterDishes(dishes, query));
+  res.json(paginateArray(res, filterDishes(dishes, query), parsePagination(req.query)));
 };
 
 /** GET /cliente/api/categorias — categorias de pratos, para os filtros de pesquisa. */
@@ -136,18 +147,7 @@ const listMenus = async (req, res) => {
   res.json(menusWithDishes);
 };
 
-/**
- * Junta a cada menu os seus pratos com UMA consulta (antes era uma consulta por menu: N+1).
- *
- * @param {Array<object>} menus menus em objetos simples (lean)
- */
-async function withDishes(menus) {
-  if (menus.length === 0) return [];
-  const dishes = await Dish.find({ menuId: trusted({ $in: menus.map((m) => m._id) }) }).lean();
-  const byMenu = new Map(menus.map((m) => [String(m._id), []]));
-  dishes.forEach((dish) => byMenu.get(String(dish.menuId))?.push(dish));
-  return menus.map((menu) => ({ ...menu, dishes: byMenu.get(String(menu._id)) }));
-}
+
 
 /**
  * GET /cliente/api/menus/:id/pratos — pratos de um menu, com a categoria.
@@ -165,13 +165,15 @@ const showCustomerDashboard = async (req, res) => {
   const userId = req.user._id;
 
   const orders = await Order.find({ userId })
+    .select('orderCode total dishes')
     .sort({ orderDate: -1 })
     .limit(5)
-    .populate('dishes.dishId');
+    .populate('dishes.dishId', 'pricePerDose')
+    .lean();
 
   const orderTotals = orders.map((order) => ({
     orderCode: order.orderCode || order._id.toString().slice(-5),
-    total: computeTotal(order.dishes),
+    total: order.total || computeTotal(order.dishes),
   }));
 
   const blockedUntil = computeBlockedUntil(await recentCancellations(userId));
@@ -385,12 +387,25 @@ const createOrderFromCart = async (req, res) => {
  * vales que comprou e ainda aguardam a confirmação do pagamento.
  */
 const listVouchers = async (req, res) => {
-  const vouchers = await Voucher.find({
+  const filter = {
     $or: [
       { ownerId: req.user._id, status: 'active' },
       { buyerId: req.user._id, status: 'pending' },
     ],
-  }).sort({ createdAt: -1 }).populate('buyerId', 'name username');
+  };
+  const pagination = parsePagination(req.query);
+  const [vouchers, total] = await Promise.all([
+    Voucher.find(filter)
+      .select('-idempotencyKey')
+      .sort({ createdAt: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('buyerId', 'name username')
+      .lean()
+      .maxTimeMS(config.timeouts.query),
+    Voucher.countDocuments(filter),
+  ]);
+  setPaginationHeaders(res, { total, ...pagination });
   res.json({ values: VOUCHER_VALUES, vouchers });
 };
 

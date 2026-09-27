@@ -6,6 +6,8 @@ const Voucher = require('../models/voucher');
 const { wrapAll } = require('../utils/asyncHandler');
 const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
 const { DEFAULT_SETTINGS } = require('../services/restaurantRules');
+const { config } = require('../config/env');
+const { parsePagination, setPaginationHeaders } = require('../utils/pagination');
 
 /** Campos que cada tipo de conta pode alterar no próprio perfil (tudo o resto é ignorado). */
 const EDITABLE_FIELDS = {
@@ -83,16 +85,29 @@ const getProfile = async (req, res) => {
  */
 const getOrderHistory = async (req, res) => {
   try {
-    let orders;
-
-    if (req.user?.userType === 'customer') {
-      orders = await Order.find({ userId: req.user._id }).populate('dishes.dishId').populate('restaurantId', 'name phone address logo');
-    } else if (req.user?.userType === 'admin') {
+    if (req.user?.userType === 'admin') {
       return res.status(403).json({ message: "Admins não têm histórico de encomendas." });
-    } else {
-      orders = await Order.find({ restaurantId: req.user._id }).populate('dishes.dishId').populate('userId', 'name username phone address');
-    } 
+    }
 
+    const isCustomer = req.user?.userType === 'customer';
+    const filter = isCustomer ? { userId: req.user._id } : { restaurantId: req.user._id };
+    const pagination = parsePagination(req.query);
+
+    let query = Order.find(filter)
+      .select('-idempotencyKey -stripeSessionId -paymentIntentId')
+      .sort({ orderDate: -1 })
+      .skip(pagination.skip)
+      .limit(pagination.limit)
+      .populate('dishes.dishId', 'name pricePerDose image');
+    query = isCustomer
+      ? query.populate('restaurantId', 'name phone address logo')
+      : query.populate('userId', 'name username phone address');
+
+    const [orders, total] = await Promise.all([
+      query.lean().maxTimeMS(config.timeouts.query),
+      Order.countDocuments(filter),
+    ]);
+    setPaginationHeaders(res, { total, ...pagination });
     res.json(orders);
   } catch (err) {
     console.error('Erro ao carregar encomendas:', err);

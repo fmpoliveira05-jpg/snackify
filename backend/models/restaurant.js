@@ -53,4 +53,7 @@ const RestaurantSchema = new mongoose.Schema({
 // Verificação do email, bloqueio por tentativas falhadas, recuperação da password e versão da sessão.
 RestaurantSchema.plugin(accountSecurityPlugin);
 
+// Restaurantes validados (catálogo) e restaurantes por validar (administração), por nome.
+RestaurantSchema.index({ isChecked: 1, name: 1 });
+
 module.exports = mongoose.model('Restaurant', RestaurantSchema);

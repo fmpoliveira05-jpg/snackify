@@ -40,4 +40,8 @@ const reviewSchema = new mongoose.Schema({
     }
 });
 
+// Avaliações recebidas por um restaurante (mais recentes primeiro) e avaliações de um cliente.
+reviewSchema.index({ restaurantId: 1, createdAt: -1 });
+reviewSchema.index({ userId: 1 });
+
 module.exports = mongoose.model('Review', reviewSchema);

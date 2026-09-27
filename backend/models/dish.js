@@ -53,4 +53,9 @@ const dishSchema = new mongoose.Schema({
   }
 });
 
+// Pratos de um restaurante (back-office) e pratos ainda sem menu (menuId: null).
+dishSchema.index({ restaurantId: 1, menuId: 1 });
+// Pratos de um menu (páginas do cliente e do back-office).
+dishSchema.index({ menuId: 1 });
+
 module.exports = mongoose.model('Dish', dishSchema);

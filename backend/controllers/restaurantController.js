@@ -10,6 +10,11 @@ const { selectedDishesValidator } = require('../models/backend-validations/dishV
 const { wrapAll } = require('../utils/asyncHandler');
 const escapeRegex = require('../utils/escapeRegex');
 const { MAX_DISHES_PER_MENU } = require('../services/orderRules');
+const { withDishes } = require('../services/menus');
+const { config } = require('../config/env');
+
+/** Máximo de avaliações mostradas de uma vez no back-office. */
+const REVIEWS_PAGE_SIZE = 100;
 
 /**
  * Converte um valor de formulário (texto, lista ou nada) numa lista.
@@ -35,7 +40,7 @@ const showRestaurantDashboard = async (req, res) => {
       { $match: { restaurantId: req.user._id } },
       { $group: { _id: "$state", count: { $sum: 1 } } },
       { $project: { _id: 0, state: "$_id", count: 1 } }
-    ]);
+    ]).option({ maxTimeMS: config.timeouts.query });
 
     res.render('dashboards/restaurantDashboard', { orderStats, search: {}});
   } catch (error) {
@@ -50,14 +55,8 @@ const showRestaurantDashboard = async (req, res) => {
 const listMenus = async (req, res) => {
   try {
     const restaurantId = req.user._id;
-    const menus = await Menu.find({ restaurantId });
-
-    const menusWithDishes = await Promise.all(
-      menus.map(async (menu) => {
-        const dishes = await Dish.find({ menuId: menu._id });
-        return { ...menu.toObject(), dishes };
-      })
-    );
+    const menus = await Menu.find({ restaurantId }).sort({ createdAt: -1 }).lean();
+    const menusWithDishes = await withDishes(menus);
 
     res.render('menus/readMenus', { menus: menusWithDishes });
   } catch (err) {
@@ -87,7 +86,7 @@ const searchMenus = async (req, res) => {
         restaurantId: req.user._id,
         [field]: trusted({ $regex: escapeRegex(trimmedValue), $options: "i" })
       };
-      menus = await Menu.find(filter);
+      menus = await Menu.find(filter).lean().maxTimeMS(config.timeouts.query);
     }
 
     if (["priceFull", "priceHalf"].includes(field)) {
@@ -116,22 +115,14 @@ const searchMenus = async (req, res) => {
         return res.status(404).send("Menus correspondentes não encontrados.");
       }
 
-      menus = await Menu.find({ _id: trusted({ $in: menuIds }) });
+      menus = await Menu.find({ _id: trusted({ $in: menuIds }), restaurantId: req.user._id }).lean();
     }
 
     if (!menus.length) {
       return res.status(404).send("Nenhum menu encontrado.");
     }
 
-    const menusWithDishes = await Promise.all(
-      menus.map(async (menu) => {
-        const dishes = await Dish.find({ menuId: menu._id });
-        return {
-          ...menu.toObject(),
-          dishes
-        };
-      })
-    );
+    const menusWithDishes = await withDishes(menus);
 
     res.render("menus/searchMenu", {
       menus: menusWithDishes,
@@ -444,7 +435,7 @@ const addDish = async (req, res) => {
  */
 const listDishes = async (req, res) => {
   try {
-    const dishes = await Dish.find({ restaurantId: req.user._id }).populate('category', 'name');
+    const dishes = await Dish.find({ restaurantId: req.user._id }).populate('category', 'name').lean().maxTimeMS(config.timeouts.query);
     res.render('dishes/readDishes', { dishes });
   } catch (err) {
     console.error('Erro ao listar pratos:', err);
@@ -474,7 +465,12 @@ const showDishDetails = async (req, res) => {
  */
 const listReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ restaurantId: req.user._id }).populate('userId', 'name');
+    const reviews = await Review.find({ restaurantId: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(REVIEWS_PAGE_SIZE)
+      .populate('userId', 'name')
+      .lean()
+      .maxTimeMS(config.timeouts.query);
     res.render('reviews/readReviews', { reviews });
   } catch (err) {
     console.error('Erro ao listar avaliações:', err);
