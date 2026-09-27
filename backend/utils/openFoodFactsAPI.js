@@ -1,5 +1,6 @@
 const axios = require('axios');
 const TtlCache = require('./ttlCache');
+const WindowBudget = require('./budget');
 const { config } = require('../config/env');
 const { normalize } = require('../services/search');
 
@@ -9,6 +10,9 @@ const { normalize } = require('../services/search');
  */
 const offCache = new TtlCache({ max: 1000, ttlMs: config.cache.openFoodFactsTtlSeconds * 1000 });
 const NO_RESULT = Object.freeze({ empty: true });
+
+/** Teto de pedidos por minuto à OpenFoodFacts (OFF_MAX_REQUESTS_PER_MINUTE), para toda a instância. */
+const offBudget = new WindowBudget({ limit: config.budgets.openFoodFactsPerMinute, windowMs: 60 * 1000 });
 
 /** Tamanho máximo do termo de pesquisa enviado à OpenFoodFacts. */
 const MAX_QUERY_LENGTH = 100;
@@ -36,6 +40,11 @@ const fetchOpenFoodData = async (dishName) => {
  * @returns {Promise<object|null>} dados nutricionais, NO_RESULT se não houver produto, ou null se falhar
  */
 const lookup = async (searchTerms) => {
+  if (!offBudget.tryConsume()) {
+    // O prato é gravado sem informação nutricional; não fica em cache (tenta-se da próxima vez).
+    console.warn('[openfoodfacts] Limite de pedidos por minuto atingido: consulta ignorada.');
+    return null;
+  }
   try {
     const url = 'https://world.openfoodfacts.org/cgi/search.pl';
     const response = await axios.get(url, {
@@ -74,3 +83,4 @@ const lookup = async (searchTerms) => {
 module.exports = fetchOpenFoodData;
 module.exports.MAX_QUERY_LENGTH = MAX_QUERY_LENGTH;
 module.exports.offCache = offCache;
+module.exports.offBudget = offBudget;

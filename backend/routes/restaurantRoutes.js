@@ -25,6 +25,7 @@ const dishValidator = require('../middlewares/frontend-validations/dishValidator
 const auth = require('../middlewares/authMiddleware');
 const { isRestaurant } = require('../middlewares/roleMiddleware');
 const validateRequest = require('../middlewares/frontend-validations/validateRequest');
+const { uploadQuota, dishWriteQuota } = require('../middlewares/rateLimiters');
 const menuValidator = require('../middlewares/frontend-validations/menuValidator');
 
 const Menu = require('../models/menu');
@@ -298,6 +299,9 @@ router.post(
   '/pratos/novo',
   auth,
   isRestaurant,
+  // Cada prato novo ou editado pode gerar uma consulta à OpenFoodFacts e um upload.
+  dishWriteQuota,
+  uploadQuota,
   upload.single('image'),
   dishValidator,
   validateRequest('dishes/createDish', async (req) => {
@@ -344,6 +348,8 @@ router.put(
   '/pratos/editar/:id',
   auth,
   isRestaurant,
+  dishWriteQuota,
+  uploadQuota,
   upload.single('image'),
   dishValidator,
   validateRequest('dishes/updateDish', async (req) => {

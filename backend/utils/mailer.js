@@ -7,6 +7,20 @@
  */
 const nodemailer = require('nodemailer');
 const { config } = require('../config/env');
+const WindowBudget = require('./budget');
+
+const ONE_DAY = 24 * 60 * 60 * 1000;
+/** Tetos de envio: total por dia (MAIL_MAX_PER_DAY) e por destinatário (MAIL_MAX_PER_ADDRESS_PER_DAY). */
+const dailyBudget = new WindowBudget({ limit: config.budgets.emailsPerDay, windowMs: ONE_DAY });
+const perAddressBudget = new WindowBudget({ limit: config.budgets.emailsPerAddressPerDay, windowMs: ONE_DAY });
+
+/** Erro de envio recusado pelo teto diário (a mensagem não tem o destinatário). */
+class EmailBudgetError extends Error {
+  constructor() {
+    super('Limite diário de emails atingido: o email não foi enviado.');
+    this.name = 'EmailBudgetError';
+  }
+}
 
 let transporter = null;
 
@@ -50,6 +64,11 @@ async function sendMail({ to, subject, text, html }) {
     }
     return { simulated: true };
   }
+  const address = String(to).trim().toLowerCase();
+  if (perAddressBudget.remaining(address) <= 0 || !dailyBudget.tryConsume()) {
+    throw new EmailBudgetError();
+  }
+  perAddressBudget.tryConsume(address);
   return getTransporter().sendMail({ from: config.mailFrom, to, subject, text, html });
 }
 
@@ -74,4 +93,6 @@ const sendPasswordResetEmail = (to, name, link) => sendMail({
   html: `<p>Olá ${escapeHtml(name)},</p><p>Para escolher uma nova password, abra este link (válido durante 30 minutos e só uma vez):</p><p><a href="${escapeHtml(link)}">Redefinir password</a></p><p>Se não pediu esta alteração, ignore este email: a sua password continua a mesma.</p>`,
 });
 
-module.exports = { sendMail, sendVerificationEmail, sendPasswordResetEmail, setTransporter, isConfigured };
+module.exports = {
+  sendMail, sendVerificationEmail, sendPasswordResetEmail, setTransporter, isConfigured, EmailBudgetError, dailyBudget, perAddressBudget,
+};

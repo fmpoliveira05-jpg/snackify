@@ -98,6 +98,26 @@ const config = {
     openFoodFactsTtlSeconds: int(process.env.OFF_CACHE_TTL_SECONDS, 24 * 60 * 60),
   },
 
+  // Limites de pedidos por IP (janela em minutos) e quotas por conta (por hora ou por dia).
+  limits: {
+    apiWindowMinutes: int(process.env.RATE_LIMIT_API_WINDOW_MINUTES, 15),
+    apiMax: int(process.env.RATE_LIMIT_API_MAX, 300),
+    loginMax: int(process.env.RATE_LIMIT_LOGIN_MAX, 20),
+    registerPerHour: int(process.env.RATE_LIMIT_REGISTER_PER_HOUR, 10),
+    ordersPerHour: int(process.env.QUOTA_ORDERS_PER_HOUR, 20),
+    paymentsPerHour: int(process.env.QUOTA_PAYMENTS_PER_HOUR, 30),
+    uploadsPerHour: int(process.env.QUOTA_UPLOADS_PER_HOUR, 30),
+    dishWritesPerHour: int(process.env.QUOTA_DISH_WRITES_PER_HOUR, 60),
+    exportsPerDay: int(process.env.QUOTA_EXPORTS_PER_DAY, 5),
+  },
+
+  // Tetos de gastos com serviços externos (por instância da aplicação).
+  budgets: {
+    openFoodFactsPerMinute: int(process.env.OFF_MAX_REQUESTS_PER_MINUTE, 30),
+    emailsPerDay: int(process.env.MAIL_MAX_PER_DAY, 300),
+    emailsPerAddressPerDay: int(process.env.MAIL_MAX_PER_ADDRESS_PER_DAY, 5),
+  },
+
   // Documentação Swagger: pública só fora de produção, salvo se for ativada explicitamente.
   enableApiDocs: !isProduction || flag(process.env.ENABLE_API_DOCS),
 };

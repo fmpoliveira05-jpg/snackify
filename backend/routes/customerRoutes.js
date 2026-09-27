@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middlewares/authMiddleware');
 const { isCustomer } = require('../middlewares/roleMiddleware');
+const { orderQuota, paymentQuota } = require('../middlewares/rateLimiters');
 const {
     listRestaurants,
     searchDishes,
@@ -112,7 +113,7 @@ router.get('/categorias', auth, isCustomer, listCategories);
  *         description: O destinatário não existe.
  */
 router.get('/vales', auth, isCustomer, listVouchers);
-router.post('/vales', auth, isCustomer, buyVoucher);
+router.post('/vales', auth, isCustomer, paymentQuota, buyVoucher);
 
 /**
  * @swagger
@@ -360,7 +361,7 @@ router.delete('/carrinho/limpar', auth, isCustomer, clearCart);
  *       409:
  *         description: O restaurante atingiu o limite de encomendas ou a morada está fora do raio de entrega.
  */
-router.post('/carrinho/finalizar', auth, isCustomer, createOrderFromCart);
+router.post('/carrinho/finalizar', auth, isCustomer, orderQuota, createOrderFromCart);
 
 /**
  * @swagger
@@ -374,6 +375,6 @@ router.post('/carrinho/finalizar', auth, isCustomer, createOrderFromCart);
  *       200:
  *         description: Sessão de pagamento criada.
  */
-router.post('/carrinho/create-checkout-session', auth, isCustomer, createStripeSession);
+router.post('/carrinho/create-checkout-session', auth, isCustomer, paymentQuota, createStripeSession);
 
 module.exports = router;

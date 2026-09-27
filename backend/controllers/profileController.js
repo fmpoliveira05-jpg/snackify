@@ -4,6 +4,7 @@ const Order = require('../models/order');
 const Review = require('../models/review');
 const Voucher = require('../models/voucher');
 const { wrapAll } = require('../utils/asyncHandler');
+const { logError } = require('../utils/logger');
 const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
 const { DEFAULT_SETTINGS, ACTIVE_STATES } = require('../services/restaurantRules');
 const { releaseOrderSlot } = require('../services/orderSlots');
@@ -121,7 +122,7 @@ const getOrderHistory = async (req, res) => {
     setPaginationHeaders(res, { total, ...pagination });
     res.json(orders);
   } catch (err) {
-    console.error('Erro ao carregar encomendas:', err);
+    logError('Erro ao carregar encomendas', err);
     res.status(500).json({ message: "Erro ao carregar histórico de encomendas." });
   }
 };
@@ -167,7 +168,7 @@ const updateProfile = async (req, res) => {
 
     res.status(200).json({ message: 'Perfil atualizado com sucesso.' });
   } catch (error) {
-    console.error("Erro no updateProfile:", error);
+    logError("Erro no updateProfile", error);
     if (error.name === 'ValidationError' || error.name === 'CastError') {
       return res.status(400).json({ errors: [{ msg: 'Dados do perfil inválidos.' }] });
     }
@@ -217,7 +218,7 @@ const cancelOrder = async (req, res) => {
 
     res.json({ message: "Pedido cancelado com sucesso." });
   } catch (error) {
-    console.error('Erro ao cancelar pedido:', error.name);
+    logError('Erro ao cancelar pedido', error);
     res.status(500).json({ message: "Erro ao cancelar pedido." });
   }
 };
@@ -269,7 +270,7 @@ const submitReview = async (req, res) => {
       redirectTo: "/user/perfil"
     });
   } catch (error) {
-    console.error('Erro ao enviar avaliação:', error);
+    logError('Erro ao enviar avaliação', error);
     res.status(500).json({ message: "Erro ao enviar avaliação." });
   }
 };
@@ -301,7 +302,7 @@ const renderReviewPage = async (req, res) => {
 
     res.json({ order });
   } catch (error) {
-    console.error('Erro ao carregar página de avaliação:', error);
+    logError('Erro ao carregar página de avaliação', error);
     res.status(500).json({ error: "Erro interno ao carregar avaliação." });
   }
 };

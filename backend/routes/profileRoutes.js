@@ -6,6 +6,7 @@ const userValidator = require('../middlewares/frontend-validations/userValidator
 const restaurantValidator = require('../middlewares/frontend-validations/restaurantValidator');
 const validateRequest = require('../middlewares/frontend-validations/validateRequest');
 const { isCustomer, isRestaurant } = require('../middlewares/roleMiddleware');
+const { uploadQuota } = require('../middlewares/rateLimiters');
 const {
   updateOrderState,
   getProfile,
@@ -111,6 +112,7 @@ router.get('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, renderReview
 router.put(
   '/perfil/editar',
   auth,
+  uploadQuota,
   upload.single('image'),
   (req, res, next) => {
     if (!req.user || !req.user.userType) {
@@ -196,7 +198,7 @@ router.post('/perfil/encomendas/:orderId/cancelar', auth, isCustomer, cancelOrde
  *       400:
  *         description: Dados inválidos ou falha na submissão.
  */
-router.post('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, upload.single('image'), submitReview);
+router.post('/perfil/encomendas/:orderId/avaliar', auth, isCustomer, uploadQuota, upload.single('image'), submitReview);
 
 /**
  * @swagger

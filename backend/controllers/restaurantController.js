@@ -8,6 +8,7 @@ const Review = require('../models/review');
 const fetchOpenFoodData = require('../utils/openFoodFactsAPI');
 const { selectedDishesValidator } = require('../models/backend-validations/dishValidations');
 const { wrapAll } = require('../utils/asyncHandler');
+const { logError } = require('../utils/logger');
 const escapeRegex = require('../utils/escapeRegex');
 const { MAX_DISHES_PER_MENU } = require('../services/orderRules');
 const { withDishes } = require('../services/menus');
@@ -44,7 +45,7 @@ const showRestaurantDashboard = async (req, res) => {
 
     res.render('dashboards/restaurantDashboard', { orderStats, search: {}});
   } catch (error) {
-    console.error(error);
+    logError('Erro ao carregar o painel do restaurante', error);
     res.status(500).send('Erro ao carregar dados de encomendas.');
   }
 };
@@ -60,7 +61,7 @@ const listMenus = async (req, res) => {
 
     res.render('menus/readMenus', { menus: menusWithDishes });
   } catch (err) {
-    console.error('Erro ao listar menus:', err);
+    logError('Erro ao listar menus', err);
     res.status(500).send('Erro ao listar menus.');
   }
 };
@@ -130,7 +131,7 @@ const searchMenus = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Erro ao pesquisar menus:", err);
+    logError("Erro ao pesquisar menus", err);
     res.status(500).send("Erro ao pesquisar menus.");
   }
 };
@@ -147,7 +148,7 @@ const showAddMenuForm = async (req, res) => {
 
     res.render('menus/createMenu', { availableDishes: availableDishes, errors: [], oldInput: {} });
   } catch (err) {
-    console.error('Erro ao carregar pratos para o menu:', err);
+    logError('Erro ao carregar pratos para o menu', err);
     res.status(500).send('Erro ao carregar formulário.');
   }
 };
@@ -180,7 +181,7 @@ const addMenu = async (req, res) => {
 
     res.redirect('/restaurante/menus');
   } catch (err) {
-    console.error('Erro ao adicionar menu:', err);
+    logError('Erro ao adicionar menu', err);
     res.status(400).send('Erro ao criar menu.');
   }
 };
@@ -216,7 +217,7 @@ const showEditMenuForm = async (req, res) => {
       oldInput: {}
     });
   } catch (err) {
-    console.error('Erro ao carregar formulário de edição:', err);
+    logError('Erro ao carregar formulário de edição', err);
     res.status(500).send('Erro ao carregar menu.');
   }
 };
@@ -266,7 +267,7 @@ const updateMenu = async (req, res) => {
 
     res.redirect('/restaurante/menus');
   } catch (err) {
-    console.error('Erro ao atualizar menu:', err);
+    logError('Erro ao atualizar menu', err);
     res.status(500).send('Erro ao atualizar menu.');
   }
 };
@@ -287,7 +288,7 @@ const deleteMenu = async (req, res) => {
 
     res.redirect('/restaurante/menus');
   } catch (err) {
-    console.error('Erro ao deletar menu:', err);
+    logError('Erro ao deletar menu', err);
     res.status(500).send('Erro ao deletar menu.');
   }
 };
@@ -308,7 +309,7 @@ const removeDishFromMenu = async (req, res) => {
 
     res.redirect('/restaurante/menus');
   } catch (err) {
-    console.error('Erro ao desassociar prato do menu:', err);
+    logError('Erro ao desassociar prato do menu', err);
     res.status(500).send('Erro ao desassociar prato.');
   }
 };
@@ -323,7 +324,7 @@ const showEditDishForm = async (req, res) => {
     const categories = await Category.find();
     res.render('dishes/updateDish', { categories, dish, errors: [], oldInput: {} });
   } catch (err) {
-    console.error('Erro ao buscar prato:', err);
+    logError('Erro ao buscar prato', err);
     res.status(500).send('Erro ao buscar prato.');
   }
 };
@@ -361,7 +362,7 @@ const updateDish = async (req, res) => {
     await dish.save();
     res.redirect('/restaurante/pratos');
   } catch (err) {
-    console.error('Erro ao atualizar prato:', err);
+    logError('Erro ao atualizar prato', err);
     res.status(500).send('Erro ao atualizar prato.');
   }
 };
@@ -377,7 +378,7 @@ const deleteDish = async (req, res) => {
     await dish.deleteOne();
     res.redirect('/restaurante/pratos');
   } catch (err) {
-    console.error('Erro ao remover prato:', err);
+    logError('Erro ao remover prato', err);
     res.status(500).send('Erro ao remover prato.');
   }
 };
@@ -425,7 +426,7 @@ const addDish = async (req, res) => {
 
     res.redirect('/restaurante/pratos');
   } catch (err) {
-    console.error('Erro ao criar prato:', err);
+    logError('Erro ao criar prato', err);
     res.status(500).send('Erro ao criar prato.');
   }
 };
@@ -438,7 +439,7 @@ const listDishes = async (req, res) => {
     const dishes = await Dish.find({ restaurantId: req.user._id }).populate('category', 'name').lean().maxTimeMS(config.timeouts.query);
     res.render('dishes/readDishes', { dishes });
   } catch (err) {
-    console.error('Erro ao listar pratos:', err);
+    logError('Erro ao listar pratos', err);
     res.status(500).send('Erro ao listar pratos.');
   }
 };
@@ -455,7 +456,7 @@ const showDishDetails = async (req, res) => {
 
     res.render('dishes/showDish', { dish, nutriInfo });
   } catch (err) {
-    console.error('Erro ao carregar detalhes do prato:', err);
+    logError('Erro ao carregar detalhes do prato', err);
     res.status(500).send('Erro ao carregar detalhes do prato.');
   }
 };
@@ -473,7 +474,7 @@ const listReviews = async (req, res) => {
       .maxTimeMS(config.timeouts.query);
     res.render('reviews/readReviews', { reviews });
   } catch (err) {
-    console.error('Erro ao listar avaliações:', err);
+    logError('Erro ao listar avaliações', err);
     res.status(500).send('Erro ao listar avaliações.');
   }
 };

@@ -4,6 +4,7 @@ const User = require('../models/user');
 const Restaurant = require('../models/restaurant');
 const { config } = require('../config/env');
 const { wrapAll } = require('../utils/asyncHandler');
+const { logError } = require('../utils/logger');
 const { HOME_BY_TYPE } = require('../middlewares/authMiddleware');
 const { startSession, endSession } = require('../services/session');
 const { createEmailToken, hashToken, isWellFormedToken } = require('../utils/tokens');
@@ -61,7 +62,7 @@ async function issueEmailVerification(Model, account) {
   try {
     await sendVerificationEmail(account.email, account.name, verificationLink(token));
   } catch (err) {
-    console.error(`[email] Não foi possível enviar a verificação da conta ${account._id}:`, err.message);
+    logError(`[email] Não foi possível enviar a verificação da conta ${account._id}`, err);
   }
 }
 
@@ -214,7 +215,7 @@ const forgotPassword = async (req, res) => {
       try {
         await sendPasswordResetEmail(account.email, account.name, resetLink(token));
       } catch (err) {
-        console.error(`[email] Não foi possível enviar a recuperação da conta ${account._id}:`, err.message);
+        logError(`[email] Não foi possível enviar a recuperação da conta ${account._id}`, err);
       }
     }
   }
