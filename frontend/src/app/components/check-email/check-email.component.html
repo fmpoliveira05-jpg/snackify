@@ -1,0 +1,32 @@
+<section class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header text-center"><h3>Confirme o seu email</h3></div>
+        <div class="card-body">
+          <p>Enviámos um email com um link para ativar a sua conta. O link é válido durante 24 horas.</p>
+          <p class="text-muted">Só depois de confirmar o email poderá iniciar sessão. Os restaurantes precisam ainda da validação de um administrador.</p>
+
+          <hr />
+          <h5 class="h6">Não recebeu o email?</h5>
+          <div *ngIf="message; else form" class="alert alert-info mb-0" role="status">{{ message }}</div>
+          <ng-template #form>
+            <form (ngSubmit)="resend()" #f="ngForm" novalidate class="d-flex gap-2 flex-wrap">
+              <label for="email" class="visually-hidden">Email</label>
+              <input id="email" name="email" type="email" class="form-control flex-grow-1 w-auto" placeholder="O seu email"
+                     autocomplete="email" maxlength="254" required email [(ngModel)]="email" />
+              <div class="visually-hidden" aria-hidden="true">
+                <label for="website">Não preencha este campo</label>
+                <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" [(ngModel)]="website" />
+              </div>
+              <button type="submit" class="btn btn-outline-primary" [disabled]="f.invalid || isSending">Reenviar</button>
+            </form>
+            <p class="text-danger mt-2" *ngIf="errorMessage">{{ errorMessage }}</p>
+          </ng-template>
+
+          <p class="mt-3 mb-0 text-center"><a routerLink="/login">Ir para o login</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

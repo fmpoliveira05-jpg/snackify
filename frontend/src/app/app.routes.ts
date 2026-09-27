@@ -17,9 +17,17 @@ import { ListCategoriesComponent } from './components/profile/list-categories/li
 import { ReviewComponent } from './components/review/review.component';
 import { DishSearchComponent } from './components/dish-search/dish-search.component';
 import { VouchersComponent } from './components/vouchers/vouchers.component';
+import { ForgotPasswordComponent } from './components/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
+import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
+import { CheckEmailComponent } from './components/check-email/check-email.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [NoAuthGuard] },
+  { path: 'recuperar-password', component: ForgotPasswordComponent },
+  { path: 'redefinir-password', component: ResetPasswordComponent },
+  { path: 'verificar-email/pendente', component: CheckEmailComponent },
+  { path: 'verificar-email', component: VerifyEmailComponent },
   { path: 'user/perfil', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'user/perfil/editar', component: UpdateProfileComponent, canActivate: [AuthGuard] },
   { path: 'user/perfil/encomendas/:id/avaliar', component: ReviewComponent, canActivate: [AuthGuard] },

@@ -1,0 +1,18 @@
+<section class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header text-center"><h3>Confirmação do email</h3></div>
+        <div class="card-body">
+          <p *ngIf="state === 'loading'" class="text-muted mb-0">A confirmar…</p>
+          <div *ngIf="state === 'success'" class="alert alert-success mb-0" role="status">
+            {{ message }} <a routerLink="/login" class="alert-link">Iniciar sessão</a>
+          </div>
+          <div *ngIf="state === 'error'" class="alert alert-warning mb-0" role="alert">
+            {{ message }} <a routerLink="/verificar-email/pendente" class="alert-link">Pedir um novo link</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
