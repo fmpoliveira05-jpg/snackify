@@ -26,6 +26,7 @@ const HIDDEN_FIELDS = [
   'failedLoginAttempts',
   'lockUntil',
   'tokenVersion',
+  'activeOrderIds',
   '__v',
 ];
 

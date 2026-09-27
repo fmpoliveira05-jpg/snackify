@@ -5,7 +5,9 @@ const Review = require('../models/review');
 const Voucher = require('../models/voucher');
 const { wrapAll } = require('../utils/asyncHandler');
 const { canCustomerCancel, isValidRestaurantTransition } = require('../services/orderRules');
-const { DEFAULT_SETTINGS } = require('../services/restaurantRules');
+const { DEFAULT_SETTINGS, ACTIVE_STATES } = require('../services/restaurantRules');
+const { releaseOrderSlot } = require('../services/orderSlots');
+const { refundVoucherBalance } = require('../services/voucherBalance');
 const { config } = require('../config/env');
 const { parsePagination, setPaginationHeaders } = require('../utils/pagination');
 
@@ -43,9 +45,18 @@ const updateOrderState = async (req, res) => {
     return res.status(400).json({ message: `Não é possível passar de "${order.state}" para "${state}".` });
   }
 
-  order.state = state;
-  await order.save();
-  res.json({ message: 'Estado da encomenda atualizado com sucesso.', order });
+  // A mudança só acontece se o estado ainda for o que foi lido: um cancelamento ou um
+  // pagamento que chegue ao mesmo tempo não é apagado por esta escrita.
+  const updated = await Order.findOneAndUpdate(
+    { _id: order._id, state: order.state },
+    { $set: { state } },
+    { new: true },
+  );
+  if (!updated) {
+    return res.status(409).json({ message: 'A encomenda foi alterada entretanto. Atualize a página.' });
+  }
+  if (!ACTIVE_STATES.includes(state)) await releaseOrderSlot(updated.restaurantId, updated._id);
+  res.json({ message: 'Estado da encomenda atualizado com sucesso.', order: updated });
 };
 
 /**
@@ -94,7 +105,7 @@ const getOrderHistory = async (req, res) => {
     const pagination = parsePagination(req.query);
 
     let query = Order.find(filter)
-      .select('-idempotencyKey -stripeSessionId -paymentIntentId')
+      .select('-idempotencyKey -stripeSessionId -paymentIntentId -slotPending')
       .sort({ orderDate: -1 })
       .skip(pagination.skip)
       .limit(pagination.limit)
@@ -188,16 +199,25 @@ const cancelOrder = async (req, res) => {
       return res.status(400).json({ message: decision.reason });
     }
 
-    order.state = 'cancelada';
-    await order.save();
+    // Transição atómica: dois cancelamentos simultâneos (ou um cancelamento e um pagamento)
+    // não podem ambos ter efeito, por isso o vale nunca é reembolsado duas vezes.
+    const cancelled = await Order.findOneAndUpdate(
+      { _id: order._id, userId: req.user._id, state: 'pendente' },
+      { $set: { state: 'cancelada' } },
+      { new: true },
+    );
+    if (!cancelled) {
+      return res.status(409).json({ message: "A encomenda já foi paga, cancelada ou está a ser preparada." });
+    }
+    await releaseOrderSlot(cancelled.restaurantId, cancelled._id);
     // A parte paga com vale volta para o saldo do vale.
-    if (order.voucherCode && order.discount > 0) {
-      await Voucher.updateOne({ code: order.voucherCode }, { $inc: { balance: order.discount } });
+    if (cancelled.voucherCode && cancelled.discount > 0) {
+      await refundVoucherBalance(cancelled.voucherCode, cancelled.discount);
     }
 
     res.json({ message: "Pedido cancelado com sucesso." });
   } catch (error) {
-    console.error('Erro ao cancelar pedido:', error);
+    console.error('Erro ao cancelar pedido:', error.name);
     res.status(500).json({ message: "Erro ao cancelar pedido." });
   }
 };

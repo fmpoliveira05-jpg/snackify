@@ -258,7 +258,7 @@ describe('vales de refeição', () => {
     test('um pagamento confirmado ativa o vale só se ainda estiver pendente (idempotente)', async () => {
       withSession(session());
       jest.spyOn(Voucher, 'findById').mockResolvedValue(pendingVoucher);
-      const update = jest.spyOn(Voucher, 'updateOne').mockResolvedValue({});
+      const update = jest.spyOn(Voucher, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
       const res = await request(app).get('/cliente/api/vales/pagamento-sucesso?voucherId=v1&session_id=cs_1');
       expect(res.headers.location).toBe(`${config.clientUrl}/cliente/vales?pagamento=sucesso`);
       const [filter, changes] = update.mock.calls[0];
@@ -326,7 +326,7 @@ describe('webhook do Stripe', () => {
 
   test('um evento assinado ativa o vale pago', async () => {
     jest.spyOn(Voucher, 'findById').mockResolvedValue({ _id: 'v1', buyerId: 'c1', value: 50, status: 'pending', stripeSessionId: 'cs_1' });
-    const update = jest.spyOn(Voucher, 'updateOne').mockResolvedValue({});
+    const update = jest.spyOn(Voucher, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
     const payload = eventPayload({
       id: 'cs_1', payment_status: 'paid', status: 'complete', currency: 'eur', amount_total: 5000,
       metadata: { type: 'voucher', voucherId: 'v1', userId: 'c1' },
@@ -347,10 +347,10 @@ describe('webhook do Stripe', () => {
   });
 
   test('um evento assinado marca a encomenda como paga', async () => {
-    jest.spyOn(Order, 'findById').mockResolvedValue({ _id: 'o1', userId: 'c1' });
-    const update = jest.spyOn(Order, 'updateOne').mockResolvedValue({});
+    jest.spyOn(Order, 'findById').mockResolvedValue({ _id: 'o1', userId: 'c1', total: 12.5, discount: 2.5 });
+    const update = jest.spyOn(Order, 'findOneAndUpdate').mockResolvedValue({ _id: 'o1' });
     const payload = eventPayload({
-      id: 'cs_2', payment_status: 'paid', status: 'complete',
+      id: 'cs_2', payment_status: 'paid', status: 'complete', currency: 'eur', amount_total: 1000, payment_intent: 'pi_1',
       metadata: { type: 'order', orderId: 'o1', userId: 'c1' },
     });
     const signature = stripe.webhooks.generateTestHeaderString({ payload, secret });
@@ -362,7 +362,11 @@ describe('webhook do Stripe', () => {
       .send(payload);
 
     expect(res.status).toBe(200);
-    expect(update).toHaveBeenCalledWith({ _id: 'o1', state: 'pendente' }, { $set: { state: 'concluída' } });
+    expect(update).toHaveBeenCalledWith(
+      { _id: 'o1', state: 'pendente' },
+      { $set: expect.objectContaining({ state: 'concluída', stripeSessionId: 'cs_2', paymentIntentId: 'pi_1' }) },
+      expect.anything(),
+    );
   });
 });
 

@@ -1,4 +1,5 @@
 // Operadores construídos pelo servidor são marcados como confiáveis; o sanitizeFilter só neutraliza os que vêm do pedido.
+const crypto = require('crypto');
 const { trusted } = require('mongoose');
 const Restaurant = require('../models/restaurant');
 const Dish = require('../models/dish');
@@ -19,15 +20,18 @@ const {
 const {
   ACTIVE_STATES,
   checkOrderAllowed,
+  effectiveSettings,
   estimateTimes,
   validateCheckoutChoices,
 } = require('../services/restaurantRules');
 const { filterRestaurants, filterDishes } = require('../services/search');
-const { VOUCHER_VALUES, generateVoucherCode, applyVoucher } = require('../services/vouchers');
+const { VOUCHER_VALUES, generateVoucherCode } = require('../services/vouchers');
 
 const payments = require('../services/payments');
 const { catalogCache, KEYS } = require('../services/catalogCache');
 const { withDishes } = require('../services/menus');
+const { reserveVoucherBalance, refundVoucherBalance } = require('../services/voucherBalance');
+const { reserveOrderSlot } = require('../services/orderSlots');
 const { parsePagination, paginateArray, setPaginationHeaders } = require('../utils/pagination');
 
 /** Campos de um restaurante que um cliente pode ver (nunca a password, o NIF ou o estado interno). */
@@ -275,15 +279,70 @@ const checkout = async (req, res) => {
   res.json(order);
 };
 
+/** Tempo ao fim do qual uma marca de "encomenda a ser criada" esquecida deixa de valer. */
+const CHECKOUT_LOCK_MS = 30 * 1000;
+
+/** Resposta devolvida ao criar a encomenda (e repetida quando o pedido é repetido). */
+const orderCreatedBody = (order) => ({
+  message: 'Encomenda criada com sucesso.',
+  orderId: order._id,
+  orderCode: order.orderCode,
+  estimatedReadyAt: order.estimatedReadyAt,
+  estimatedDeliveryAt: order.estimatedDeliveryAt,
+  toPay: Math.round(((order.total || 0) - (order.discount || 0)) * 100) / 100,
+});
+
+/** Código legível e único da encomenda (tempo + parte aleatória, para pedidos no mesmo milissegundo). */
+const newOrderCode = () => `ORD-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+
+/**
+ * Espera um pouco pela encomenda criada por outro pedido com o mesmo Idempotency-Key
+ * (o primeiro pedido ainda a estar a gravar quando chega a repetição).
+ */
+async function waitForIdempotentOrder(userId, key, attempts = 10, delayMs = 200) {
+  for (let i = 0; i < attempts; i += 1) {
+    const order = await Order.findOne({ userId, idempotencyKey: key }).lean();
+    if (order) return order;
+    await new Promise((resolve) => { setTimeout(resolve, delayMs); });
+  }
+  return null;
+}
+
+/**
+ * Lê o cabeçalho Idempotency-Key (opcional).
+ *
+ * @returns {{ok: boolean, key?: string}} ok=false se vier num formato inválido
+ */
+function readIdempotencyKey(req) {
+  const key = req.get('Idempotency-Key');
+  if (key === undefined) return { ok: true };
+  if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{8,100}$/.test(key)) return { ok: false };
+  return { ok: true, key };
+}
+
 /**
  * POST /cliente/api/carrinho/finalizar — transforma o carrinho numa encomenda.
  *
  * Corpo (opcional): `fulfilment` (entrega | levantamento | no local), `paymentMethod`
  * (online | local), `identityDoc` (obrigatório se o pagamento for no local) e `voucherCode`.
  * Aplica as regras do restaurante: limite de encomendas em curso e raio máximo de entrega.
+ *
+ * Proteção contra encomendas em duplicado (duplo clique, repetição por falha de rede):
+ *  - com o cabeçalho `Idempotency-Key`, repetir o pedido devolve a mesma encomenda;
+ *  - o carrinho é "reservado" de forma atómica: um segundo pedido simultâneo recebe 409;
+ *  - o saldo do vale e o lugar no limite de encomendas do restaurante são atómicos.
  */
 const createOrderFromCart = async (req, res) => {
   const userId = req.user._id;
+
+  const idempotency = readIdempotencyKey(req);
+  if (!idempotency.ok) {
+    return res.status(400).json({ message: 'Cabeçalho Idempotency-Key inválido.' });
+  }
+  if (idempotency.key) {
+    const previous = await Order.findOne({ userId, idempotencyKey: idempotency.key }).lean();
+    if (previous) return res.status(200).json({ ...orderCreatedBody(previous), replayed: true });
+  }
 
   const blockedUntil = computeBlockedUntil(await recentCancellations(userId));
   if (blockedUntil) {
@@ -301,6 +360,9 @@ const createOrderFromCart = async (req, res) => {
   const cart = await loadCart(userId);
   const items = cart.items.filter((item) => item.dishId);
   if (items.length === 0) {
+    // Com Idempotency-Key, um carrinho vazio pode querer dizer que o pedido original já o esvaziou.
+    const previous = idempotency.key && await waitForIdempotentOrder(userId, idempotency.key, 1, 0);
+    if (previous) return res.status(200).json({ ...orderCreatedBody(previous), replayed: true });
     return res.status(400).json({ message: 'O carrinho está vazio ou expirou.' });
   }
 
@@ -327,59 +389,113 @@ const createOrderFromCart = async (req, res) => {
   }
 
   const total = computeTotal(items);
-  let discount = 0;
-  let voucher = null;
-  if (typeof req.body?.voucherCode === 'string' && req.body.voucherCode.trim()) {
+  const voucherCode = typeof req.body?.voucherCode === 'string' && req.body.voucherCode.trim()
+    ? req.body.voucherCode.trim().toUpperCase()
+    : null;
+  if (voucherCode) {
     // Só vales ativos (pagos) contam: um vale pendente ainda não tem saldo utilizável.
-    voucher = await Voucher.findOne({
-      code: req.body.voucherCode.trim().toUpperCase(),
+    const usable = await Voucher.findOne({
+      code: voucherCode,
       ownerId: userId,
       status: 'active',
       balance: trusted({ $gt: 0 }),
     });
-    if (!voucher) {
+    if (!usable) {
       return res.status(400).json({ message: 'Vale inválido, sem saldo ou de outro utilizador.' });
     }
-    const applied = applyVoucher(voucher.balance, total);
-    discount = applied.discount;
-    voucher.balance = applied.remainingBalance;
   }
 
+  // Reserva atómica do carrinho: só um pedido de cada vez o transforma numa encomenda.
   const now = new Date();
-  const { readyAt, deliveredAt } = estimateTimes(restaurant.settings, fulfilment, now);
-  const order = await Order.create({
-    userId,
-    restaurantId: restaurant._id,
-    dishes: items.map((item) => ({ dishId: item.dishId._id, amount: item.amount, dose: item.dose })),
-    // Se o vale pagar tudo, a encomenda fica logo paga.
-    state: discount > 0 && discount >= total ? 'concluída' : 'pendente',
-    orderDate: now,
-    cancelTimeout: new Date(now.getTime() + 5 * 60 * 1000),
-    orderCode: `ORD-${Date.now().toString(36).toUpperCase()}`,
-    identityDoc,
-    fulfilment,
-    paymentMethod,
-    total,
-    discount,
-    voucherCode: voucher?.code,
-    estimatedReadyAt: readyAt,
-    estimatedDeliveryAt: deliveredAt,
-  });
-  if (voucher) await voucher.save();
+  const locked = await Cart.findOneAndUpdate(
+    {
+      userId,
+      _id: cart._id,
+      $or: [
+        { checkoutLockedAt: null },
+        { checkoutLockedAt: trusted({ $lt: new Date(now.getTime() - CHECKOUT_LOCK_MS) }) },
+      ],
+    },
+    { $set: { checkoutLockedAt: now } },
+  );
+  if (!locked) {
+    // Repetição de um pedido que ainda está a ser tratado: espera por ele e devolve a mesma encomenda.
+    const previous = idempotency.key && await waitForIdempotentOrder(userId, idempotency.key);
+    if (previous) return res.status(200).json({ ...orderCreatedBody(previous), replayed: true });
+    return res.status(409).json({ message: 'Esta encomenda já está a ser processada. Aguarde um momento.' });
+  }
 
-  cart.items = [];
-  cart.total = 0;
-  cart.timeout = null;
-  await cart.save();
+  let reservedVoucher = null;
+  let order = null;
+  try {
+    let discount = 0;
+    if (voucherCode) {
+      reservedVoucher = await reserveVoucherBalance({ code: voucherCode, ownerId: userId, total });
+      if (!reservedVoucher) {
+        await Cart.updateOne({ _id: cart._id }, { $unset: { checkoutLockedAt: 1 } });
+        return res.status(409).json({ message: 'O saldo do vale foi usado noutra encomenda. Verifique os seus vales.' });
+      }
+      discount = reservedVoucher.discount;
+    }
 
-  res.status(201).json({
-    message: 'Encomenda criada com sucesso.',
-    orderId: order._id,
-    orderCode: order.orderCode,
-    estimatedReadyAt: readyAt,
-    estimatedDeliveryAt: deliveredAt,
-    toPay: Math.round((total - discount) * 100) / 100,
-  });
+    const { readyAt, deliveredAt } = estimateTimes(restaurant.settings, fulfilment, now);
+    try {
+      order = await Order.create({
+        userId,
+        restaurantId: restaurant._id,
+        dishes: items.map((item) => ({ dishId: item.dishId._id, amount: item.amount, dose: item.dose })),
+        // Se o vale pagar tudo, a encomenda fica logo paga.
+        state: discount > 0 && discount >= total ? 'concluída' : 'pendente',
+        orderDate: now,
+        cancelTimeout: new Date(now.getTime() + 5 * 60 * 1000),
+        orderCode: newOrderCode(),
+        identityDoc,
+        fulfilment,
+        paymentMethod,
+        total,
+        discount,
+        voucherCode: reservedVoucher ? voucherCode : undefined,
+        estimatedReadyAt: readyAt,
+        estimatedDeliveryAt: deliveredAt,
+        idempotencyKey: idempotency.key,
+        slotPending: true,
+      });
+    } catch (err) {
+      // O mesmo Idempotency-Key chegou duas vezes ao mesmo tempo: devolve a encomenda do outro pedido.
+      if (err?.code === 11000 && idempotency.key) {
+        const previous = await Order.findOne({ userId, idempotencyKey: idempotency.key }).lean();
+        if (previous) {
+          if (reservedVoucher) await refundVoucherBalance(voucherCode, reservedVoucher.discount);
+          reservedVoucher = null;
+          await Cart.updateOne({ _id: cart._id }, { $unset: { checkoutLockedAt: 1 } });
+          return res.status(200).json({ ...orderCreatedBody(previous), replayed: true });
+        }
+      }
+      throw err;
+    }
+
+    const maxActiveOrders = effectiveSettings(restaurant.settings).maxActiveOrders;
+    if (!(await reserveOrderSlot(restaurant._id, order._id, maxActiveOrders))) {
+      await Order.deleteOne({ _id: order._id });
+      order = null;
+      if (reservedVoucher) await refundVoucherBalance(voucherCode, reservedVoucher.discount);
+      reservedVoucher = null;
+      await Cart.updateOne({ _id: cart._id }, { $unset: { checkoutLockedAt: 1 } });
+      return res.status(409).json({ message: 'O restaurante atingiu o número máximo de encomendas em curso. Tente daqui a pouco.' });
+    }
+
+    await Cart.updateOne(
+      { _id: cart._id },
+      { $set: { items: [], total: 0, timeout: null }, $unset: { checkoutLockedAt: 1 } },
+    );
+    return res.status(201).json(orderCreatedBody(order));
+  } catch (err) {
+    // Desfaz o que ficou a meio: saldo do vale, encomenda e reserva do carrinho.
+    if (order) await Order.deleteOne({ _id: order._id }).catch(() => {});
+    if (reservedVoucher) await refundVoucherBalance(voucherCode, reservedVoucher.discount).catch(() => {});
+    await Cart.updateOne({ _id: cart._id }, { $unset: { checkoutLockedAt: 1 } }).catch(() => {});
+    throw err;
+  }
 };
 
 /**
@@ -423,6 +539,10 @@ const buyVoucher = async (req, res) => {
   if (!VOUCHER_VALUES.includes(value)) {
     return res.status(400).json({ message: `O valor do vale tem de ser um destes: ${VOUCHER_VALUES.join(', ')} €.` });
   }
+  const idempotency = readIdempotencyKey(req);
+  if (!idempotency.ok) {
+    return res.status(400).json({ message: 'Cabeçalho Idempotency-Key inválido.' });
+  }
 
   let ownerId = req.user._id;
   const giftTo = typeof req.body?.giftTo === 'string' ? req.body.giftTo.trim() : '';
@@ -435,7 +555,7 @@ const buyVoucher = async (req, res) => {
   }
 
   const message = typeof req.body?.message === 'string' ? req.body.message.trim().slice(0, 140) : undefined;
-  const base = { code: generateVoucherCode(), buyerId: req.user._id, ownerId, value, message };
+  const base = { code: generateVoucherCode(), buyerId: req.user._id, ownerId, value, message, idempotencyKey: idempotency.key };
 
   if (config.allowSimulatedPayments) {
     const voucher = await Voucher.create({ ...base, balance: value, status: 'active', paymentMethod: 'simulado', paidAt: new Date() });
@@ -451,7 +571,22 @@ const buyVoucher = async (req, res) => {
     return res.status(503).json({ message: 'O pagamento online não está configurado neste servidor.' });
   }
 
-  const voucher = await Voucher.create({ ...base, balance: 0, status: 'pending' });
+  // Pedido repetido (mesmo Idempotency-Key): devolve o mesmo pagamento em vez de criar outro vale.
+  if (idempotency.key) {
+    const previous = await Voucher.findOne({ buyerId: req.user._id, idempotencyKey: idempotency.key }).lean();
+    if (previous) return replayVoucherPurchase(res, stripe, previous);
+  }
+
+  let voucher;
+  try {
+    voucher = await Voucher.create({ ...base, balance: 0, status: 'pending' });
+  } catch (err) {
+    if (err?.code === 11000 && idempotency.key) {
+      const previous = await Voucher.findOne({ buyerId: req.user._id, idempotencyKey: idempotency.key }).lean();
+      if (previous) return replayVoucherPurchase(res, stripe, previous);
+    }
+    throw err;
+  }
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -468,6 +603,9 @@ const buyVoucher = async (req, res) => {
       metadata: { type: 'voucher', voucherId: String(voucher._id), userId: String(req.user._id) },
       success_url: `${config.serverUrl}/cliente/api/vales/pagamento-sucesso?voucherId=${voucher._id}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${config.clientUrl}/cliente/vales?pagamento=cancelado`,
+    }, {
+      // Se o pedido ao Stripe for repetido (rede), o Stripe devolve a mesma sessão em vez de criar outra.
+      idempotencyKey: `snackify-vale-${voucher._id}`,
     });
     await Voucher.updateOne({ _id: voucher._id }, { $set: { stripeSessionId: session.id, paymentMethod: 'stripe' } });
     return res.status(201).json({ message: 'Vale reservado. Conclua o pagamento para o ativar.', url: session.url });
@@ -476,6 +614,20 @@ const buyVoucher = async (req, res) => {
     throw err;
   }
 };
+
+/** Resposta a uma compra de vale repetida: a sessão de pagamento aberta, ou o vale já pago. */
+async function replayVoucherPurchase(res, stripe, voucher) {
+  if (voucher.status === 'active') {
+    return res.status(200).json({ message: 'Este vale já está pago e ativo.', code: voucher.code, replayed: true });
+  }
+  if (voucher.stripeSessionId) {
+    const session = await stripe.checkout.sessions.retrieve(voucher.stripeSessionId);
+    if (session?.status === 'open' && session.url) {
+      return res.status(200).json({ message: 'Vale reservado. Conclua o pagamento para o ativar.', url: session.url, replayed: true });
+    }
+  }
+  return res.status(409).json({ message: 'Este pedido de compra já foi tratado. Atualize a lista de vales.' });
+}
 
 /**
  * GET /cliente/api/vales/pagamento-sucesso — regresso do Stripe depois de pagar um vale.
@@ -491,14 +643,33 @@ const handleVoucherPaymentSuccess = async (req, res) => {
     return res.redirect(303, `${config.clientUrl}/cliente/vales?pagamento=falhou`);
   }
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  const confirmed = await payments.confirmVoucherPayment(session, voucherId);
-  return res.redirect(303, `${config.clientUrl}/cliente/vales?pagamento=${confirmed ? 'sucesso' : 'falhou'}`);
+  const session = await retrieveSession(stripe, sessionId);
+  const { ok } = session ? await payments.confirmVoucherPayment(session, voucherId) : { ok: false };
+  return res.redirect(303, `${config.clientUrl}/cliente/vales?pagamento=${ok ? 'sucesso' : 'falhou'}`);
 };
+
+/** Pede uma sessão ao Stripe; um id inválido ou uma falha do Stripe dão null (e não um 500). */
+async function retrieveSession(stripe, sessionId) {
+  if (!/^cs_[A-Za-z0-9_]{1,250}$/.test(sessionId)) return null;
+  try {
+    return await stripe.checkout.sessions.retrieve(sessionId);
+  } catch (err) {
+    console.error('[stripe] Não foi possível obter a sessão de pagamento:', err.type || err.name);
+    return null;
+  }
+}
+
+/** Validade das sessões do Stripe Checkout criadas para encomendas (o mínimo do Stripe é 30 minutos). */
+const CHECKOUT_SESSION_MINUTES = 30;
 
 /**
  * Cria a sessão de pagamento do Stripe a partir da encomenda guardada na base de dados.
  * Os preços enviados pelo browser são ignorados (antes, o cliente podia alterá-los).
+ *
+ * Um só pagamento por encomenda: se já existir uma sessão aberta para esta encomenda, é essa
+ * que é devolvida (dois cliques em "Pagar agora" não abrem dois pagamentos); o pedido ao
+ * Stripe leva uma chave de idempotência que depende da sessão anterior, por isso dois pedidos
+ * simultâneos recebem a mesma sessão.
  */
 const createStripeSession = async (req, res) => {
   const stripe = payments.getStripe();
@@ -511,6 +682,18 @@ const createStripeSession = async (req, res) => {
 
   if (order.paymentMethod === 'local') {
     return res.status(400).json({ message: 'Esta encomenda é paga no local, com o código e o documento de identificação.' });
+  }
+
+  if (order.stripeSessionId) {
+    const existing = await retrieveSession(stripe, order.stripeSessionId);
+    if (existing?.status === 'open' && existing.url) {
+      return res.json({ url: existing.url, reused: true });
+    }
+    if (existing?.status === 'complete') {
+      // Já foi paga (o webhook ainda não tinha chegado): confirma agora em vez de cobrar outra vez.
+      const { ok } = await payments.confirmOrderPayment(existing, order._id);
+      if (ok) return res.status(409).json({ message: 'Esta encomenda já está paga.' });
+    }
   }
 
   // Com vale, o Stripe cobra só o que falta pagar, numa única linha.
@@ -535,15 +718,32 @@ const createStripeSession = async (req, res) => {
       quantity: item.amount,
     }));
 
+  const previousSessionId = order.stripeSessionId || null;
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
     line_items: lineItems,
     client_reference_id: String(order._id),
     metadata: { type: 'order', orderId: String(order._id), userId: String(req.user._id) },
+    expires_at: Math.floor(Date.now() / 1000) + CHECKOUT_SESSION_MINUTES * 60,
     success_url: `${config.serverUrl}/cliente/api/carrinho/pagamento-sucesso?orderId=${order._id}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${config.clientUrl}/cliente/dashboard`,
+  }, {
+    idempotencyKey: `snackify-encomenda-${order._id}-${previousSessionId || 'inicial'}`,
   });
+
+  // Guarda a sessão só se ninguém tiver guardado outra entretanto (compare-and-set).
+  const saved = await Order.updateOne(
+    { _id: order._id, state: 'pendente', stripeSessionId: previousSessionId ?? trusted({ $exists: false }) },
+    { $set: { stripeSessionId: session.id } },
+  );
+  if (saved.modifiedCount !== 1) {
+    const current = await Order.findById(order._id).select('stripeSessionId state').lean();
+    if (current?.stripeSessionId && current.stripeSessionId !== session.id) {
+      const other = await retrieveSession(stripe, current.stripeSessionId);
+      if (other?.status === 'open' && other.url) return res.json({ url: other.url, reused: true });
+    }
+  }
 
   res.json({ url: session.url });
 };
@@ -562,8 +762,9 @@ const handlePaymentSuccess = async (req, res) => {
     return res.status(400).json({ message: 'Pagamento não confirmado.' });
   }
 
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-  if (!(await payments.confirmOrderPayment(session, orderId))) {
+  const session = await retrieveSession(stripe, sessionId);
+  const { ok } = session ? await payments.confirmOrderPayment(session, orderId) : { ok: false };
+  if (!ok) {
     return res.status(402).json({ message: 'O pagamento não foi concluído.' });
   }
   return res.redirect(303, `${config.clientUrl}/cliente/dashboard`);

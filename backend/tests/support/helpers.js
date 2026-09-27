@@ -36,6 +36,7 @@ const fakeQuery = (value) => {
     skip: () => query,
     maxTimeMS: () => query,
     collation: () => query,
+    distinct: () => query,
     then: (resolve, reject) => Promise.resolve(typeof value === 'function' ? value() : value).then(resolve, reject),
     catch: (reject) => Promise.resolve(value).catch(reject),
   };

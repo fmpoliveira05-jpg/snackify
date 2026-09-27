@@ -83,14 +83,31 @@ describe('estado das encomendas', () => {
     expect(res.status).toBe(400);
   });
 
-  test('o restaurante dono avança a encomenda', async () => {
+  test('o restaurante dono avança a encomenda (só se o estado não mudou entretanto)', async () => {
     mockRestaurant('r1');
-    const order = { restaurantId: 'r1', state: 'pendente', save: jest.fn() };
-    jest.spyOn(Order, 'findById').mockResolvedValue(order);
+    jest.spyOn(Order, 'findById').mockResolvedValue({ _id: 'o1', restaurantId: 'r1', state: 'pendente' });
+    const update = jest.spyOn(Order, 'findOneAndUpdate').mockResolvedValue({ _id: 'o1', restaurantId: 'r1', state: 'em preparação' });
     const res = await asUser(request(app).patch(url), 'r1', 'restaurant').send({ state: 'em preparação' });
     expect(res.status).toBe(200);
-    expect(order.state).toBe('em preparação');
-    expect(order.save).toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({ _id: 'o1', state: 'pendente' }, { $set: { state: 'em preparação' } }, { new: true });
+  });
+
+  test('se a encomenda mudou entretanto (ex.: cancelada), responde 409', async () => {
+    mockRestaurant('r1');
+    jest.spyOn(Order, 'findById').mockResolvedValue({ _id: 'o1', restaurantId: 'r1', state: 'pendente' });
+    jest.spyOn(Order, 'findOneAndUpdate').mockResolvedValue(null);
+    const res = await asUser(request(app).patch(url), 'r1', 'restaurant').send({ state: 'em preparação' });
+    expect(res.status).toBe(409);
+  });
+
+  test('entregar a encomenda liberta o lugar no limite de encomendas em curso', async () => {
+    mockRestaurant('r1');
+    jest.spyOn(Order, 'findById').mockResolvedValue({ _id: 'o1', restaurantId: 'r1', state: 'expedida' });
+    jest.spyOn(Order, 'findOneAndUpdate').mockResolvedValue({ _id: 'o1', restaurantId: 'r1', state: 'entregue' });
+    const release = jest.spyOn(Restaurant, 'updateOne').mockResolvedValue({ modifiedCount: 1 });
+    const res = await asUser(request(app).patch(url), 'r1', 'restaurant').send({ state: 'entregue' });
+    expect(res.status).toBe(200);
+    expect(release).toHaveBeenCalledWith({ _id: 'r1' }, { $pull: { activeOrderIds: 'o1' } });
   });
 });
 

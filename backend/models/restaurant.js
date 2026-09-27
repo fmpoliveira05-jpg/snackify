@@ -47,6 +47,8 @@ const RestaurantSchema = new mongoose.Schema({
     maxDeliveryKm: { type: Number, default: 10, min: 0.5, max: 100 },
     maxActiveOrders: { type: Number, default: 20, min: 1, max: 500 }
   },
+  // Lugares ocupados pelas encomendas em curso (ver services/orderSlots.js). Uso interno.
+  activeOrderIds: { type: [mongoose.Schema.Types.ObjectId], default: undefined, select: false },
   createdAt: { type: Date, default: Date.now }
 });
 

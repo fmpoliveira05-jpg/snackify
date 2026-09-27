@@ -31,6 +31,8 @@ const orderSchema = new mongoose.Schema({
     paidAt: Date,
     // Chave enviada pelo cliente (cabeçalho Idempotency-Key): repetir o pedido não cria outra encomenda.
     idempotencyKey: String,
+    // Encomenda acabada de gravar, ainda à espera de lugar no limite do restaurante (uso interno).
+    slotPending: Boolean,
   });
 
 /** Índice único que ignora os documentos em que o campo não existe (ou não é texto). */

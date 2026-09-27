@@ -12,7 +12,9 @@ const cartSchema = new mongoose.Schema({
       ],
     total: { type: Number, default: 0 },
     addedDate: { type: Date, default: Date.now },
-    timeout: { type: Date }
+    timeout: { type: Date },
+    // Marca de "encomenda a ser criada": impede que dois pedidos simultâneos usem o mesmo carrinho.
+    checkoutLockedAt: { type: Date }
 });
 
 module.exports = mongoose.model('Cart', cartSchema);
