@@ -1,12 +1,20 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { VoucherService } from '../../services/voucher.service';
 
+/** Mensagens mostradas no regresso do Stripe (?pagamento=...). */
+const PAYMENT_MESSAGES: Record<string, string> = {
+  sucesso: 'Pagamento confirmado: o vale já está ativo.',
+  falhou: 'O pagamento não foi confirmado. O vale continua pendente e não pode ser usado.',
+  cancelado: 'Pagamento cancelado. O vale não foi ativado.',
+};
+
 /**
- * Vales de refeição: compra (pagamento simulado) para o próprio ou para oferecer a outro
- * cliente, e lista dos vales recebidos com o saldo disponível.
+ * Vales de refeição: compra com o Stripe Checkout, para o próprio ou para oferecer a outro
+ * cliente, e lista dos vales (ativos e à espera de pagamento).
  */
 @Component({
   selector: 'app-vouchers',
@@ -22,9 +30,13 @@ export class VouchersComponent implements OnInit {
   message = '';
   isSaving = false;
 
-  constructor(private voucherService: VoucherService, private snackBar: MatSnackBar) {}
+  constructor(private voucherService: VoucherService, private snackBar: MatSnackBar, private route: ActivatedRoute) {}
 
   ngOnInit(): void {
+    const payment = this.route.snapshot.queryParamMap.get('pagamento');
+    if (payment && PAYMENT_MESSAGES[payment]) {
+      this.snackBar.open(PAYMENT_MESSAGES[payment], 'Fechar', { duration: 6000 });
+    }
     this.load();
   }
 
@@ -44,6 +56,11 @@ export class VouchersComponent implements OnInit {
     this.isSaving = true;
     this.voucherService.buyVoucher(this.value, this.giftTo.trim() || undefined, this.message.trim() || undefined).subscribe({
       next: res => {
+        if (res.url) {
+          // O vale fica pendente até o Stripe confirmar o pagamento.
+          window.location.href = res.url;
+          return;
+        }
         this.snackBar.open(`${res.message} Código: ${res.code}`, 'Fechar', { duration: 6000 });
         this.giftTo = '';
         this.message = '';

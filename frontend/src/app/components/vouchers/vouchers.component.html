@@ -24,7 +24,7 @@
         {{ giftTo.trim() ? 'Comprar e oferecer' : 'Comprar vale' }}
       </button>
     </div>
-    <div class="form-text">O pagamento dos vales é simulado, como previsto no enunciado.</div>
+    <div class="form-text">O pagamento é feito no Stripe. O vale só fica ativo (e com saldo) depois de o pagamento ser confirmado.</div>
   </form>
 
   <h4>Os meus vales</h4>
@@ -38,9 +38,12 @@
           Oferta de {{ v.buyerId.name || v.buyerId.username }}<span *ngIf="v.message">: “{{ v.message }}”</span>
         </div>
       </div>
-      <span class="badge" [class.text-bg-success]="v.balance > 0" [class.text-bg-secondary]="v.balance === 0">
-        Saldo €{{ v.balance.toFixed(2) }}
-      </span>
+      <span *ngIf="v.status === 'pending'; else balance" class="badge text-bg-warning">A aguardar pagamento</span>
+      <ng-template #balance>
+        <span class="badge" [class.text-bg-success]="v.balance > 0" [class.text-bg-secondary]="v.balance === 0">
+          Saldo €{{ v.balance.toFixed(2) }}
+        </span>
+      </ng-template>
     </li>
   </ul>
 </div>

@@ -18,13 +18,14 @@ export class VoucherService {
   }
 
   /**
-   * Compra um vale (pagamento simulado).
+   * Compra um vale. Normalmente devolve o `url` do Stripe Checkout (o vale só fica ativo depois
+   * do pagamento); em desenvolvimento, com o pagamento simulado ligado no backend, devolve logo o `code`.
    *
    * @param value valor em euros
    * @param giftTo username do cliente a quem se oferece (vazio = para o próprio)
    * @param message mensagem opcional para quem recebe
    */
-  buyVoucher(value: number, giftTo?: string, message?: string): Observable<{ message: string; code: string }> {
-    return this.http.post<{ message: string; code: string }>(this.apiUrl, { value, giftTo, message });
+  buyVoucher(value: number, giftTo?: string, message?: string): Observable<{ message: string; url?: string; code?: string }> {
+    return this.http.post<{ message: string; url?: string; code?: string }>(this.apiUrl, { value, giftTo, message });
   }
 }
