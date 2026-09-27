@@ -113,7 +113,8 @@ const config = {
 
   // Tetos de gastos com serviços externos (por instância da aplicação).
   budgets: {
-    openFoodFactsPerMinute: int(process.env.OFF_MAX_REQUESTS_PER_MINUTE, 30),
+    // A Open Food Facts pede no máximo 10 pesquisas por minuto (política de uso da API).
+    openFoodFactsPerMinute: int(process.env.OFF_MAX_REQUESTS_PER_MINUTE, 10),
     emailsPerDay: int(process.env.MAIL_MAX_PER_DAY, 300),
     emailsPerAddressPerDay: int(process.env.MAIL_MAX_PER_ADDRESS_PER_DAY, 5),
   },

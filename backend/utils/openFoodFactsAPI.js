@@ -56,6 +56,8 @@ const lookup = async (searchTerms) => {
         page_size: 20
       },
       // Um serviço externo lento ou com respostas enormes não pode prender o pedido do restaurante.
+      // A Open Food Facts pede que cada aplicação se identifique.
+      headers: { 'User-Agent': 'Snackify/2.0 (+https://github.com/fmpoliveira05-jpg/snackify)' },
       timeout: 5000,
       maxContentLength: 2 * 1024 * 1024,
       maxRedirects: 2

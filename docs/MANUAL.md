@@ -40,6 +40,13 @@ Enquanto não for aprovado, um restaurante não consegue iniciar sessão.
 6. **Vales** – em *vales* compra-se um vale de 5, 10, 20 ou 50 € (pago no Stripe Checkout; o vale só fica ativo depois de o pagamento ser confirmado) para si ou para oferecer a outro cliente, indicando o nome de utilizador. O saldo é descontado nas encomendas; se a parte em falta for zero, a encomenda fica logo paga. Se a encomenda for cancelada, o valor volta ao vale.
 7. **Avaliar** – quando o restaurante marca a encomenda como entregue, aparece a opção de deixar um comentário com fotografia (uma avaliação por encomenda).
 
+## 4. Todos – privacidade e conta
+
+- No registo é preciso marcar a caixa da **Política de Privacidade** (ligação no formulário, no rodapé do cliente Angular e na barra do *back-office*).
+- No *perfil*, **Descarregar os meus dados** gera um ficheiro JSON com tudo o que a plataforma guarda sobre a conta (conta, encomendas, avaliações, vales ou, no caso dos restaurantes, menus e pratos).
+- **Apagar conta** pede a password e não pode ser desfeito. Com encomendas em curso não é possível; as encomendas terminadas ficam guardadas sem ligação à pessoa (obrigação legal de conservar os documentos de venda). Os pormenores estão em [RGPD.md](RGPD.md).
+- Enquanto um pedido está a ser enviado (encomendar, pagar, guardar), o botão fica desativado para não criar encomendas ou pagamentos em duplicado.
+
 ## Pagamentos de teste com o Stripe
 
 Com uma chave `sk_test_...` no `.env`, o botão de pagamento abre o checkout do Stripe. Dados de teste:

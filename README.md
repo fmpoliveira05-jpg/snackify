@@ -66,13 +66,17 @@ backend/
   config/           leitura e validação das variáveis de ambiente
   routes/           rotas + anotações Swagger
   controllers/      lógica de cada rota
-  services/         regras de negócio puras (cancelamento, bloqueio, estados, totais,
-                    regras do restaurante, pesquisa e vales)
+  services/         regras de negócio (cancelamento, bloqueio, estados, totais, restaurante,
+                    pesquisa, vales, pagamentos, lugares, cache, RGPD e limpeza)
   models/           esquemas Mongoose e validações
   middlewares/      autenticação, papéis, uploads, validação e erros
   views/ public/    back-office em EJS
-  tests/            testes Jest + Supertest
-frontend/           cliente Angular 19 (componentes standalone)
+  tests/            testes Jest + Supertest (sem base de dados)
+  tests-integracao/ testes contra um MongoDB real (concorrência, RGPD, explain)
+  tests-navegador/  teste num Chromium real (armazenamento do browser e cookies)
+frontend/           cliente Angular 20 (componentes standalone)
+scripts/            cópias de segurança e restauro do MongoDB (e o teste do restauro)
+docs/               manual, operação, RGPD e custos
 ```
 
 ## Como executar
@@ -111,11 +115,87 @@ O [manual de utilização](docs/MANUAL.md) descreve o percurso completo de cada 
 ## Testes
 
 ```bash
-cd backend && npm test          # 141 testes: regras de negócio, pesquisa, vales, pagamentos, uploads, sessão, CSRF, cabeçalhos
-cd frontend && npm run test:ci  # 40 testes: serviços, guards, componentes e regra das passwords
+cd backend
+npm test                   # 243 testes sem base de dados: regras, API, segurança, cache, limites, RGPD, erros
+npm run test:integracao    # 39 testes contra um MongoDB real em Docker: concorrência, RGPD, explain()
+npm run test:navegador     # Chromium real: armazenamento do browser e cookies (precisa do build do Angular)
+npm run carga              # teste de carga com autocannon (ver docs/OPERACAO.md)
+cd ../frontend && npm run test:ci   # 59 testes: serviços, guards, componentes, interceptor e estados
+scripts/testar-backup-restauro.sh   # cópia de segurança, restauro e comparação dos dados
 ```
 
-Os testes do backend não precisam de base de dados: as regras de negócio são funções puras e os testes da API usam *mocks* dos modelos. O GitHub Actions corre os dois conjuntos, compila o Angular em modo de produção e verifica se há dependências com vulnerabilidades conhecidas.
+Os testes de integração, do browser e de carga arrancam um `mongo:7` descartável em Docker (dados em
+memória, removido no fim); com `MONGO_TEST_URI` usam um MongoDB já existente. O GitHub Actions corre
+os testes unitários, os de integração (com um contentor MongoDB), compila o Angular em modo de
+produção e confirma que não há *source maps*, corre o `npm audit` e procura segredos no histórico
+com o gitleaks.
+
+## Operação
+
+Pormenores em [docs/OPERACAO.md](docs/OPERACAO.md).
+
+- **Saúde**: `GET /health/live` (processo) e `GET /health/ready` (MongoDB), sem segredos e fora dos
+  limites de pedidos.
+- **Monitorização**: `.github/workflows/uptime.yml` verifica `SNACKIFY_HEALTH_URL` (variável do
+  repositório) a cada 15 minutos e abre uma issue se falhar; sem a variável não faz nada. Como alarme
+  principal, UptimeRobot ou Better Stack.
+- **Cópias de segurança**: `scripts/backup.sh` (mongodump comprimido, com data e hora, `.sha256`,
+  retenção de `BACKUP_KEEP` cópias, cifra opcional com age ou GPG) e `scripts/restore.sh`.
+  `scripts/testar-backup-restauro.sh` prova que a cópia repõe exatamente os mesmos dados.
+- **Carga**: `npm run carga` — 100 ligações durante 20 s em cada cenário, sem erros (resultados em
+  docs/OPERACAO.md).
+- **Encerramento e tempos máximos**: `SIGTERM` termina os pedidos em curso e fecha o MongoDB; o
+  servidor, o MongoDB, o Stripe, o SMTP e o Angular têm tempos máximos.
+- **Índices**: `npm run indices` depois de um deploy que mude índices.
+- **Limpeza (RGPD)**: tarefa de hora a hora; `npm run limpeza` corre-a uma vez.
+- **Erros**: página 404 no Angular e no back-office, 404 em JSON na API, página 500 sem pormenores.
+- **Cache**: catálogo e Open Food Facts em memória, ficheiros do Angular com cache de um ano,
+  `no-store` na API.
+
+## Limites
+
+Todos configuráveis no `backend/.env` (valores por omissão):
+
+| Limite | Valor | Variável |
+|---|---|---|
+| Pedidos à API por IP | 300 / 15 min | `RATE_LIMIT_API_MAX`, `RATE_LIMIT_API_WINDOW_MINUTES` |
+| Login por IP | 20 / 15 min | `RATE_LIMIT_LOGIN_MAX` |
+| Registos por IP | 10 / hora | `RATE_LIMIT_REGISTER_PER_HOUR` |
+| Recuperação da password / reenvio da confirmação por IP | 5 / hora | — |
+| Encomendas por conta | 20 / hora | `QUOTA_ORDERS_PER_HOUR` |
+| Pagamentos e compras de vales por conta | 30 / hora | `QUOTA_PAYMENTS_PER_HOUR` |
+| Uploads por conta | 30 / hora | `QUOTA_UPLOADS_PER_HOUR` |
+| Pratos criados/editados por conta (Open Food Facts) | 60 / hora | `QUOTA_DISH_WRITES_PER_HOUR` |
+| Exportações de dados por conta | 5 / dia | `QUOTA_EXPORTS_PER_DAY` |
+| Pedidos à Open Food Facts (instância) | 10 / minuto | `OFF_MAX_REQUESTS_PER_MINUTE` |
+| Emails (instância / por destinatário) | 300 / 5 por dia | `MAIL_MAX_PER_DAY`, `MAIL_MAX_PER_ADDRESS_PER_DAY` |
+| Corpo JSON/formulário | 100 KB | — |
+| Imagem | 1 ficheiro, 2 MB (JPG, PNG, WEBP, GIF) | — |
+| Páginas das listas | 50 por omissão, máximo 100 (`?pagina=&limite=`, total em `X-Total-Count`) | — |
+
+Acima do limite a resposta é `429` com cabeçalhos `RateLimit-*`. O webhook do Stripe e as
+verificações de saúde não contam. Os contadores são por instância. Como pôr alertas e tetos de
+gastos nos serviços pagos: [docs/CUSTOS.md](docs/CUSTOS.md).
+
+## RGPD
+
+Pormenores, registo das atividades de tratamento (art. 30.º), segurança (art. 32.º) e procedimento
+em caso de violação de dados (art. 33.º/34.º, 72 h) em [docs/RGPD.md](docs/RGPD.md).
+
+- **Política de Privacidade** em `/privacidade` (rodapé do Angular, barra do back-office e registo),
+  com responsável, dados, finalidades, fundamentos, prazos, subcontratantes, transferências,
+  direitos e reclamação à CNPD.
+- **Registo**: caixa da política obrigatória e nunca pré-marcada; ficam guardadas a versão
+  (`PRIVACY_POLICY_VERSION`) e a data da aceitação. Não há marketing, por isso não há outro consentimento.
+- **Acesso e portabilidade**: "Descarregar os meus dados" no perfil (`GET /user/perfil/exportar`, JSON).
+- **Apagamento**: "Apagar conta" no perfil, com a password (`POST /user/perfil/eliminar`); as
+  encomendas ficam pseudonimizadas pela obrigação legal de conservar os documentos de venda.
+- **Retificação**: "Editar perfil".
+- **Conservação**: contas por confirmar apagadas ao fim de 7 dias (e índice TTL), tokens expirados
+  removidos, documento de identificação das encomendas apagado 30 dias depois, vales nunca pagos
+  apagados ao fim de 2 dias.
+- **Cookies**: só o cookie da sessão (estritamente necessário, sem banner); nada no `localStorage`;
+  Bootstrap e tipo de letra servidos pelo próprio servidor; Google Charts só na página do gráfico.
 
 ## Segurança: o que foi corrigido na revisão de 2026
 
