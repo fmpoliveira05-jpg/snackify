@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { RouterModule, Router } from '@angular/router';
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FormsModule } from '@angular/forms';
+import { FooterComponent } from './shared/footer.component';
 
 /**
  * Componente raiz: barra de navegação e zona onde o router mostra cada página.
@@ -12,7 +13,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterModule, NavbarComponent, FormsModule],
+  imports: [RouterModule, NavbarComponent, FormsModule, FooterComponent],
   templateUrl: './app.component.html',
 })
 export class AppComponent {

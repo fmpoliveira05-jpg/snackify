@@ -1,0 +1,133 @@
+<article class="container my-5" style="max-width: 52rem;">
+  <h1>Política de Privacidade</h1>
+  <p class="text-muted">Versão {{ version }}. Aplica-se à plataforma Snackify (cliente web, back-office dos restaurantes e API).</p>
+
+  <h2 class="h4 mt-4">1. Responsável pelo tratamento</h2>
+  <p>
+    [Nome ou denominação do responsável], [NIF], [morada], email de contacto
+    <a href="mailto:privacidade@exemplo.pt">privacidade&#64;exemplo.pt</a>.
+    <em>(Dados a preencher por quem publicar a plataforma. Num trabalho académico, o responsável é quem a disponibiliza.)</em>
+  </p>
+
+  <h2 class="h4 mt-4">2. Que dados tratamos e porquê</h2>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr><th>Dados</th><th>Finalidade</th><th>Fundamento (RGPD, art. 6.º)</th><th>Conservação</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Nome, nome de utilizador, email, telemóvel, morada, data de nascimento; fotografia (opcional); NIF (opcional para clientes)</td>
+          <td>Criar e gerir a conta, entregar encomendas, confirmar a maioridade para contratar</td>
+          <td>Execução do contrato (al. b))</td>
+          <td>Enquanto a conta existir; contas por confirmar são apagadas ao fim de 7 dias</td>
+        </tr>
+        <tr>
+          <td>Restaurantes: nome, NIF, contactos, morada, logótipo, menus e pratos</td>
+          <td>Validar o restaurante e publicá-lo no catálogo</td>
+          <td>Execução do contrato (al. b))</td>
+          <td>Enquanto a conta existir</td>
+        </tr>
+        <tr>
+          <td>Encomendas (pratos, valores, datas, estado, forma de entrega e de pagamento)</td>
+          <td>Prestar o serviço e cumprir obrigações fiscais e contabilísticas</td>
+          <td>Contrato (al. b)) e obrigação legal (al. c))</td>
+          <td>Prazo legal de conservação dos documentos de faturação (até 10 anos); se apagar a conta, ficam sem ligação a si (pseudonimizadas)</td>
+        </tr>
+        <tr>
+          <td>N.º do documento de identificação (só no pagamento no local)</td>
+          <td>Confirmar quem levanta e paga a encomenda</td>
+          <td>Contrato (al. b))</td>
+          <td>Apagado 30 dias depois de a encomenda terminar</td>
+        </tr>
+        <tr>
+          <td>Avaliações e fotografias das avaliações</td>
+          <td>Publicar a opinião sobre a encomenda ao restaurante</td>
+          <td>Contrato (al. b))</td>
+          <td>Até apagar a conta</td>
+        </tr>
+        <tr>
+          <td>Vales de refeição (valor, saldo, mensagem de oferta)</td>
+          <td>Comprar, oferecer e usar vales</td>
+          <td>Contrato (al. b)) e obrigação legal (al. c))</td>
+          <td>Enquanto houver saldo e pelo prazo legal dos pagamentos; vales nunca pagos são apagados ao fim de 2 dias</td>
+        </tr>
+        <tr>
+          <td>Endereço IP, data/hora e caminho dos pedidos; tentativas de login falhadas</td>
+          <td>Segurança: limitar abusos, bloquear ataques de força bruta, investigar incidentes</td>
+          <td>Interesse legítimo (al. f))</td>
+          <td>Contadores em memória (minutos a horas); registos do servidor até 30 dias</td>
+        </tr>
+        <tr>
+          <td>Aceitação desta política (versão e data)</td>
+          <td>Demonstrar que foi informado(a)</td>
+          <td>Obrigação legal (al. c)) – art. 5.º, n.º 2, e 7.º</td>
+          <td>Enquanto a conta existir</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Não fazemos marketing, perfis nem decisões automatizadas, e não vendemos dados.</p>
+
+  <h2 class="h4 mt-4">3. Destinatários e subcontratantes</h2>
+  <ul>
+    <li><strong>Restaurante</strong> da encomenda: recebe o nome, o contacto, a morada e, no pagamento no local, o documento de identificação.</li>
+    <li><strong>Stripe</strong> (pagamentos com cartão): os dados do cartão são introduzidos diretamente no Stripe; nós nunca os vemos.</li>
+    <li><strong>Fornecedor de email (SMTP)</strong>: envio dos emails de confirmação e de recuperação da password.</li>
+    <li><strong>Cloudflare Turnstile</strong> (quando ativo): verificação anti-robô no registo, login e recuperação.</li>
+    <li><strong>Open Food Facts</strong>: recebe apenas o nome dos pratos, para obter a informação nutricional (sem dados pessoais).</li>
+    <li><strong>Google Charts</strong>: carregado só nas páginas com gráficos; o browser pede o script ao Google (que recebe o endereço IP). Os dados do gráfico ficam no browser.</li>
+    <li><strong>Alojamento</strong> da aplicação e da base de dados: [fornecedor e região a indicar].</li>
+  </ul>
+
+  <h2 class="h4 mt-4">4. Transferências internacionais</h2>
+  <p>
+    O Stripe, a Cloudflare e o Google podem tratar dados fora do Espaço Económico Europeu (EUA). Estas transferências
+    baseiam-se no Quadro de Privacidade de Dados UE-EUA (decisão de adequação de 10/07/2023) e/ou em cláusulas contratuais-tipo.
+  </p>
+
+  <h2 class="h4 mt-4">5. Os seus direitos</h2>
+  <ul>
+    <li><strong>Acesso e portabilidade</strong>: no seu perfil, “Descarregar os meus dados” gera um ficheiro JSON com todos os seus dados.</li>
+    <li><strong>Retificação</strong>: “Editar perfil”.</li>
+    <li><strong>Apagamento</strong>: “Apagar conta” no perfil (pede a password). As encomendas ficam pseudonimizadas pelo prazo legal.</li>
+    <li><strong>Oposição e limitação</strong>, e qualquer outro pedido: por email para o contacto indicado no ponto 1. Respondemos no prazo de um mês.</li>
+    <li>
+      <strong>Reclamação</strong>: pode apresentar queixa à Comissão Nacional de Proteção de Dados (CNPD),
+      <a href="https://www.cnpd.pt" target="_blank" rel="noopener">www.cnpd.pt</a>.
+    </li>
+  </ul>
+
+  <h2 class="h4 mt-4">6. Segurança</h2>
+  <p>
+    Ligações cifradas (HTTPS), passwords guardadas com bcrypt, sessão num cookie inacessível a scripts, tokens enviados por
+    email guardados só como hash, limites de tentativas, cópias de segurança cifradas e acesso restrito à base de dados.
+    Em caso de violação de dados que represente risco, a CNPD é notificada em 72 horas e, se o risco for elevado, os titulares também.
+  </p>
+
+  <h2 class="h4 mt-4" id="cookies">7. Cookies e armazenamento no browser</h2>
+  <p>Usamos <strong>apenas cookies estritamente necessários</strong>, por isso não é pedido consentimento (Lei n.º 41/2004, art. 5.º, n.º 2):</p>
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead><tr><th>Nome</th><th>Finalidade</th><th>Duração</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>__Host-snackify</code> (em desenvolvimento, <code>token</code>)</td>
+          <td>Manter a sessão iniciada. HttpOnly, Secure e SameSite=Strict: não é acessível a scripts nem enviado por outros sites.</td>
+          <td>1 hora (ou até terminar a sessão)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Não usamos cookies de análise, publicidade ou redes sociais. O Bootstrap e os tipos de letra são servidos pelo nosso servidor.
+    O Cloudflare Turnstile, quando ativo, é uma medida de segurança e não é usado para seguir a navegação.
+    O cliente guarda no <code>sessionStorage</code> apenas um indicador de interface sem dados pessoais (“mostrar aviso de encomenda concluída”);
+    o <code>sessionStorage</code> é de cada separador, é apagado pelo browser ao fechar o separador e é limpo ao terminar a sessão.
+  </p>
+
+  <h2 class="h4 mt-4">8. Alterações</h2>
+  <p>Se esta política mudar de forma relevante, a nova versão é publicada nesta página com a data e, se necessário, pedimos nova confirmação.</p>
+
+  <p class="mt-4"><a routerLink="/">Voltar ao início</a></p>
+</article>

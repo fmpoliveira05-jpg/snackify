@@ -21,6 +21,8 @@ import { ForgotPasswordComponent } from './components/forgot-password/forgot-pas
 import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 import { VerifyEmailComponent } from './components/verify-email/verify-email.component';
 import { CheckEmailComponent } from './components/check-email/check-email.component';
+import { NotFoundComponent } from './pages/not-found/not-found.component';
+import { PrivacyComponent } from './pages/privacy/privacy.component';
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent, canActivate: [NoAuthGuard] },
@@ -28,6 +30,7 @@ export const routes: Routes = [
   { path: 'redefinir-password', component: ResetPasswordComponent },
   { path: 'verificar-email/pendente', component: CheckEmailComponent },
   { path: 'verificar-email', component: VerifyEmailComponent },
+  { path: 'privacidade', component: PrivacyComponent, title: 'Política de Privacidade · Snackify' },
   { path: 'user/perfil', component: ProfileComponent, canActivate: [AuthGuard] },
   { path: 'user/perfil/editar', component: UpdateProfileComponent, canActivate: [AuthGuard] },
   { path: 'user/perfil/encomendas/:id/avaliar', component: ReviewComponent, canActivate: [AuthGuard] },
@@ -50,5 +53,6 @@ export const routes: Routes = [
     ]
   },
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: '**', redirectTo: '' }
+  // Qualquer outro endereço mostra a página 404 (antes voltava em silêncio para o login).
+  { path: '**', component: NotFoundComponent, title: 'Página não encontrada · Snackify' }
 ];
