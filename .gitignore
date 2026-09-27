@@ -23,3 +23,6 @@ coverage/
 Thumbs.db
 desktop.ini
 .idea/
+
+# Cópias de segurança da base de dados (scripts/backup.sh)
+backups/
