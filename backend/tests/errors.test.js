@@ -97,3 +97,29 @@ describe('source maps em produção', () => {
     },
   );
 });
+
+describe('back-office sem dependências de terceiros', () => {
+  test('o Bootstrap é servido pelo próprio servidor', async () => {
+    const css = await request(app).get('/vendor/bootstrap/css/bootstrap.min.css');
+    expect(css.status).toBe(200);
+    const js = await request(app).get('/vendor/bootstrap/js/bootstrap.bundle.min.js');
+    expect(js.status).toBe(200);
+  });
+
+  test('nenhuma página EJS carrega o Bootstrap nem tipos de letra de uma CDN', () => {
+    const fs = require('fs');
+    const views = path.join(__dirname, '..', 'views');
+    const files = fs.readdirSync(views, { recursive: true }).filter((f) => f.endsWith('.ejs'));
+    files.forEach((file) => {
+      const content = fs.readFileSync(path.join(views, file), 'utf8');
+      expect(content).not.toMatch(/cdn\.jsdelivr|fonts\.googleapis|fonts\.gstatic/);
+    });
+  });
+
+  test('os formulários EJS ficam protegidos contra envios em duplicado', () => {
+    const fs = require('fs');
+    const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'javascripts', 'confirmActions.js'), 'utf8');
+    expect(script).toMatch(/data-submitting/);
+    expect(script).toMatch(/disabled = true/);
+  });
+});
