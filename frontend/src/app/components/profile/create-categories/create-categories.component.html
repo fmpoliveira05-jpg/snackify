@@ -9,6 +9,6 @@
       <label for="name" class="form-label">Nome da Categoria</label>
       <input type="text" id="name" formControlName="name" class="form-control" />
     </div>
-    <button type="submit" class="btn btn-primary">Criar Categoria</button>
+    <button type="submit" class="btn btn-primary" [disabled]="categoryForm.invalid || isSaving">{{ isSaving ? 'A criar…' : 'Criar Categoria' }}</button>
   </form>
 </div>

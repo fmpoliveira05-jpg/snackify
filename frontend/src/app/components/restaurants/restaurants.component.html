@@ -18,12 +18,16 @@
       </select>
     </div>
     <div class="col-6 col-md-3 d-flex gap-2">
-      <button type="submit" class="btn btn-primary flex-fill">Procurar</button>
+      <button type="submit" class="btn btn-primary flex-fill" [disabled]="isLoading">Procurar</button>
       <button type="button" class="btn btn-outline-secondary" (click)="clear()">Limpar</button>
     </div>
   </form>
 
-  <p *ngIf="!isLoading && restaurants.length === 0" class="text-muted">Nenhum restaurante corresponde à pesquisa.</p>
+  <app-loading *ngIf="isLoading" message="A carregar restaurantes…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="search()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !error && restaurants.length === 0"
+    [message]="filters.q || filters.location ? 'Nenhum restaurante corresponde à pesquisa.' : 'Ainda não há restaurantes disponíveis.'">
+  </app-empty-state>
 
   <div class="row">
     <div class="col-md-4" *ngFor="let rest of restaurants">
@@ -40,5 +44,11 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="text-center my-3" *ngIf="!isLoading && hasMore">
+    <button type="button" class="btn btn-outline-primary" (click)="loadMore()" [disabled]="isLoadingMore">
+      {{ isLoadingMore ? 'A carregar…' : 'Mostrar mais (' + restaurants.length + ' de ' + total + ')' }}
+    </button>
   </div>
 </div>

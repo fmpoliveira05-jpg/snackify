@@ -2,7 +2,10 @@
   <div class="card shadow p-4">
     <h1 class="mb-4">Avaliar pedido</h1>
 
-    <div *ngIf="order">
+    <app-loading *ngIf="isLoading" message="A carregar a encomenda…"></app-loading>
+    <app-error-state *ngIf="!isLoading && loadError" [message]="loadError" (retry)="fetchOrderDetails()"></app-error-state>
+
+    <div *ngIf="!isLoading && order">
       <div class="mb-4">
         <h5><strong>Restaurante:</strong> {{ order.restaurantId?.name }}</h5>
         <p><strong>Data e hora da encomenda:</strong> {{ order.orderDate | date:'short' }}</p>
@@ -39,7 +42,7 @@
         </div>
 
         <div class="d-flex gap-2">
-          <button class="btn btn-primary" type="submit" [disabled]="form.invalid">Submeter avaliação</button>
+          <button class="btn btn-primary" type="submit" [disabled]="form.invalid || isSubmitting">{{ isSubmitting ? 'A enviar…' : 'Submeter avaliação' }}</button>
           <a routerLink="/user/perfil" class="btn btn-secondary">Cancelar</a>
         </div>
 

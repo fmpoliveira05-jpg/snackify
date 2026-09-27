@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { VoucherService } from '../../services/voucher.service';
+import { errorMessage } from '../../utils/http-error';
+import { newIdempotencyKey } from '../../utils/idempotency';
+import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { EmptyStateComponent } from '../../shared/empty-state.component';
+import { ErrorStateComponent } from '../../shared/error-state.component';
 
 /** Mensagens mostradas no regresso do Stripe (?pagamento=...). */
 const PAYMENT_MESSAGES: Record<string, string> = {
@@ -19,7 +24,7 @@ const PAYMENT_MESSAGES: Record<string, string> = {
 @Component({
   selector: 'app-vouchers',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatSnackBarModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
   templateUrl: './vouchers.component.html'
 })
 export class VouchersComponent implements OnInit {
@@ -29,6 +34,10 @@ export class VouchersComponent implements OnInit {
   giftTo = '';
   message = '';
   isSaving = false;
+  isLoading = true;
+  error = '';
+  /** Chave desta tentativa de compra (repetir o pedido não cria um segundo vale). */
+  private idempotencyKey = newIdempotencyKey();
 
   constructor(private voucherService: VoucherService, private snackBar: MatSnackBar, private route: ActivatedRoute) {}
 
@@ -41,26 +50,33 @@ export class VouchersComponent implements OnInit {
   }
 
   load(): void {
+    this.isLoading = true;
+    this.error = '';
     this.voucherService.getVouchers().subscribe({
       next: data => {
         this.values = data.values;
         this.vouchers = data.vouchers;
         this.value ??= data.values[1] ?? data.values[0] ?? null;
+        this.isLoading = false;
       },
-      error: err => console.error('Erro ao carregar vales:', err)
+      error: err => {
+        this.error = errorMessage(err, 'Não foi possível carregar os vales.');
+        this.isLoading = false;
+      }
     });
   }
 
   buy(): void {
-    if (!this.value) return;
+    if (!this.value || this.isSaving) return;
     this.isSaving = true;
-    this.voucherService.buyVoucher(this.value, this.giftTo.trim() || undefined, this.message.trim() || undefined).subscribe({
+    this.voucherService.buyVoucher(this.value, this.giftTo.trim() || undefined, this.message.trim() || undefined, this.idempotencyKey).subscribe({
       next: res => {
         if (res.url) {
           // O vale fica pendente até o Stripe confirmar o pagamento.
           window.location.href = res.url;
           return;
         }
+        this.idempotencyKey = newIdempotencyKey();
         this.snackBar.open(`${res.message} Código: ${res.code}`, 'Fechar', { duration: 6000 });
         this.giftTo = '';
         this.message = '';
@@ -68,7 +84,8 @@ export class VouchersComponent implements OnInit {
         this.load();
       },
       error: err => {
-        this.snackBar.open(err?.error?.message || 'Não foi possível comprar o vale.', 'Fechar', { duration: 5000 });
+        if (err?.status >= 400 && err?.status < 500) this.idempotencyKey = newIdempotencyKey();
+        this.snackBar.open(errorMessage(err, 'Não foi possível comprar o vale.'), 'Fechar', { duration: 5000 });
         this.isSaving = false;
       }
     });

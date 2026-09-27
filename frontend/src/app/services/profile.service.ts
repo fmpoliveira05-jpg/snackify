@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { PAGE_SIZE, Page, toPage } from '../utils/page';
 import { environment } from '../../environments/environment';
 
 /**
@@ -20,8 +21,23 @@ export class ProfileService {
     return this.http.put(`${this.baseUrl}/editar`, data, { withCredentials: true });
   }
 
-  getOrderHistory(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/encomendas`, { withCredentials: true });
+  /** Histórico de encomendas, mais recentes primeiro, paginado. */
+  getOrderHistory(page = 1): Observable<Page<any>> {
+    return this.http.get<any[]>(`${this.baseUrl}/encomendas`, {
+      withCredentials: true,
+      params: { pagina: page, limite: PAGE_SIZE },
+      observe: 'response',
+    }).pipe(map(toPage));
+  }
+
+  /** Ficheiro JSON com todos os dados pessoais da conta (RGPD). */
+  exportData(): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/exportar`, { withCredentials: true, responseType: 'blob' });
+  }
+
+  /** Apaga a conta (pede a password). */
+  deleteAccount(password: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/eliminar`, { password }, { withCredentials: true });
   }
 
   cancelOrder(orderId: string): Observable<any> {

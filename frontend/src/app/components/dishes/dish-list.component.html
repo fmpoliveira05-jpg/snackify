@@ -1,10 +1,15 @@
 <div class="container mt-5">
-  <h2 *ngIf="menu">{{ menu.title }}</h2>
-  <p *ngIf="menu?.description" class="text-muted">{{ menu.description }}</p>
+  <app-loading *ngIf="isLoading" message="A carregar pratos…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" [retryable]="!notFound" (retry)="load()"></app-error-state>
 
-  <div class="row">
-    <div *ngFor="let dish of dishes" class="col-md-4 mb-3">
-      <app-dish-card [dish]="dish" (add)="addToCart($event)"></app-dish-card>
+  <ng-container *ngIf="!isLoading && !error">
+    <h2>{{ menu?.title }}</h2>
+    <p *ngIf="menu?.description" class="text-muted">{{ menu.description }}</p>
+    <app-empty-state *ngIf="dishes.length === 0" message="Ainda não há pratos neste menu."></app-empty-state>
+    <div class="row">
+      <div *ngFor="let dish of dishes" class="col-md-4 mb-3">
+        <app-dish-card [dish]="dish" [busy]="adding.has(dish._id)" (add)="addToCart($event)"></app-dish-card>
+      </div>
     </div>
-  </div>
+  </ng-container>
 </div>

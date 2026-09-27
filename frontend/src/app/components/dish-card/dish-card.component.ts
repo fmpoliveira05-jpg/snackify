@@ -19,6 +19,8 @@ export class DishCardComponent implements OnChanges {
   @Input({ required: true }) dish: any;
   /** Mostra o nome e a localidade do restaurante (útil na pesquisa global). */
   @Input() showRestaurant = false;
+  /** Enquanto o pedido anterior não terminar, o botão fica desativado (sem cliques repetidos). */
+  @Input() busy = false;
   /** Emitido quando o cliente carrega em "Adicionar ao carrinho". */
   @Output() add = new EventEmitter<{ dishId: string; amount: number; dose: string }>();
 
@@ -40,7 +42,7 @@ export class DishCardComponent implements OnChanges {
   }
 
   submit(): void {
-    if (!this.dose || !Number.isInteger(this.amount) || this.amount < 1) return;
+    if (this.busy || !this.dose || !Number.isInteger(this.amount) || this.amount < 1) return;
     this.add.emit({ dishId: this.dish._id, amount: this.amount, dose: this.dose });
   }
 }

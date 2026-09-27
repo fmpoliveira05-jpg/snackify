@@ -1,11 +1,10 @@
 <div class="container mt-4">
   <h2>Restaurantes Pendentes</h2>
 
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-
-  <div *ngIf="pendingRestaurants.length === 0">
-    <p>Nenhum restaurante pendente para validar.</p>
-  </div>
+  <div *ngIf="actionError" class="alert alert-danger" role="alert">{{ actionError }}</div>
+  <app-loading *ngIf="isLoading" message="A carregar restaurantes pendentes…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="load()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !error && pendingRestaurants.length === 0" message="Ainda não há restaurantes à espera de validação."></app-empty-state>
 
   <div *ngFor="let r of pendingRestaurants" class="card mb-3">
     <div class="card-body">
@@ -14,8 +13,8 @@
       <p><strong>NIF:</strong> {{ r.nif }}</p>
       <p><strong>Morada:</strong> {{ r.address?.street }}, {{ r.address?.place }}</p>
 
-      <button class="btn btn-success me-2" (click)="validate(r._id)">Validar</button>
-      <button class="btn btn-danger" (click)="reject(r._id)">Rejeitar</button>
+      <button type="button" class="btn btn-success me-2" (click)="validate(r._id)" [disabled]="busyId === r._id">Validar</button>
+      <button type="button" class="btn btn-danger" (click)="reject(r._id)" [disabled]="busyId === r._id">Rejeitar</button>
     </div>
   </div>
 </div>

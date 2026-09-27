@@ -1,6 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map, shareReplay, catchError, throwError } from 'rxjs';
+import { PAGE_SIZE, Page, toPage } from '../utils/page';
 import { environment } from '../../environments/environment';
 
 /** Filtros aceites pela pesquisa de restaurantes (GET /cliente/api/restaurantes). */
@@ -39,12 +40,15 @@ function toParams(filters: object): HttpParams {
   providedIn: 'root'
 })
 export class RestaurantsService {
+  /** Categorias (dados de referência): pedidas uma vez e partilhadas por todas as páginas. */
+  private categories$?: Observable<any[]>;
 
   constructor(private http: HttpClient) {}
 
-  /** Restaurantes validados, filtrados e ordenados no servidor. */
-  getRestaurants(filters: RestaurantFilters = {}): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/cliente/api/restaurantes`, { params: toParams(filters) });
+  /** Restaurantes validados, filtrados, ordenados e paginados no servidor. */
+  getRestaurants(filters: RestaurantFilters = {}, page = 1): Observable<Page<any>> {
+    const params = toParams({ ...filters, pagina: page, limite: PAGE_SIZE });
+    return this.http.get<any[]>(`${environment.apiUrl}/cliente/api/restaurantes`, { params, observe: 'response' }).pipe(map(toPage));
   }
 
   getRestaurantById(id: string) {
@@ -64,12 +68,22 @@ export class RestaurantsService {
   }
 
   /** Pesquisa de pratos em todos os restaurantes, com filtros e ordenação. */
-  searchDishes(filters: DishFilters = {}): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/cliente/api/pratos`, { params: toParams(filters) });
+  searchDishes(filters: DishFilters = {}, page = 1): Observable<Page<any>> {
+    const params = toParams({ ...filters, pagina: page, limite: PAGE_SIZE });
+    return this.http.get<any[]>(`${environment.apiUrl}/cliente/api/pratos`, { params, observe: 'response' }).pipe(map(toPage));
   }
 
-  /** Categorias de pratos, para o filtro da pesquisa. */
+  /** Categorias de pratos, para o filtro da pesquisa (em cache; um erro permite tentar de novo). */
   getCategories(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/cliente/api/categorias`);
+    if (!this.categories$) {
+      this.categories$ = this.http.get<any[]>(`${environment.apiUrl}/cliente/api/categorias`).pipe(
+        catchError((err) => {
+          this.categories$ = undefined;
+          return throwError(() => err);
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    }
+    return this.categories$;
   }
 }

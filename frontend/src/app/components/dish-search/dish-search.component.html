@@ -34,17 +34,25 @@
       </select>
     </div>
     <div class="col-12 col-md-2 d-flex gap-2">
-      <button type="submit" class="btn btn-primary flex-fill">Procurar</button>
+      <button type="submit" class="btn btn-primary flex-fill" [disabled]="isLoading">Procurar</button>
       <button type="button" class="btn btn-outline-secondary" (click)="clear()">Limpar</button>
     </div>
   </form>
 
   <p class="text-muted small">O preço usado nos filtros e na ordenação é o da dose mais barata.</p>
-  <p *ngIf="!isLoading && dishes.length === 0" class="text-muted">Nenhum prato corresponde à pesquisa.</p>
+  <app-loading *ngIf="isLoading" message="A pesquisar pratos…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="search()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !error && dishes.length === 0" message="Nenhum prato corresponde à pesquisa."></app-empty-state>
 
   <div class="row">
     <div *ngFor="let dish of dishes" class="col-md-4 mb-3">
-      <app-dish-card [dish]="dish" [showRestaurant]="true" (add)="addToCart($event)"></app-dish-card>
+      <app-dish-card [dish]="dish" [showRestaurant]="true" [busy]="adding.has(dish._id)" (add)="addToCart($event)"></app-dish-card>
     </div>
+  </div>
+
+  <div class="text-center my-3" *ngIf="!isLoading && hasMore">
+    <button type="button" class="btn btn-outline-primary" (click)="loadMore()" [disabled]="isLoadingMore">
+      {{ isLoadingMore ? 'A carregar…' : 'Mostrar mais (' + dishes.length + ' de ' + total + ')' }}
+    </button>
   </div>
 </div>

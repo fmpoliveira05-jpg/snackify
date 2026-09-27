@@ -25,7 +25,8 @@ export class VoucherService {
    * @param giftTo username do cliente a quem se oferece (vazio = para o próprio)
    * @param message mensagem opcional para quem recebe
    */
-  buyVoucher(value: number, giftTo?: string, message?: string): Observable<{ message: string; url?: string; code?: string }> {
-    return this.http.post<{ message: string; url?: string; code?: string }>(this.apiUrl, { value, giftTo, message });
+  buyVoucher(value: number, giftTo?: string, message?: string, idempotencyKey?: string): Observable<{ message: string; url?: string; code?: string }> {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
+    return this.http.post<{ message: string; url?: string; code?: string }>(this.apiUrl, { value, giftTo, message }, { headers });
   }
 }

@@ -7,6 +7,11 @@ import { Router } from '@angular/router';
 import { switchMap } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { errorMessage } from '../../utils/http-error';
+import { newIdempotencyKey } from '../../utils/idempotency';
+import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { EmptyStateComponent } from '../../shared/empty-state.component';
+import { ErrorStateComponent } from '../../shared/error-state.component';
 
 /**
  * Carrinho do cliente: contador dos 10 minutos, remoção de pratos e finalização da encomenda
@@ -15,13 +20,23 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 @Component({
   selector: 'app-cart',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatSnackBarModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
   templateUrl: './cart.component.html',
   styleUrls: ['./cart.component.css']
 })
 export class CartComponent implements OnInit, OnDestroy {
   cart: any = null;
   isLoading = true;
+  error = '';
+  /** Encomenda a ser criada: o botão fica desativado até haver resposta. */
+  isSubmitting = false;
+  /** Item a ser removido (evita cliques repetidos). */
+  removing: string | null = null;
+  /**
+   * Chave de idempotência desta tentativa de encomenda: se o pedido for repetido (falha de rede,
+   * novo clique depois de um erro de ligação), o servidor devolve a mesma encomenda.
+   */
+  private idempotencyKey = newIdempotencyKey();
 
   cartTimeout: Date | null = null;
   minutes: string = '00';
@@ -45,7 +60,8 @@ export class CartComponent implements OnInit, OnDestroy {
     this.loadCartAndStartTimer();
     this.voucherService.getVouchers().subscribe({
       next: data => this.vouchers = (data?.vouchers || []).filter((v: any) => v.balance > 0),
-      error: err => console.error('Erro ao carregar vales:', err)
+      // Sem vales, o carrinho funciona na mesma (só não aparece a opção de usar um vale).
+      error: () => this.vouchers = []
     });
 
     this.cartService.cart$.subscribe(cart => {
@@ -63,6 +79,8 @@ export class CartComponent implements OnInit, OnDestroy {
   }
 
   loadCartAndStartTimer() {
+    this.isLoading = true;
+    this.error = '';
     this.cartService.loadCart().subscribe({
       next: cart => {
         this.cart = cart;
@@ -75,7 +93,7 @@ export class CartComponent implements OnInit, OnDestroy {
         }
       },
       error: err => {
-        console.error('Erro ao carregar carrinho:', err);
+        this.error = errorMessage(err, 'Não foi possível carregar o carrinho.');
         this.isLoading = false;
       }
     });
@@ -113,10 +131,9 @@ export class CartComponent implements OnInit, OnDestroy {
           this.cart = { items: [], total: 0 };
           this.isLoading = false;
         },
-        error: (err) => {
-          console.error('Erro ao limpar carrinho após expiração:', err);
+        error: () => {
           this.isLoading = false;
-          alert('O tempo expirou, mas ocorreu um erro ao limpar o carrinho.');
+          this.snackBar.open('O tempo expirou, mas não foi possível limpar o carrinho. Atualize a página.', 'Fechar', { duration: 5000 });
         }
       });
 
@@ -131,6 +148,7 @@ export class CartComponent implements OnInit, OnDestroy {
   }
 
   finalizeOrder(): void {
+    if (this.isSubmitting) return;
     if (this.expired) {
       alert('O tempo para concluir a encomenda expirou. Por favor, adicione itens novamente.');
       return;
@@ -148,26 +166,32 @@ export class CartComponent implements OnInit, OnDestroy {
       voucherCode: this.options.voucherCode || undefined,
     };
 
-    this.cartService.finalizeOrder(options).subscribe({
+    this.isSubmitting = true;
+    this.cartService.finalizeOrder(options, this.idempotencyKey).subscribe({
       next: (res: any) => {
         const orderId = res.orderId || this.extractOrderIdFromRedirect(res);
+        // Encomenda criada: a próxima tentativa (outra encomenda) usa uma chave nova.
+        this.idempotencyKey = newIdempotencyKey();
 
-        sessionStorage.setItem('showSuccessToast', 'true');
+        // Só um indicador de interface (sem dados pessoais), lido e apagado na página seguinte.
+        try {
+          sessionStorage.setItem('showSuccessToast', 'true');
+        } catch {
+          // sem sessionStorage: não aparece o aviso, nada mais muda
+        }
 
         if (orderId) {
-          this.cartService.getOrderDetails(orderId).subscribe({
-            next: (order: any) => {
-              this.router.navigate([`/cliente/carrinho/checkout/${orderId}`], { state: { order } });
-            },
-            error: err => console.error('Erro ao obter detalhes da encomenda:', err)
-          });
+          this.router.navigate([`/cliente/carrinho/checkout/${orderId}`]);
         } else {
-          console.error('Não foi possível obter o orderId');
+          this.isSubmitting = false;
+          this.snackBar.open('A encomenda foi criada, mas não foi possível abri-la. Veja-a no seu perfil.', 'Fechar', { duration: 6000 });
         }
       },
       error: (err) => {
-        console.error('Erro ao finalizar encomenda:', err);
-        this.snackBar.open(err?.error?.message || 'Erro ao finalizar a encomenda.', 'Fechar', { duration: 5000 });
+        this.isSubmitting = false;
+        // Erros definitivos (4xx) encerram a tentativa; falhas de rede mantêm a chave para repetir em segurança.
+        if (err?.status >= 400 && err?.status < 500) this.idempotencyKey = newIdempotencyKey();
+        this.snackBar.open(errorMessage(err, 'Erro ao finalizar a encomenda.'), 'Fechar', { duration: 5000 });
       }
     });
   }
@@ -188,13 +212,14 @@ export class CartComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.isLoading = true;
+    if (this.removing) return;
+    this.removing = `${item.dishId._id}-${item.dose}`;
     this.cartService.removeItemFromCart(item.dishId._id, item.dose).pipe(
       switchMap(() => this.cartService.loadCart())
     ).subscribe({
       next: (cart) => {
         this.cart = cart;
-        this.isLoading = false;
+        this.removing = null;
 
         if (!cart?.items || cart.items.length === 0) {
           this.resetTimer();
@@ -203,8 +228,8 @@ export class CartComponent implements OnInit, OnDestroy {
         }
       },
       error: (err) => {
-        console.error('Erro ao remover item do carrinho ou carregar carrinho', err);
-        this.isLoading = false;
+        this.removing = null;
+        this.snackBar.open(errorMessage(err, 'Não foi possível remover o prato.'), 'Fechar', { duration: 4000 });
       }
     });
   }

@@ -4,6 +4,9 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { errorMessage } from '../../utils/http-error';
+import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { ErrorStateComponent } from '../../shared/error-state.component';
 
 /**
  * Avaliação de uma encomenda entregue: comentário, classificação e foto opcional.
@@ -11,7 +14,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-review',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingStateComponent, ErrorStateComponent],
   templateUrl: './review.component.html'
 })
 export class ReviewComponent implements OnInit {
@@ -20,6 +23,8 @@ export class ReviewComponent implements OnInit {
   order: any;
   error = '';
   isLoading = true;
+  loadError = '';
+  isSubmitting = false;
   selectedFile: File | null = null;
   previewUrl: string | null = null;
 
@@ -46,13 +51,14 @@ export class ReviewComponent implements OnInit {
 
   fetchOrderDetails(): void {
     this.isLoading = true;
+    this.loadError = '';
     this.http.get(`${environment.apiUrl}/user/perfil/encomendas/${this.orderId}`).subscribe({
       next: data => {
         this.order = data;
         this.isLoading = false;
-      },  
-      error: () => {
-        this.error = 'Erro ao carregar encomenda.';
+      },
+      error: (err) => {
+        this.loadError = err?.status === 404 ? 'Esta encomenda não existe ou não é sua.' : errorMessage(err, 'Erro ao carregar encomenda.');
         this.isLoading = false;
       }
     });
@@ -74,7 +80,9 @@ export class ReviewComponent implements OnInit {
   }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.isSubmitting) return;
+    this.isSubmitting = true;
+    this.error = '';
 
     const formData = new FormData();
     formData.append('title', this.form.get('title')?.value);
@@ -87,7 +95,10 @@ export class ReviewComponent implements OnInit {
 
     this.http.post(`${environment.apiUrl}/user/perfil/encomendas/${this.orderId}/avaliar`, formData).subscribe({
       next: () => this.router.navigate(['/user/perfil']),
-      error: () => this.error = 'Erro ao submeter avaliação.'
+      error: (err) => {
+        this.isSubmitting = false;
+        this.error = errorMessage(err, 'Erro ao submeter avaliação.');
+      }
     });
   }
 }

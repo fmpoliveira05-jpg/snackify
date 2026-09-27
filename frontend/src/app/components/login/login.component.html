@@ -53,8 +53,8 @@
 
             <app-turnstile (token)="turnstileToken = $event"></app-turnstile>
 
-            <button type="submit" class="btn btn-primary w-100" [disabled]="loginForm.invalid || (turnstileEnabled && !turnstileToken)">
-              Entrar
+            <button type="submit" class="btn btn-primary w-100" [disabled]="loginForm.invalid || isSubmitting || (turnstileEnabled && !turnstileToken)">
+              {{ isSubmitting ? 'A entrar…' : 'Entrar' }}
             </button>
           </form>
 

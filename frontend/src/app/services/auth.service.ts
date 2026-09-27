@@ -45,10 +45,24 @@ export class AuthService {
   }
 
   logout(): void {
-    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe(() => {
-      this.currentUserSubject.next(null);
-      window.location.href = `${environment.apiUrl}`;
-    });
+    const finish = () => {
+      this.clearClientState();
+      window.location.href = `${environment.apiUrl}/`;
+    };
+    this.http.post(`${this.apiUrl}/logout`, {}, { withCredentials: true }).subscribe({ next: finish, error: finish });
+  }
+
+  /**
+   * Esquece tudo o que o cliente guardou sobre a sessão: o utilizador em memória e o
+   * sessionStorage (só tem estado de interface, mas não deve passar para a pessoa seguinte).
+   */
+  clearClientState(): void {
+    this.currentUserSubject.next(null);
+    try {
+      sessionStorage.clear();
+    } catch {
+      // Browser sem sessionStorage (modo privado restrito): nada a limpar.
+    }
   }
 
   isLoggedIn(): Observable<boolean> {

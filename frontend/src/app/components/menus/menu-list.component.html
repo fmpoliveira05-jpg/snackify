@@ -1,10 +1,17 @@
 <div class="container mt-5">
-  <h2 *ngIf="restaurant">{{ restaurant.name }}</h2>
-  <div *ngFor="let menu of menus" class="card mb-4">
-    <div class="card-body">
-      <h4 class="card-title">{{ menu.title }}</h4>
-      <p>{{ menu.description }}</p>
-      <a [routerLink]="['/cliente/menus', menu._id, 'pratos']" class="btn btn-outline-primary">Ver pratos</a>
+  <app-loading *ngIf="isLoading" message="A carregar menus…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" [retryable]="!notFound" (retry)="load()"></app-error-state>
+
+  <ng-container *ngIf="!isLoading && !error">
+    <h2>{{ restaurant?.name }}</h2>
+    <app-empty-state *ngIf="menus.length === 0" message="Este restaurante ainda não tem menus."
+      actionLabel="Ver outros restaurantes" actionLink="/cliente/restaurantes"></app-empty-state>
+    <div *ngFor="let menu of menus" class="card mb-4">
+      <div class="card-body">
+        <h4 class="card-title">{{ menu.title }}</h4>
+        <p>{{ menu.description }}</p>
+        <a [routerLink]="['/cliente/menus', menu._id, 'pratos']" class="btn btn-outline-primary">Ver pratos</a>
+      </div>
     </div>
-  </div>
+  </ng-container>
 </div>

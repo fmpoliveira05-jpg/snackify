@@ -1,14 +1,16 @@
 <div class="container mt-4">
   <h2>Carrinho</h2>
 
-  <div *ngIf="isLoading">A carregar carrinho...</div>
-  <div *ngIf="!isLoading && cart?.items?.length === 0">Carrinho vazio.</div>
+  <app-loading *ngIf="isLoading" message="A carregar o carrinho…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="loadCartAndStartTimer()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !error && !cart?.items?.length" message="Ainda não há pratos no carrinho."
+    actionLabel="Ver restaurantes" actionLink="/cliente/restaurantes"></app-empty-state>
 
   <div *ngIf="cartTimeout" class="alert alert-warning" role="alert">
     Tem {{ minutes }}:{{ seconds }} minutos para concluir a sua encomenda.
   </div>
 
-  <div *ngIf="!isLoading && cart?.items?.length">
+  <div *ngIf="!isLoading && !error && cart?.items?.length">
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -33,7 +35,7 @@
             }}
           </td>
           <td>
-            <button class="btn btn-danger btn-sm" (click)="removeItem(item)">Remover</button>
+            <button type="button" class="btn btn-danger btn-sm" (click)="removeItem(item)" [disabled]="!!removing || isSubmitting">Remover</button>
           </td>
         </tr>
       </tbody>
@@ -74,7 +76,10 @@
         </div>
       </div>
       <div class="text-end mt-3">
-        <button type="submit" class="btn btn-success">Finalizar encomenda</button>
+        <button type="submit" class="btn btn-success" [disabled]="isSubmitting || expired" [attr.aria-busy]="isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+          {{ isSubmitting ? 'A criar a encomenda…' : 'Finalizar encomenda' }}
+        </button>
       </div>
     </form>
   </div>

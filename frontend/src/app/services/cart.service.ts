@@ -62,8 +62,9 @@ export class CartService {
    * @param options tipo de entrega, forma de pagamento, documento de identificação (pagamento no
    *        local) e código de um vale de refeição
    */
-  finalizeOrder(options: CheckoutOptions = {}): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/finalizar`, options);
+  finalizeOrder(options: CheckoutOptions = {}, idempotencyKey?: string): Observable<any> {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
+    return this.http.post<any>(`${this.apiUrl}/finalizar`, options, { headers });
   }
 
   getOrderDetails(orderId: string): Observable<any> {

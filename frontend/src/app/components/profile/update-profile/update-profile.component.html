@@ -4,7 +4,10 @@
     {{ userType === 'customer' ? 'Cliente' : userType === 'admin' ? 'Administrador' : 'Restaurante' }}
   </h2>
 
-  <form *ngIf="profileForm" [formGroup]="profileForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
+  <app-loading *ngIf="isLoading" message="A carregar os dados do perfil…"></app-loading>
+  <app-error-state *ngIf="!isLoading && loadError" [message]="loadError" (retry)="load()"></app-error-state>
+
+  <form *ngIf="!isLoading && profileForm" [formGroup]="profileForm" (ngSubmit)="onSubmit()" enctype="multipart/form-data">
     <div class="mb-3">
       <label class="form-label">{{ fieldLabels.name }}</label>
       <input type="text" formControlName="name" class="form-control" />
@@ -112,7 +115,7 @@
     <div *ngIf="success" class="alert alert-success">{{ success }}</div>
 
     <div class="container mt-1 pb-2">
-      <button type="submit" class="btn btn-warning">Guardar Alterações</button>
+      <button type="submit" class="btn btn-warning" [disabled]="isSaving || !!success">{{ isSaving ? 'A guardar…' : 'Guardar Alterações' }}</button>
       <button type="button" class="btn btn-secondary" (click)="cancel()">Cancelar</button>
     </div>
   </form>

@@ -28,7 +28,7 @@
           <option *ngFor="let p of dish.pricePerDose" [value]="p.dose">{{ doseLabel(p.dose) }}</option>
         </select>
       </div>
-      <button type="submit" class="btn btn-success btn-sm w-100" [disabled]="!dish.pricePerDose?.length">Adicionar ao carrinho</button>
+      <button type="submit" class="btn btn-success btn-sm w-100" [disabled]="busy || !dish.pricePerDose?.length">{{ busy ? 'A adicionar…' : 'Adicionar ao carrinho' }}</button>
     </form>
   </div>
 </div>

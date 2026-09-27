@@ -4,6 +4,10 @@ import { DashboardService } from '../../services/dashboard.service';
 import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { OrderChartComponent } from '../charts/order-chart/order-chart.component';
+import { errorMessage } from '../../utils/http-error';
+import { LoadingStateComponent } from '../../shared/loading-state.component';
+import { ErrorStateComponent } from '../../shared/error-state.component';
+import { EmptyStateComponent } from '../../shared/empty-state.component';
 
 /**
  * Página inicial do cliente: gráfico das últimas encomendas e aviso de bloqueio por cancelamentos.
@@ -11,7 +15,7 @@ import { OrderChartComponent } from '../charts/order-chart/order-chart.component
 @Component({
   selector: 'app-customer-dashboard',
   standalone: true,
-  imports: [CommonModule, OrderChartComponent],
+  imports: [CommonModule, OrderChartComponent, LoadingStateComponent, ErrorStateComponent, EmptyStateComponent],
   templateUrl: './customer-dashboard.component.html',
   styleUrls: ['./customer-dashboard.component.css']
 })
@@ -20,6 +24,7 @@ export class CustomerDashboardComponent implements OnInit {
   isBlocked = false;
   blockedUntil: string | null = null;
   isLoading = true;
+  error = '';
   user: any = null;
 
   constructor(
@@ -29,21 +34,14 @@ export class CustomerDashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.getUserSession().subscribe({
-      next: (user) => {
-        this.user = user;
-
-        this.loadDashboardData();
-      },
-      error: (err) => {
-        console.error('Erro ao obter sessão do user:', err);
-        this.isLoading = false;
-        this.router.navigate(['/auth/login']);
-      }
-    });
+    // A sessão já foi confirmada pelo AuthGuard; o utilizador vem do AuthService (em memória).
+    this.authService.currentUser$.subscribe((user) => this.user = user);
+    this.loadDashboardData();
   }
 
   loadDashboardData() {
+    this.isLoading = true;
+    this.error = '';
     this.dashboardService.getDashboardData().subscribe({
       next: (data) => {
         this.orderTotals = data.orderTotals;
@@ -52,7 +50,7 @@ export class CustomerDashboardComponent implements OnInit {
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Erro ao carregar dashboard:', err);
+        this.error = errorMessage(err, 'Não foi possível carregar a sua área pessoal.');
         this.isLoading = false;
       }
     });

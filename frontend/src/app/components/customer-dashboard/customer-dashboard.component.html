@@ -1,12 +1,16 @@
 <div class="container mt-5">
   <h4>Esta é a sua área pessoal.</h4>
 
-  <div *ngIf="isLoading">A carregar dados da dashboard...</div>
+  <app-loading *ngIf="isLoading" message="A carregar a sua área pessoal…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="loadDashboardData()"></app-error-state>
 
-  <div *ngIf="!isLoading">
-    <div *ngIf="orderTotals?.length">
+  <div *ngIf="!isLoading && !error">
+    <div *ngIf="orderTotals?.length; else noOrders">
       <app-order-chart [data]="orderTotals"></app-order-chart>
     </div>
+    <ng-template #noOrders>
+      <app-empty-state message="Ainda não há encomendas. Quando fizer a primeira, aparece aqui o gráfico dos totais."></app-empty-state>
+    </ng-template>
 
     <div *ngIf="!isBlocked">
       <button class="btn btn-primary" (click)="goToRestaurants()">Encomendar comida</button>

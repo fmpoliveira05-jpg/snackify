@@ -21,15 +21,17 @@
     </div>
     <div class="text-end mt-3">
       <button type="submit" class="btn btn-success" [disabled]="!value || isSaving">
-        {{ giftTo.trim() ? 'Comprar e oferecer' : 'Comprar vale' }}
+        {{ isSaving ? 'A abrir o pagamento…' : (giftTo.trim() ? 'Comprar e oferecer' : 'Comprar vale') }}
       </button>
     </div>
     <div class="form-text">O pagamento é feito no Stripe. O vale só fica ativo (e com saldo) depois de o pagamento ser confirmado.</div>
   </form>
 
   <h4>Os meus vales</h4>
-  <p *ngIf="vouchers.length === 0" class="text-muted">Ainda não tem vales.</p>
-  <ul class="list-group">
+  <app-loading *ngIf="isLoading" message="A carregar os seus vales…"></app-loading>
+  <app-error-state *ngIf="!isLoading && error" [message]="error" (retry)="load()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !error && vouchers.length === 0" message="Ainda não há vales. Compre um acima para si ou para oferecer."></app-empty-state>
+  <ul class="list-group" *ngIf="!isLoading && !error">
     <li *ngFor="let v of vouchers" class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
         <strong>{{ v.code }}</strong>

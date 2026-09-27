@@ -1,13 +1,21 @@
 <div class="container mt-5">
+  <app-loading *ngIf="isLoadingProfile" message="A carregar o perfil…"></app-loading>
+  <app-error-state *ngIf="!isLoadingProfile && error" [message]="error" (retry)="loadProfile()"></app-error-state>
+
+  <ng-container *ngIf="!isLoadingProfile && !error">
   <h1 class="mb-4">Perfil de {{ userTypeFormatted }}</h1>
 
-  <div class="mb-4">
+  <div class="mb-4" *ngIf="!isAdmin">
     <h4>Histórico de Encomendas</h4>
-    <div *ngIf="orders.length === 0">
-      <p>Sem encomendas anteriores.</p>
-    </div>
+    <app-loading *ngIf="isLoadingOrders" message="A carregar as encomendas…"></app-loading>
+    <app-error-state *ngIf="!isLoadingOrders && ordersError" [message]="ordersError" (retry)="loadOrders()"></app-error-state>
+    <app-empty-state *ngIf="!isLoadingOrders && !ordersError && orders.length === 0"
+      [message]="isRestaurant ? 'Ainda não há encomendas recebidas.' : 'Ainda não há encomendas.'"
+      [actionLabel]="isRestaurant ? undefined : 'Encomendar comida'" [actionLink]="isRestaurant ? undefined : '/cliente/restaurantes'">
+    </app-empty-state>
     <div *ngFor="let order of orders" class="card mb-2">
       <div class="card-body">
+        <p *ngIf="!isRestaurant && order.restaurantId === null" class="text-muted small mb-1">(restaurante removido)</p>
         <h5 class="card-title"><strong>Código da encomenda:</strong> {{ order.orderCode || '(sem código)' }}</h5>
         <p><strong>Data e hora:</strong> {{ order.orderDate | date:'short' }}</p>
         <p><strong>Estado da encomenda:</strong> {{ order.state }}</p>
@@ -31,12 +39,14 @@
 
         <button *ngIf="isOrderPendingAndRecent(order) && user.userType === 'customer'" 
               class="btn btn-danger mt-2"
+              [disabled]="busyOrderId === order._id"
               (click)="cancelOrder(order._id)">
         Cancelar Pedido
         </button>
 
         <button *ngIf="order.state === 'pendente' && order.paymentMethod !== 'local' && user.userType === 'customer'" 
               class="btn btn-success mt-2"
+              [disabled]="busyOrderId === order._id"
               (click)="pay(order._id, order.orderCode, order.dishes)">
         Pagar agora
         </button>
@@ -50,29 +60,38 @@
         <!-- O restaurante avança a encomenda uma etapa de cada vez (a API recusa saltos). -->
         <button *ngIf="(order.state === 'pendente' || order.state === 'concluída') && user.userType === 'restaurant'"
                 class="btn btn-secondary mt-2"
+                [disabled]="busyOrderId === order._id"
                 (click)="updateOrderState(order._id, 'em preparação')">
           Iniciar preparação
         </button>
 
         <button *ngIf="order.state === 'em preparação' && user.userType === 'restaurant'"
                 class="btn btn-warning mt-2 me-2"
+                [disabled]="busyOrderId === order._id"
                 (click)="updateOrderState(order._id, 'expedida')">
           Alterar para expedida
         </button>
 
         <button *ngIf="order.state === 'em preparação' && user.userType === 'restaurant'"
                 class="btn btn-success mt-2"
+                [disabled]="busyOrderId === order._id"
                 (click)="updateOrderState(order._id, 'entregue')">
           Entregue no restaurante
         </button>
 
         <button *ngIf="order.state === 'expedida' && user.userType === 'restaurant'"
                 class="btn btn-success mt-2"
+                [disabled]="busyOrderId === order._id"
                 (click)="updateOrderState(order._id, 'entregue')">
           Alterar para entregue
         </button>
 
       </div>
+    </div>
+    <div class="text-center" *ngIf="!isLoadingOrders && hasMoreOrders">
+      <button type="button" class="btn btn-outline-primary" (click)="loadMoreOrders()" [disabled]="isLoadingMore">
+        {{ isLoadingMore ? 'A carregar…' : 'Mostrar mais (' + orders.length + ' de ' + ordersTotal + ')' }}
+      </button>
     </div>
   </div>
 
@@ -102,4 +121,41 @@
       </div>
     </div>
   </div>
+
+  <section class="card mb-4 border-secondary-subtle" aria-labelledby="privacyTitle">
+    <div class="card-body">
+      <h4 class="card-title" id="privacyTitle">Privacidade e dados pessoais</h4>
+      <p class="text-muted small mb-3">
+        Pode descarregar todos os seus dados num ficheiro JSON ou apagar a conta. Saiba mais na
+        <a routerLink="/privacidade">Política de Privacidade</a>.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-secondary" (click)="exportData()" [disabled]="isExporting">
+          {{ isExporting ? 'A preparar o ficheiro…' : 'Descarregar os meus dados' }}
+        </button>
+        <button type="button" class="btn btn-outline-danger" *ngIf="!isAdmin && !showDeleteForm" (click)="showDeleteForm = true">Apagar conta</button>
+      </div>
+
+      <form *ngIf="showDeleteForm" class="mt-3 border border-danger rounded p-3" (ngSubmit)="deleteAccount()">
+        <p class="mb-2"><strong>Esta ação não pode ser desfeita.</strong></p>
+        <ul class="small">
+          <li *ngIf="!isRestaurant">A conta, as avaliações e as fotografias são apagadas; o saldo dos seus vales é perdido.</li>
+          <li *ngIf="!isRestaurant">As encomendas ficam guardadas sem ligação a si, pelo prazo legal de conservação das faturas.</li>
+          <li *ngIf="isRestaurant">A conta, os menus, os pratos, as imagens e as avaliações recebidas são apagados. As encomendas continuam no histórico dos clientes.</li>
+          <li>Não é possível apagar a conta com encomendas em curso.</li>
+        </ul>
+        <label for="deletePassword" class="form-label">Confirme com a sua password</label>
+        <input id="deletePassword" name="deletePassword" type="password" class="form-control mb-2" autocomplete="current-password"
+               maxlength="128" required [(ngModel)]="deletePassword" />
+        <p class="text-danger small" *ngIf="deleteError" role="alert">{{ deleteError }}</p>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-danger" [disabled]="!deletePassword || isDeleting">
+            {{ isDeleting ? 'A apagar…' : 'Apagar definitivamente' }}
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="showDeleteForm = false; deletePassword = ''; deleteError = ''" [disabled]="isDeleting">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+  </ng-container>
 </div>

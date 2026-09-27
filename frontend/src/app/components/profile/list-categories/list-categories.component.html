@@ -1,14 +1,19 @@
-<div *ngIf="error" class="error">{{ error }}</div>
+<div class="container mt-4">
+  <h2>Categorias</h2>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
 
-<ul *ngIf="categories.length > 0; else noData">
-  <li *ngFor="let category of categories" class="d-flex justify-content-between align-items-center">
-    <strong>{{ category.name }}</strong>
-    <button class="btn btn-danger btn-sm" (click)="deleteCategory(category._id)">
-      Remover
-    </button>
-  </li>
-</ul>
+  <app-loading *ngIf="isLoading" message="A carregar categorias…"></app-loading>
+  <app-error-state *ngIf="!isLoading && loadError" [message]="loadError" (retry)="load()"></app-error-state>
+  <app-empty-state *ngIf="!isLoading && !loadError && categories.length === 0" message="Ainda não há categorias."
+    actionLabel="Criar categoria" actionLink="/user/perfil/criar-categoria"></app-empty-state>
 
-<ng-template #noData>
-  <p>Não há categorias para mostrar.</p>
-</ng-template>
+  <ul *ngIf="!isLoading && categories.length > 0" class="list-group">
+    <li *ngFor="let category of categories" class="list-group-item d-flex justify-content-between align-items-center">
+      <strong>{{ category.name }}</strong>
+      <button type="button" class="btn btn-danger btn-sm" (click)="deleteCategory(category._id)" [disabled]="busyId === category._id">
+        Remover
+      </button>
+    </li>
+  </ul>
+</div>

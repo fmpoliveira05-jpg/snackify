@@ -4,6 +4,10 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ProfileService } from '../../../services/profile.service';
 import { fieldLabels } from '../../../utils/field-formatters';
+import { errorMessage } from '../../../utils/http-error';
+import { LoadingStateComponent } from '../../../shared/loading-state.component';
+import { EmptyStateComponent } from '../../../shared/empty-state.component';
+import { ErrorStateComponent } from '../../../shared/error-state.component';
 
 /**
  * Edição do perfil. Os restaurantes definem aqui também os tempos de preparação e de entrega,
@@ -12,7 +16,7 @@ import { fieldLabels } from '../../../utils/field-formatters';
 @Component({
   selector: 'app-update-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent],
   templateUrl: './update-profile.component.html',
   styleUrls: ['./update-profile.component.css']
 })
@@ -25,6 +29,9 @@ export class UpdateProfileComponent implements OnInit {
   success = '';
   selectedFile: File | null = null;
   previewUrl: string | null = null;
+  isLoading = true;
+  loadError = '';
+  isSaving = false;
 
   constructor(
     private fb: FormBuilder,
@@ -33,13 +40,23 @@ export class UpdateProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.isLoading = true;
+    this.loadError = '';
     this.profileService.getProfile().subscribe({
       next: data => {
         this.user = data;
         this.userType = data.userType || 'customer';
         this.createForm(data);
+        this.isLoading = false;
       },
-      error: err => this.error = err?.message || 'Erro ao carregar dados.'
+      error: err => {
+        this.loadError = errorMessage(err, 'Erro ao carregar os dados do perfil.');
+        this.isLoading = false;
+      }
     });
   }
 
@@ -72,7 +89,9 @@ export class UpdateProfileComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.profileForm.invalid) return;
+    if (this.profileForm.invalid || this.isSaving) return;
+    this.isSaving = true;
+    this.error = '';
 
     const rawForm = this.profileForm.getRawValue();
     const formData = new FormData();
@@ -101,7 +120,10 @@ export class UpdateProfileComponent implements OnInit {
         this.success = 'Perfil atualizado com sucesso!';
         setTimeout(() => this.router.navigate(['/user/perfil']), 1500);
       },
-      error: err => this.error = err?.message || 'Erro ao atualizar perfil.'
+      error: err => {
+        this.isSaving = false;
+        this.error = errorMessage(err, 'Erro ao atualizar perfil.');
+      }
     });
   }
 
