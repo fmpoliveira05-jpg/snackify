@@ -116,7 +116,20 @@ const verifyImageContent = async (req, res, next) => {
   }
 };
 
-const multerUpload = multer({ storage, fileFilter, limits: { fileSize: MAX_FILE_SIZE, files: 1, fields: 50 } });
+/**
+ * Limites do multipart (formulários com imagem): uma imagem até 2 MB, até 50 campos de texto com
+ * 100 KB cada (o mesmo limite dos corpos JSON), nomes de campos curtos e 60 partes no total.
+ */
+const UPLOAD_LIMITS = {
+  fileSize: MAX_FILE_SIZE,
+  files: 1,
+  fields: 50,
+  fieldSize: 100 * 1024,
+  fieldNameSize: 100,
+  parts: 60,
+};
+
+const multerUpload = multer({ storage, fileFilter, limits: UPLOAD_LIMITS });
 
 /**
  * Mesmo uso que o multer (upload.single('campo')), mas devolve também a verificação do conteúdo.
@@ -133,3 +146,4 @@ module.exports.verifyImageContent = verifyImageContent;
 module.exports.discardUpload = discardUpload;
 module.exports.ALLOWED_TYPES = ALLOWED_TYPES;
 module.exports.UPLOAD_ROOT = UPLOAD_ROOT;
+module.exports.UPLOAD_LIMITS = UPLOAD_LIMITS;

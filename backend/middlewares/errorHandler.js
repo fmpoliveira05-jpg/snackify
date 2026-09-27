@@ -7,6 +7,10 @@ const MULTER_MESSAGES = {
   LIMIT_FILE_SIZE: 'A imagem não pode ter mais de 2 MB.',
   LIMIT_FILE_COUNT: 'Só é possível enviar uma imagem.',
   LIMIT_UNEXPECTED_FILE: 'Campo de ficheiro inesperado.',
+  LIMIT_FIELD_VALUE: 'Um dos campos do formulário é demasiado grande.',
+  LIMIT_FIELD_COUNT: 'O formulário tem demasiados campos.',
+  LIMIT_FIELD_KEY: 'O nome de um campo é demasiado grande.',
+  LIMIT_PART_COUNT: 'O formulário tem demasiadas partes.',
 };
 
 /**
