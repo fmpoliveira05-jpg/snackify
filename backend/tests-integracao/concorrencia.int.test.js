@@ -180,6 +180,23 @@ describe('encomendas', () => {
   let category;
   beforeAll(async () => { category = await db.createCategory(); });
 
+  test('10 cliques simultâneos em "Adicionar" somam todas as quantidades, sem erros', async () => {
+    const customer = await db.createCustomer();
+    const restaurant = await db.createRestaurant();
+    const dish = await db.createDish(restaurant, category);
+
+    const responses = await Promise.all(Array.from({ length: 10 }, () => (
+      asCustomer(request(app).post('/cliente/api/carrinho/adicionar'), customer).send({ dishId: String(dish._id), amount: 1, dose: '1' })
+    )));
+
+    expect(responses.map((r) => r.status)).toEqual(Array(10).fill(200));
+    const cart = await Cart.findOne({ userId: customer._id }).lean();
+    expect(cart.items).toHaveLength(1);
+    expect(cart.items[0].amount).toBe(10);
+    const view = await asCustomer(request(app).get('/cliente/api/carrinho'), customer);
+    expect(view.body.total).toBe(100);
+  });
+
   test('5 pedidos simultâneos com o mesmo carrinho criam uma só encomenda', async () => {
     const customer = await db.createCustomer();
     const restaurant = await db.createRestaurant();

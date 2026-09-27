@@ -15,6 +15,10 @@ const cartSchema = new mongoose.Schema({
     timeout: { type: Date },
     // Marca de "encomenda a ser criada": impede que dois pedidos simultâneos usem o mesmo carrinho.
     checkoutLockedAt: { type: Date }
+}, {
+    // Cada gravação confirma que ninguém alterou o carrinho entretanto (versão __v); se alterou,
+    // dá VersionError e o pedido volta a ler o carrinho (ver withCartRetry no controlador).
+    optimisticConcurrency: true
 });
 
 module.exports = mongoose.model('Cart', cartSchema);

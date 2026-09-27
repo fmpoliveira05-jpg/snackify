@@ -55,13 +55,37 @@ async function loadCart(userId) {
       cart = await Cart.findOne({ userId }).populate('items.dishId');
     }
   }
-  if (isCartExpired(cart.timeout)) {
+  if (isCartExpired(cart.timeout) && cart.items.length > 0) {
     cart.items = [];
     cart.total = 0;
     cart.timeout = null;
-    await cart.save();
+    try {
+      await cart.save();
+    } catch (err) {
+      // Outro pedido alterou o carrinho entretanto: volta a lê-lo.
+      if (err?.name !== 'VersionError') throw err;
+      return loadCart(userId);
+    }
   }
+  // O total é sempre recalculado a partir dos pratos (preços atuais).
+  cart.total = computeTotal(cart.items.filter((item) => item.dishId));
   return cart;
+}
+
+/**
+ * Repete uma alteração ao carrinho se outro pedido o tiver gravado entretanto (VersionError):
+ * cliques rápidos em "Adicionar" já não perdem quantidades nem dão erro 500.
+ */
+async function withCartRetry(operation, attempts = 10) {
+  for (let i = 1; ; i += 1) {
+    try {
+      return await operation();
+    } catch (err) {
+      if (err?.name !== 'VersionError' || i >= attempts) throw err;
+      // Pausa curta e aleatória para os pedidos concorrentes não colidirem outra vez.
+      await new Promise((resolve) => { setTimeout(resolve, 5 + Math.floor(Math.random() * 20 * i)); });
+    }
+  }
 }
 
 /** Datas dos cancelamentos recentes do cliente (os últimos 3 meses chegam para a regra dos 2 meses). */
@@ -222,25 +246,45 @@ const addToCart = async (req, res) => {
   }
 
   const cart = await loadCart(req.user._id);
+  if (cart.checkoutLockedAt && Date.now() - cart.checkoutLockedAt.getTime() < CHECKOUT_LOCK_MS) {
+    return res.status(409).json({ message: 'A encomenda está a ser criada. Aguarde um momento.' });
+  }
   const otherRestaurant = cart.items.some((item) => item.dishId && !sameId(item.dishId.restaurantId, dish.restaurantId));
   if (otherRestaurant) {
     return res.status(400).json({ message: 'O carrinho só pode ter pratos de um restaurante. Esvazie-o primeiro.' });
   }
 
-  const existing = cart.items.find((item) => item.dishId && sameId(item.dishId._id, dish._id) && item.dose === dose);
-  if (existing) {
-    existing.amount += parsedAmount;
-  } else {
-    cart.items.push({ dishId: dish._id, amount: parsedAmount, dose });
+  // Alteração atómica (sem ler-alterar-gravar): cliques simultâneos somam todos as quantidades.
+  const notLocked = {
+    $or: [
+      { checkoutLockedAt: null },
+      { checkoutLockedAt: trusted({ $lt: new Date(Date.now() - CHECKOUT_LOCK_MS) }) },
+    ],
+  };
+  const sameItem = trusted({ $elemMatch: { dishId: dish._id, dose } });
+  let updated = null;
+  for (let attempt = 0; attempt < 3 && !updated; attempt += 1) {
+    updated = await Cart.findOneAndUpdate(
+      { _id: cart._id, ...notLocked, items: sameItem },
+      { $inc: { 'items.$.amount': parsedAmount, __v: 1 } },
+    );
+    if (!updated) {
+      updated = await Cart.findOneAndUpdate(
+        { _id: cart._id, ...notLocked, items: trusted({ $not: { $elemMatch: { dishId: dish._id, dose } } }) },
+        { $push: { items: { dishId: dish._id, amount: parsedAmount, dose } }, $inc: { __v: 1 } },
+      );
+    }
   }
-  if (!cart.timeout) {
-    cart.timeout = new Date(Date.now() + CART_TIMEOUT_MINUTES * 60 * 1000);
+  if (!updated) {
+    return res.status(409).json({ message: 'O carrinho foi alterado entretanto. Tente novamente.' });
   }
+  // O prazo dos 10 minutos começa no primeiro prato (só é definido se ainda não existir).
+  await Cart.updateOne(
+    { _id: cart._id, timeout: null },
+    { $set: { timeout: new Date(Date.now() + CART_TIMEOUT_MINUTES * 60 * 1000) } },
+  );
 
-  await cart.populate('items.dishId');
-  cart.total = computeTotal(cart.items);
-  await cart.save();
-  res.json(cart);
+  res.json(await loadCart(req.user._id));
 };
 
 /**
@@ -248,19 +292,21 @@ const addToCart = async (req, res) => {
  */
 const removeFromCart = async (req, res) => {
   const { dishId, dose } = req.query;
-  const cart = await loadCart(req.user._id);
-
-  const index = cart.items.findIndex((item) => item.dishId && sameId(item.dishId._id, dishId) && item.dose === dose);
-  if (index === -1) {
+  const cart = await withCartRetry(async () => {
+    const current = await loadCart(req.user._id);
+    const index = current.items.findIndex((item) => item.dishId && sameId(item.dishId._id, dishId) && item.dose === dose);
+    if (index === -1) return null;
+    current.items.splice(index, 1);
+    current.total = computeTotal(current.items);
+    if (current.items.length === 0) {
+      current.timeout = null;
+    }
+    await current.save();
+    return current;
+  });
+  if (!cart) {
     return res.status(404).json({ message: 'Item não encontrado no carrinho.' });
   }
-
-  cart.items.splice(index, 1);
-  cart.total = computeTotal(cart.items);
-  if (cart.items.length === 0) {
-    cart.timeout = null;
-  }
-  await cart.save();
   res.json(cart);
 };
 
@@ -268,7 +314,7 @@ const removeFromCart = async (req, res) => {
  * DELETE /cliente/api/carrinho/limpar — esvazia o carrinho (usado também quando o prazo termina).
  */
 const clearCart = async (req, res) => {
-  await Cart.findOneAndUpdate({ userId: req.user._id }, { items: [], total: 0, timeout: null });
+  await Cart.findOneAndUpdate({ userId: req.user._id }, { $set: { items: [], total: 0, timeout: null }, $inc: { __v: 1 } });
   res.json({ message: 'Carrinho limpo.' });
 };
 
@@ -416,7 +462,7 @@ const createOrderFromCart = async (req, res) => {
         { checkoutLockedAt: trusted({ $lt: new Date(now.getTime() - CHECKOUT_LOCK_MS) }) },
       ],
     },
-    { $set: { checkoutLockedAt: now } },
+    { $set: { checkoutLockedAt: now }, $inc: { __v: 1 } },
   );
   if (!locked) {
     // Repetição de um pedido que ainda está a ser tratado: espera por ele e devolve a mesma encomenda.
@@ -486,7 +532,7 @@ const createOrderFromCart = async (req, res) => {
 
     await Cart.updateOne(
       { _id: cart._id },
-      { $set: { items: [], total: 0, timeout: null }, $unset: { checkoutLockedAt: 1 } },
+      { $set: { items: [], total: 0, timeout: null }, $unset: { checkoutLockedAt: 1 }, $inc: { __v: 1 } },
     );
     return res.status(201).json(orderCreatedBody(order));
   } catch (err) {
