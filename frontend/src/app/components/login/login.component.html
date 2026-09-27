@@ -15,6 +15,8 @@
                 type="text"
                 class="form-control"
                 placeholder="Introduza o seu nome de utilizador"
+                autocomplete="username"
+                maxlength="50"
                 required
                 [(ngModel)]="username"
                 #usernameInput="ngModel"
@@ -32,6 +34,8 @@
                 type="password"
                 class="form-control"
                 placeholder="Introduza a sua palavra-passe"
+                autocomplete="current-password"
+                maxlength="64"
                 required
                 [(ngModel)]="password"
                 #passwordInput="ngModel"
@@ -41,12 +45,26 @@
               </div>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100" [disabled]="loginForm.invalid">
+            <!-- Campo "armadilha" para bots: escondido das pessoas e dos leitores de ecrã. -->
+            <div class="visually-hidden" aria-hidden="true">
+              <label for="website">Não preencha este campo</label>
+              <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" [(ngModel)]="website" />
+            </div>
+
+            <app-turnstile (token)="turnstileToken = $event"></app-turnstile>
+
+            <button type="submit" class="btn btn-primary w-100" [disabled]="loginForm.invalid || (turnstileEnabled && !turnstileToken)">
               Entrar
             </button>
           </form>
 
           <p class="text-danger mt-3" *ngIf="errorMessage">{{ errorMessage }}</p>
+          <p class="mt-2" *ngIf="emailNotVerified">
+            <a routerLink="/verificar-email/pendente">Reenviar o email de confirmação</a>
+          </p>
+          <p class="mt-3 mb-0 text-center">
+            <a routerLink="/recuperar-password">Esqueci-me da palavra-passe</a>
+          </p>
         </div>
       </div>
     </div>

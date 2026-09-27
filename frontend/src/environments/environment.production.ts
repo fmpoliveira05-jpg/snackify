@@ -5,4 +5,6 @@
 export const environment = {
   production: true,
   apiUrl: '',
+  // Chave pública (site key) do Cloudflare Turnstile. Vazia = desafio desligado.
+  turnstileSiteKey: '',
 };

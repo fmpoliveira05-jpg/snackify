@@ -2,11 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, of } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, switchMap, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
+/** Campos anti-bot enviados com os formulários públicos. */
+export interface BotFields {
+  /** Campo "armadilha": uma pessoa nunca o preenche. */
+  website?: string;
+  /** Token do desafio Cloudflare Turnstile (vazio quando está desligado). */
+  turnstileToken?: string;
+}
+
+/** Resposta genérica dos pedidos de email (não revela se a conta existe). */
+export interface MessageResponse {
+  message: string;
+}
+
 /**
- * Login, logout e sessão atual (o token fica num cookie httpOnly gerido pelo backend).
+ * Login, logout e sessão atual.
+ *
+ * O token fica apenas num cookie httpOnly gerido pelo backend: o Angular nunca o vê e os
+ * dados da conta vivem só em memória (nada em localStorage).
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -19,10 +35,13 @@ export class AuthService {
     this.loadUser();
   }
 
-  login(username: string, password: string): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/login`, { username, password }, { withCredentials: true }).pipe(
-      tap(user => this.currentUserSubject.next(user))
-    );
+  /** Inicia sessão e, a seguir, carrega os dados da conta a partir do /auth/me. */
+  login(username: string, password: string, bot: BotFields = {}): Observable<any> {
+    return this.http
+      .post<{ message: string; userType: string }>(`${this.apiUrl}/login`, { username, password, ...bot }, { withCredentials: true })
+      .pipe(
+        switchMap(res => this.getUserSession().pipe(map(user => ({ ...res, user }))))
+      );
   }
 
   logout(): void {
@@ -34,7 +53,7 @@ export class AuthService {
 
   isLoggedIn(): Observable<boolean> {
     return this.currentUser$.pipe(
-      tap(user => !!user),
+      map(user => !!user),
       catchError(() => of(false))
     );
   }
@@ -51,6 +70,26 @@ export class AuthService {
 
   loadUser(): void {
     this.getUserSession().subscribe();
+  }
+
+  /** Pede o email com o link para redefinir a password. */
+  forgotPassword(email: string, bot: BotFields = {}): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/forgot-password`, { email, ...bot });
+  }
+
+  /** Define a nova password com o token do link recebido por email. */
+  resetPassword(token: string, password: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/reset-password`, { token, password });
+  }
+
+  /** Confirma o email com o token do link recebido por email. */
+  verifyEmail(token: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/verify-email`, { token });
+  }
+
+  /** Pede um novo email de confirmação. */
+  resendVerification(email: string, bot: BotFields = {}): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/resend-verification`, { email, ...bot });
   }
 
   navigateToDashboard(userType: string): void {

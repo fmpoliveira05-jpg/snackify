@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, ViewChild } from '@angular/core';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { environment } from '../../../environments/environment';
+import { TurnstileComponent } from '../turnstile/turnstile.component';
 
 /**
  * Login; depois de entrar, cada tipo de conta segue para a sua página inicial (o restaurante vai para o back-office EJS).
@@ -11,18 +12,27 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, CommonModule],
+  imports: [FormsModule, CommonModule, RouterModule, TurnstileComponent],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {
   username = '';
   password = '';
+  /** Campo honeypot: escondido, tem de ficar vazio. */
+  website = '';
+  turnstileToken = '';
   errorMessage = '';
+  emailNotVerified = false;
+  readonly turnstileEnabled = Boolean(environment.turnstileSiteKey);
+
+  @ViewChild(TurnstileComponent) turnstile?: TurnstileComponent;
 
   constructor(private authService: AuthService, private router: Router) {}
 
   onSubmit() {
-    this.authService.login(this.username, this.password).subscribe({
+    this.errorMessage = '';
+    this.emailNotVerified = false;
+    this.authService.login(this.username, this.password, { website: this.website, turnstileToken: this.turnstileToken }).subscribe({
       next: (res) => {
         if (res.userType === 'customer') {
           this.router.navigate(['/cliente/dashboard']);
@@ -33,7 +43,10 @@ export class LoginComponent {
         }
       },
       error: (err) => {
-        this.errorMessage = err.error.message || 'Erro ao fazer login.';
+        this.emailNotVerified = err?.error?.code === 'EMAIL_NOT_VERIFIED';
+        this.errorMessage = err?.error?.message || 'Erro ao fazer login.';
+        // Cada token do Turnstile só serve uma vez.
+        this.turnstile?.reset();
       }
     });
   }
