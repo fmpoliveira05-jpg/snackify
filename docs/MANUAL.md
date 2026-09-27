@@ -4,7 +4,7 @@ Este guia percorre a plataforma com os três tipos de conta. Assume que a API es
 
 ## 1. Administrador – aprovar restaurantes
 
-1. Entrar em `http://localhost:4200/login` com `admin` / `Admin#2025`.
+1. Entrar em `http://localhost:4200/login` com `admin` e a password definida em `ADMIN_PASSWORD` (ou a gerada e mostrada pelo `npm run seed`).
 2. No perfil há três áreas:
    - **Validar restaurantes** – lista os registos pendentes; cada um pode ser aprovado ou rejeitado.
    - **Restaurantes validados** – permite desativar um restaurante (perde o acesso de imediato) ou removê-lo.
@@ -37,7 +37,7 @@ Enquanto não for aprovado, um restaurante não consegue iniciar sessão.
 
    A encomenda recebe um código (ex.: `ORD-M8K2...`) e a hora prevista de preparação e de entrega. Aparece uma notificação a confirmar a encomenda.
 5. **Cancelar** – possível nos primeiros 5 minutos e só enquanto a encomenda estiver pendente. Atenção: 5 cancelamentos no espaço de um mês bloqueiam novas encomendas durante 2 meses; o painel do cliente mostra até quando dura o bloqueio.
-6. **Vales** – em *vales* compra-se um vale de 5, 10, 20 ou 50 € (pagamento simulado) para si ou para oferecer a outro cliente, indicando o nome de utilizador. O saldo é descontado nas encomendas; se a parte em falta for zero, a encomenda fica logo paga. Se a encomenda for cancelada, o valor volta ao vale.
+6. **Vales** – em *vales* compra-se um vale de 5, 10, 20 ou 50 € (pago no Stripe Checkout; o vale só fica ativo depois de o pagamento ser confirmado) para si ou para oferecer a outro cliente, indicando o nome de utilizador. O saldo é descontado nas encomendas; se a parte em falta for zero, a encomenda fica logo paga. Se a encomenda for cancelada, o valor volta ao vale.
 7. **Avaliar** – quando o restaurante marca a encomenda como entregue, aparece a opção de deixar um comentário com fotografia (uma avaliação por encomenda).
 
 ## Pagamentos de teste com o Stripe
@@ -54,4 +54,4 @@ No fim, o Stripe devolve o cliente à API, que confirma o pagamento junto do Str
 
 ## Documentação da API
 
-A lista completa de endpoints, com parâmetros e respostas, está em `http://localhost:5000/api-docs` (Swagger). Os pedidos autenticados usam o cookie `token` definido no login ou o cabeçalho `Authorization: Bearer <token>`.
+A lista completa de endpoints, com parâmetros e respostas, está em `http://localhost:5000/api-docs` (Swagger). Os pedidos autenticados usam apenas o cookie da sessão definido no login (`token` em desenvolvimento, `__Host-snackify` em produção); os pedidos que alteram dados têm de trazer o cabeçalho `Origin` da aplicação.
