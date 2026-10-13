@@ -1,261 +1,245 @@
-# Snackify – plataforma de encomendas a restaurantes
+# Snackify — Restaurant Ordering Platform
 
-Aplicação web *full stack* onde restaurantes publicam menus e gerem encomendas, e clientes pesquisam restaurantes, montam o carrinho, encomendam e avaliam a refeição. Inclui API REST documentada com Swagger, *back-office* para os restaurantes, cliente Angular e pagamento de teste com Stripe.
+A full-stack web application where restaurants publish menus and manage orders, while customers search restaurants, build a basket, place orders, and review meals. Includes a Swagger-documented REST API, restaurant back office, Angular client, and Stripe test payments.
 
-Trabalho prático de grupo de **Programação em Ambiente Web** (2.º ano da Licenciatura em Engenharia Informática, ESTG – Politécnico do Porto, 2024/25), revisto em 2026.
+A group assignment for **Web Application Programming**, in the second year of the BSc in Computer Engineering at ESTG – Polytechnic of Porto (2024/25), reviewed in 2026.
 
 [![CI](https://github.com/fmpoliveira05-jpg/snackify/actions/workflows/ci.yml/badge.svg)](https://github.com/fmpoliveira05-jpg/snackify/actions/workflows/ci.yml)
 
-## Equipa
+## Team
 
-- Francisco Oliveira – [@fmpoliveira05-jpg](https://github.com/fmpoliveira05-jpg)
+- Francisco Oliveira — [@fmpoliveira05-jpg](https://github.com/fmpoliveira05-jpg)
 - franciscom0rais
 - PedroIUrt3
 
-O histórico de *commits* do repositório original do grupo foi mantido.
+The original group repository's commit history has been preserved.
 
-**O meu papel:** montei a estrutura inicial e o modelo de dados, e fiquei com o registo e a autenticação, a gestão de menus e a validação de restaurantes pelo administrador; integrei a Open Food Facts, o pagamento com Stripe e os gráficos dos painéis (Google Charts), e arranquei o cliente Angular. Depois da entrega, em 2026, fiz a revisão de segurança, os testes e as funcionalidades que tinham ficado por fazer (descritas no fim).
+**My contribution:** initial project structure and data model; registration/authentication, menu management, and administrator restaurant approval; Open Food Facts and Stripe integration; Google Charts dashboards; and the initial Angular client. After submission, I completed the 2026 security review, tests, and missing features described below.
 
-## O enunciado em poucas palavras
+## Assignment overview
 
-Uma plataforma para ajudar restaurantes a gerir pedidos e menus:
+- Register/authenticate customers and restaurants; an **administrator approves** restaurants before they can operate.
+- Menus contain **at most 10 dishes**, with categories, photos, nutritional information, and price per serving.
+- Baskets **expire after 10 minutes**; calculate totals and notify restaurants of completed orders.
+- Customers may **cancel within five minutes**, provided preparation has not started. **Five cancellations in a month block ordering for two months**.
+- Restaurants track preparation, dispatch, and delivery.
+- Customers can review delivered orders with a comment and photo.
 
-- registo e autenticação de clientes e restaurantes; um **administrador valida** cada restaurante antes de este poder operar;
-- menus com **no máximo 10 pratos**, categorias, fotografias, informação nutricional e preço por dose;
-- carrinho que **expira ao fim de 10 minutos**, cálculo do total e conclusão da encomenda (com notificação);
-- o cliente pode **cancelar nos primeiros 5 minutos**, desde que a cozinha ainda não tenha começado; quem cancelar **5 encomendas num mês fica 2 meses sem poder encomendar**;
-- o restaurante acompanha o estado de cada encomenda (em preparação, expedida, entregue);
-- depois da entrega o cliente pode deixar um comentário com fotografia.
+Required stack: Node.js/Express, MongoDB, EJS for the first milestone, Angular client, and Swagger-documented REST services.
 
-Obrigatório: Node.js + Express, MongoDB, EJS no primeiro *milestone*, Angular no cliente e serviços REST documentados com Swagger.
+## Features
 
-## Funcionalidades
-
-| Cliente | Restaurante | Administrador |
+| Customer | Restaurant | Administrator |
 |---|---|---|
-| Pesquisa de restaurantes (nome, localidade/distrito) e de pratos (texto, categoria, restaurante, localização, preço) com ordenação | Criação e edição de pratos e menus (máx. 10 pratos) | Validação e desativação de restaurantes |
-| Página de cada prato com imagem, categoria, Nutri-Score, calorias e alergénios | Informação nutricional automática ([Open Food Facts](https://world.openfoodfacts.org/)) | Gestão de categorias |
-| Carrinho com contagem decrescente de 10 minutos | Tempos de preparação e de entrega, raio máximo de entrega e limite de encomendas em curso | |
-| Entrega, levantamento ou consumo no restaurante; pagamento online (Stripe, modo de teste) ou no local com código + documento de identificação | Aviso de novas encomendas (no perfil e no *back-office*) | |
-| Vales de refeição: comprar para si ou oferecer a outro cliente e usar o saldo nas encomendas | Gestão do estado das encomendas e leitura de avaliações | |
-| Cancelamento, avaliação com foto, histórico e perfil | Gráfico de encomendas por estado (Google Charts) | |
+| Search/sort restaurants by name/location and dishes by text, category, restaurant, location, and price | Create/edit dishes and menus, maximum 10 dishes | Approve/deactivate restaurants |
+| Dish pages with image, category, Nutri-Score, calories, and allergens | Automatic nutrition information from [Open Food Facts](https://world.openfoodfacts.org/) | Manage categories |
+| Basket with a 10-minute countdown | Configure preparation/delivery times, delivery radius, and concurrent-order limits | |
+| Delivery, collection, or dine-in; Stripe test payments or on-site payment with order code and ID | New-order alerts in profile and back office | |
+| Buy meal vouchers for yourself or another customer; spend their balance | Track orders and read reviews | |
+| Cancel, review with a photo, inspect history, and manage profile | Order-status charts with Google Charts | |
 
-Funcionalidades de bonificação do enunciado: gráficos nos *dashboards* ✔, pagamento com API externa (Stripe) ✔, carrinho de 10 minutos com contador ✔, vales de refeição ✔ e Open Food Facts ✔.
+All assignment bonus features are implemented: dashboard charts, external payment API, countdown basket, meal vouchers, and Open Food Facts integration.
 
-### Capturas de ecrã
+### Screenshots
 
-| Criar um prato (*back-office* do restaurante) | Avaliações recebidas pelo restaurante |
+| Restaurant dish creation | Restaurant reviews |
 |---|---|
-| ![Formulário de novo prato com pré-visualização da imagem](docs/screenshots/novo-prato.png) | ![Lista de avaliações deixadas pelos clientes](docs/screenshots/avaliacoes.png) |
+| ![New dish form with image preview](docs/screenshots/novo-prato.png) | ![Customer reviews](docs/screenshots/avaliacoes.png) |
 
-## Arquitetura
+## Architecture
 
 ```mermaid
-flowchart LR
-    C[Cliente Angular<br/>:4200] -- REST + cookie JWT --> A
-    R[Browser do restaurante] -- páginas EJS --> A
-    A[Express :5000<br/>API REST · EJS · Swagger] --> M[(MongoDB)]
-    A --> S[Stripe]
-    A --> O[Open Food Facts]
+flowchart TD
+    C["Angular client :4200"] -->|REST and JWT cookie| A
+    R["Restaurant browser"] -->|EJS pages| A
+    A["Express :5000 — REST, EJS, Swagger"] --> M["MongoDB"]
+    A --> S["Stripe"]
+    A --> O["Open Food Facts"]
 ```
 
-```
+```text
 backend/
-  app.js            configuração do Express (exportada para os testes)
-  server.js         liga ao MongoDB e arranca o servidor
-  config/           leitura e validação das variáveis de ambiente
-  routes/           rotas + anotações Swagger
-  controllers/      lógica de cada rota
-  services/         regras de negócio (cancelamento, bloqueio, estados, totais, restaurante,
-                    pesquisa, vales, pagamentos, lugares, cache, RGPD e limpeza)
-  models/           esquemas Mongoose e validações
-  middlewares/      autenticação, papéis, uploads, validação e erros
-  views/ public/    back-office em EJS
-  tests/            testes Jest + Supertest (sem base de dados)
-  tests-integracao/ testes contra um MongoDB real (concorrência, RGPD, explain)
-  tests-navegador/  teste num Chromium real (armazenamento do browser e cookies)
-frontend/           cliente Angular 20 (componentes standalone)
-scripts/            cópias de segurança e restauro do MongoDB (e o teste do restauro)
-docs/               manual, operação, RGPD e custos
+  app.js             Express configuration exported for tests
+  server.js          MongoDB connection and server startup
+  config/            Environment configuration and validation
+  routes/            Routes and Swagger annotations
+  controllers/       Route handlers
+  services/          Business rules: cancellations, blocks, states, totals, restaurants,
+                     search, vouchers, payments, capacity, caching, GDPR, cleanup
+  models/            Mongoose schemas and validation
+  middlewares/       Authentication, roles, uploads, validation, errors
+  views/ public/     EJS restaurant back office
+  tests/             Jest/Supertest tests without a database
+  tests-integracao/  Real MongoDB tests: concurrency, GDPR, explain
+  tests-navegador/   Chromium browser-storage and cookie tests
+frontend/            Angular 20 standalone client
+scripts/             MongoDB backup/restore and restore tests
+docs/                Manual, operations, GDPR, costs
 ```
 
-## Como executar
+## Run locally
 
-Requisitos: **Node.js 20+** e um **MongoDB** (local, em Docker ou no Atlas).
+Requires **Node.js 20+** and **MongoDB**, locally, in Docker, or through Atlas. The examples use Bash.
 
 ```bash
 git clone https://github.com/fmpoliveira05-jpg/snackify.git
 cd snackify
 
-# 1. Base de dados (opcional, se não tiver um MongoDB)
-cp .env.example .env        # definir MONGO_ROOT_PASSWORD
-docker compose up -d        # MongoDB só em 127.0.0.1:27017, com autenticação
+# Optional database setup if you do not already have MongoDB
+cp .env.example .env     # Set MONGO_ROOT_PASSWORD
+docker compose up -d    # Authenticated MongoDB on 127.0.0.1:27017 only
 
-# 2. API
+# API
 cd backend
-cp .env.example .env        # e preencher, sobretudo JWT_SECRET e MONGODB_URI
+cp .env.example .env     # Set JWT_SECRET, MONGODB_URI, and other required values
 npm install
-npm run seed                # cria o administrador (password de ADMIN_PASSWORD ou gerada) e as categorias
-npm run dev                 # http://localhost:5000  ·  Swagger em /api-docs
-
-# 3. Cliente Angular (noutro terminal)
-cd frontend
-npm install
-npm start                   # http://localhost:4200
+npm run seed            # Create administrator and categories
+npm run dev             # http://localhost:5000; Swagger: /api-docs
 ```
 
-Com o `docker-compose.yml`, a ligação no `backend/.env` é `MONGODB_URI=mongodb://snackify:<MONGO_ROOT_PASSWORD>@127.0.0.1:27017/snackify?authSource=admin`.
-
-Para experimentar o pagamento online é preciso uma chave de teste do Stripe (`sk_test_...`) no `.env` e usar o cartão de teste `4242 4242 4242 4242`. Sem chave, a aplicação funciona na mesma com pagamento no local (os vales precisam do Stripe ou, só em desenvolvimento, de `ALLOW_SIMULATED_PAYMENTS=true`).
-
-Depois do registo é preciso confirmar o email. Sem SMTP configurado, em desenvolvimento o link aparece na consola do backend.
-
-O [manual de utilização](docs/MANUAL.md) descreve o percurso completo de cada tipo de utilizador.
-
-## Testes
+In another terminal, start from the repository root:
 
 ```bash
-cd backend
-npm test                   # 243 testes sem base de dados: regras, API, segurança, cache, limites, RGPD, erros
-npm run test:integracao    # 39 testes contra um MongoDB real em Docker: concorrência, RGPD, explain()
-npm run test:navegador     # Chromium real: armazenamento do browser e cookies (precisa do build do Angular)
-npm run carga              # teste de carga com autocannon (ver docs/OPERACAO.md)
-cd ../frontend && npm run test:ci   # 59 testes: serviços, guards, componentes, interceptor e estados
-scripts/testar-backup-restauro.sh   # cópia de segurança, restauro e comparação dos dados
+cd frontend
+npm install
+npm start               # http://localhost:4200
 ```
 
-Os testes de integração, do browser e de carga arrancam um `mongo:7` descartável em Docker (dados em
-memória, removido no fim); com `MONGO_TEST_URI` usam um MongoDB já existente. O GitHub Actions corre
-os testes unitários, os de integração (com um contentor MongoDB), compila o Angular em modo de
-produção e confirma que não há *source maps*, corre o `npm audit` e procura segredos no histórico
-com o gitleaks.
+With Docker Compose, use `MONGODB_URI=mongodb://snackify:<MONGO_ROOT_PASSWORD>@127.0.0.1:27017/snackify?authSource=admin` in `backend/.env`.
 
-## Operação
+For online test payments, set a Stripe test key (`sk_test_...`) and use test card `4242 4242 4242 4242`. Without a key, on-site payments still work. Vouchers require Stripe or development-only `ALLOW_SIMULATED_PAYMENTS=true`.
 
-Pormenores em [docs/OPERACAO.md](docs/OPERACAO.md).
+Email verification is required after registration. Without SMTP in development, the backend console prints the verification link.
 
-- **Saúde**: `GET /health/live` (processo) e `GET /health/ready` (MongoDB), sem segredos e fora dos
-  limites de pedidos.
-- **Monitorização**: `.github/workflows/uptime.yml` verifica `SNACKIFY_HEALTH_URL` (variável do
-  repositório) a cada 15 minutos e abre uma issue se falhar; sem a variável não faz nada. Como alarme
-  principal, UptimeRobot ou Better Stack.
-- **Cópias de segurança**: `scripts/backup.sh` (mongodump comprimido, com data e hora, `.sha256`,
-  retenção de `BACKUP_KEEP` cópias, cifra opcional com age ou GPG) e `scripts/restore.sh`.
-  `scripts/testar-backup-restauro.sh` prova que a cópia repõe exatamente os mesmos dados.
-- **Carga**: `npm run carga` — 100 ligações durante 20 s em cada cenário, sem erros (resultados em
-  docs/OPERACAO.md).
-- **Encerramento e tempos máximos**: `SIGTERM` termina os pedidos em curso e fecha o MongoDB; o
-  servidor, o MongoDB, o Stripe, o SMTP e o Angular têm tempos máximos.
-- **Índices**: `npm run indices` depois de um deploy que mude índices.
-- **Limpeza (RGPD)**: tarefa de hora a hora; `npm run limpeza` corre-a uma vez.
-- **Erros**: página 404 no Angular e no back-office, 404 em JSON na API, página 500 sem pormenores.
-- **Cache**: catálogo e Open Food Facts em memória, ficheiros do Angular com cache de um ano,
-  `no-store` na API.
+The [user manual](docs/MANUAL.md) covers each user workflow.
 
-## Limites
+## Tests
 
-Todos configuráveis no `backend/.env` (valores por omissão):
+Run from the repository root:
 
-| Limite | Valor | Variável |
+```bash
+(cd backend && npm test)                 # 243 tests without a database
+(cd backend && npm run test:integracao)  # 39 tests against real MongoDB
+(cd backend && npm run test:navegador)   # Chromium; Angular build required
+(cd backend && npm run carga)           # autocannon load test
+(cd frontend && npm run test:ci)        # 59 Angular tests
+scripts/testar-backup-restauro.sh        # Backup, restore, data comparison
+```
+
+Backend unit tests cover rules, API behaviour, security, cache, quotas, GDPR, and errors. Angular tests cover services, guards, components, interceptors, and state.
+
+Integration, browser, and load tests start a disposable Docker `mongo:7` with in-memory data, removed afterwards. `MONGO_TEST_URI` can point to an existing test database. GitHub Actions runs unit/integration tests, builds production Angular, verifies source maps are absent, runs `npm audit`, and scans history with gitleaks.
+
+## Operations
+
+See [docs/OPERACAO.md](docs/OPERACAO.md).
+
+- **Health:** `GET /health/live` for process health and `/health/ready` for MongoDB readiness, without secrets or request quotas.
+- **Monitoring:** `uptime.yml` checks repository variable `SNACKIFY_HEALTH_URL` every 15 minutes and opens an issue on failure; absent configuration disables it. The original operations guide recommends an external primary monitor such as UptimeRobot or Better Stack.
+- **Backups:** `scripts/backup.sh` creates timestamped compressed mongodump files, SHA-256 checksums, `BACKUP_KEEP` retention, and optional age/GPG encryption; `scripts/restore.sh` restores them. The restore test compares the recovered data.
+- **Load:** recorded scenarios use 100 connections for 20 seconds with no errors; results are in the operations guide.
+- **Shutdown/timeouts:** SIGTERM drains requests and closes MongoDB; server, database, Stripe, SMTP, and Angular have timeouts.
+- **Indexes:** run `npm run indices` after deployments changing indexes.
+- **GDPR cleanup:** hourly task; `npm run limpeza` runs it once.
+- **Errors:** Angular/back-office 404 pages, JSON API 404s, and a 500 page without internal details.
+- **Cache:** in-memory catalogue/Open Food Facts cache, one-year Angular asset caching, and API `no-store`.
+
+## Limits
+
+Configurable in `backend/.env`; defaults are:
+
+| Limit | Default | Variable |
 |---|---|---|
-| Pedidos à API por IP | 300 / 15 min | `RATE_LIMIT_API_MAX`, `RATE_LIMIT_API_WINDOW_MINUTES` |
-| Login por IP | 20 / 15 min | `RATE_LIMIT_LOGIN_MAX` |
-| Registos por IP | 10 / hora | `RATE_LIMIT_REGISTER_PER_HOUR` |
-| Recuperação da password / reenvio da confirmação por IP | 5 / hora | — |
-| Encomendas por conta | 20 / hora | `QUOTA_ORDERS_PER_HOUR` |
-| Pagamentos e compras de vales por conta | 30 / hora | `QUOTA_PAYMENTS_PER_HOUR` |
-| Uploads por conta | 30 / hora | `QUOTA_UPLOADS_PER_HOUR` |
-| Pratos criados/editados por conta (Open Food Facts) | 60 / hora | `QUOTA_DISH_WRITES_PER_HOUR` |
-| Exportações de dados por conta | 5 / dia | `QUOTA_EXPORTS_PER_DAY` |
-| Pedidos à Open Food Facts (instância) | 10 / minuto | `OFF_MAX_REQUESTS_PER_MINUTE` |
-| Emails (instância / por destinatário) | 300 / 5 por dia | `MAIL_MAX_PER_DAY`, `MAIL_MAX_PER_ADDRESS_PER_DAY` |
-| Corpo JSON/formulário | 100 KB | — |
-| Imagem | 1 ficheiro, 2 MB (JPG, PNG, WEBP, GIF) | — |
-| Páginas das listas | 50 por omissão, máximo 100 (`?pagina=&limite=`, total em `X-Total-Count`) | — |
+| API requests per IP | 300 / 15 minutes | `RATE_LIMIT_API_MAX`, `RATE_LIMIT_API_WINDOW_MINUTES` |
+| Login attempts per IP | 20 / 15 minutes | `RATE_LIMIT_LOGIN_MAX` |
+| Registrations per IP | 10 / hour | `RATE_LIMIT_REGISTER_PER_HOUR` |
+| Password reset / verification resend per IP | 5 / hour | — |
+| Orders per account | 20 / hour | `QUOTA_ORDERS_PER_HOUR` |
+| Payments / voucher purchases per account | 30 / hour | `QUOTA_PAYMENTS_PER_HOUR` |
+| Uploads per account | 30 / hour | `QUOTA_UPLOADS_PER_HOUR` |
+| Dish creates/edits per account | 60 / hour | `QUOTA_DISH_WRITES_PER_HOUR` |
+| Data exports per account | 5 / day | `QUOTA_EXPORTS_PER_DAY` |
+| Open Food Facts requests per instance | 10 / minute | `OFF_MAX_REQUESTS_PER_MINUTE` |
+| Emails per instance / recipient | 300 / 5 per day | `MAIL_MAX_PER_DAY`, `MAIL_MAX_PER_ADDRESS_PER_DAY` |
+| JSON/form body | 100 KB | — |
+| Image upload | One file, 2 MB; JPG/PNG/WEBP/GIF | — |
+| List page size | Default 50, maximum 100; `?pagina=&limite=`, total in `X-Total-Count` | — |
 
-Acima do limite a resposta é `429` com cabeçalhos `RateLimit-*`. O webhook do Stripe e as
-verificações de saúde não contam. Os contadores são por instância. Como pôr alertas e tetos de
-gastos nos serviços pagos: [docs/CUSTOS.md](docs/CUSTOS.md).
+Exceeding quotas returns 429 with `RateLimit-*` headers. Stripe webhooks and health checks are excluded. Counters are per instance. See [cost controls](docs/CUSTOS.md) for alerts and spending caps.
 
-## RGPD
+## GDPR
 
-Pormenores, registo das atividades de tratamento (art. 30.º), segurança (art. 32.º) e procedimento
-em caso de violação de dados (art. 33.º/34.º, 72 h) em [docs/RGPD.md](docs/RGPD.md).
+[docs/RGPD.md](docs/RGPD.md) records processing activities, security controls, and the breach-response process, including the applicable notification timelines described in the original project documentation.
 
-- **Política de Privacidade** em `/privacidade` (rodapé do Angular, barra do back-office e registo),
-  com responsável, dados, finalidades, fundamentos, prazos, subcontratantes, transferências,
-  direitos e reclamação à CNPD.
-- **Registo**: caixa da política obrigatória e nunca pré-marcada; ficam guardadas a versão
-  (`PRIVACY_POLICY_VERSION`) e a data da aceitação. Não há marketing, por isso não há outro consentimento.
-- **Acesso e portabilidade**: "Descarregar os meus dados" no perfil (`GET /user/perfil/exportar`, JSON).
-- **Apagamento**: "Apagar conta" no perfil, com a password (`POST /user/perfil/eliminar`); as
-  encomendas ficam pseudonimizadas pela obrigação legal de conservar os documentos de venda.
-- **Retificação**: "Editar perfil".
-- **Conservação**: contas por confirmar apagadas ao fim de 7 dias (e índice TTL), tokens expirados
-  removidos, documento de identificação das encomendas apagado 30 dias depois, vales nunca pagos
-  apagados ao fim de 2 dias.
-- **Cookies**: só o cookie da sessão (estritamente necessário, sem banner); nada no `localStorage`;
-  Bootstrap e tipo de letra servidos pelo próprio servidor; Google Charts só na página do gráfico.
+- **Privacy policy:** `/privacidade`, linked from Angular, the back office, and registration; describes controller, data, purposes, legal bases, retention, processors, transfers, rights, and complaints to Portugal's CNPD.
+- **Registration:** mandatory, unchecked policy checkbox; stores `PRIVACY_POLICY_VERSION` and acceptance timestamp. No marketing feature or separate marketing consent.
+- **Access/portability:** profile data download, `GET /user/perfil/exportar`, returns JSON.
+- **Deletion:** password-confirmed `POST /user/perfil/eliminar`; orders are pseudonymised for the sales-document retention obligation described in the GDPR guide.
+- **Rectification:** edit profile.
+- **Retention:** delete unverified accounts after seven days, including a TTL index; remove expired tokens; remove order identity documents after 30 days; delete unpaid vouchers after two days.
+- **Cookies:** only the essential session cookie; no localStorage. Bootstrap/fonts are served locally; Google Charts loads only on the chart page.
 
-## Segurança: o que foi corrigido na revisão de 2026
+## Security fixes in the 2026 review
 
-A versão entregue funcionava, mas uma revisão com foco em segurança encontrou problemas sérios. Ficam aqui registados porque são exatamente o tipo de coisa que é fácil deixar passar num projeto académico:
+The submitted application worked, but a security-focused review found serious issues:
 
-- **Credenciais no repositório** – o ficheiro `.env` (ligação ao MongoDB Atlas, segredo JWT e chave do Stripe) estava no histórico do Git. Foi removido de todo o histórico e passou a existir um `.env.example`.
-- **Escalada de privilégios** – o formulário de perfil aceitava qualquer campo, pelo que um cliente podia enviar `userType: "admin"`; e um restaurante podia registar-se já com `isChecked: true`, saltando a validação do administrador. Agora só são aceites campos explicitamente permitidos.
-- **Acesso a dados de terceiros (IDOR)** – qualquer utilizador autenticado podia mudar o estado de qualquer encomenda, ver encomendas de outros clientes e editar ou apagar pratos de outros restaurantes. Todas estas operações verificam agora o dono do recurso.
-- **Pagamentos** – os preços enviados ao Stripe vinham do browser e bastava abrir o URL de sucesso para marcar uma encomenda como paga. Agora os valores vêm da base de dados e a sessão é confirmada junto do Stripe.
-- **Fuga de dados** – as listagens devolviam os *hashes* das passwords, o NIF e contas por validar. A password deixou de ser lida por omissão (`select: false`) e as respostas só incluem os campos necessários.
-- **Injeção NoSQL e força bruta** – o login aceitava objetos como `{"$ne": null}` e não tinha limite de tentativas. Ativado o `sanitizeFilter` do Mongoose, validado o tipo dos campos e acrescentado *rate limiting*; a mensagem de erro deixou de revelar se o utilizador existe.
-- **Uploads** – eram aceites ficheiros de qualquer tipo com o nome original (incluindo HTML servido a partir do domínio). Agora só imagens até 2 MB, com nome gerado pelo servidor.
-- **Estabilidade** – um erro dentro de um controlador assíncrono (por exemplo, um id de prato inválido) terminava o processo Node. Todos os controladores passaram por um `asyncHandler` e há um *middleware* de erros central.
+- **Repository credentials:** `.env` with MongoDB Atlas credentials, JWT secret, and Stripe key was removed from history and replaced by `.env.example`.
+- **Privilege escalation:** profile updates accepted arbitrary fields such as `userType: "admin"`; restaurants could register with `isChecked: true`. Updates now accept explicit allowlisted fields.
+- **IDOR:** users could change other orders, view other customers' orders, and edit/delete other restaurants' dishes. Resource ownership is now checked.
+- **Payments:** Stripe prices came from the browser, and visiting the success URL marked an order paid. Prices now come from the database; sessions are verified with Stripe.
+- **Data exposure:** listings returned password hashes, tax IDs, and unapproved accounts. Passwords use `select: false`; responses expose only necessary fields.
+- **NoSQL injection/brute force:** login accepted objects such as `{"$ne": null}` and had no rate limit. Added Mongoose `sanitizeFilter`, field-type checks, rate limiting, and uniform login errors.
+- **Uploads:** arbitrary original-name files, including HTML, could be served from the application domain. Only images up to 2 MB with server-generated names are now accepted.
+- **Stability:** asynchronous controller errors could terminate Node. Controllers now use `asyncHandler` and central error middleware.
 
-Também foram corrigidas regras de negócio: o bloqueio por cancelamentos desaparecia ao fim de um mês em vez de dois e não impedia novas encomendas; o limite de 10 pratos não era verificado ao editar um menu; era possível avaliar encomendas ainda não entregues e saltar estados da encomenda; o gráfico do restaurante contava as encomendas de todos os restaurantes; e as fotografias enviadas no registo ficavam guardadas numa pasta diferente daquela para onde apontava o link. No cliente Angular, os endereços da API deixaram de estar escritos em nove ficheiros e passaram para a configuração de ambiente.
+Business-rule fixes included the cancellation block ending after one month instead of two and failing to prevent orders; missing menu-size validation during editing; reviews before delivery; skipped order states; restaurant charts counting all restaurants; and registration-image paths pointing to the wrong directory. Angular API addresses were consolidated from nine files into environment configuration.
 
-## Segurança: configuração e segunda revisão
+## Security configuration and second review
 
-Uma segunda revisão acrescentou as proteções abaixo. Todas as variáveis estão descritas em `backend/.env.example`.
+All settings are documented in `backend/.env.example`.
 
-- **Sessão** – o JWT (HS256, com emissor, público, `jti` e versão da conta) vive só num cookie `HttpOnly`, `SameSite=Strict` e `Secure` em produção, com o nome `__Host-snackify` (em desenvolvimento, `token`). Nunca é devolvido no corpo nem aceite no cabeçalho `Authorization`. Redefinir a password ou usar `POST /auth/logout-all` invalida todas as sessões abertas. Em produção, `JWT_SECRET` tem de ter pelo menos 32 caracteres.
-- **CSRF** – os pedidos `POST/PUT/PATCH/DELETE` só são aceites com `Origin` (ou `Referer`) igual a `CLIENT_URL` ou `SERVER_URL`.
-- **Contas** – o email tem de ser confirmado antes do primeiro login; há recuperação da password (link de 30 minutos e uso único); após 5 tentativas falhadas a conta fica bloqueada 15 minutos; todas as falhas de login dão a mesma mensagem. Passwords com 10 a 64 caracteres, maiúscula, minúscula, número e símbolo (bcrypt com custo 12). Os tokens enviados por email só são guardados como *hash* SHA-256.
-- **Vales pagos a sério** – comprar um vale cria-o pendente e sem saldo; só fica ativo quando o Stripe confirma o pagamento (no regresso ou pelo webhook). Antes, a compra "simulada" dava saldo real sem pagar.
-- **Bots e abusos** – limites de pedidos por IP (login, registo, recuperação, reenvio, verificação e um limite geral da API), campo *honeypot* e Cloudflare Turnstile no registo, login e recuperação.
-- **Cabeçalhos** – CSP com *nonce* por pedido (sem scripts nem atributos de evento inline), `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, HSTS e redirecionamento para HTTPS em produção; limite de 100 KB nos corpos JSON/formulários; Swagger fechado em produção.
-- **Uploads** – o tipo real da imagem é confirmado pelos primeiros bytes (JPEG, PNG, WEBP, GIF) e a extensão é a do tipo detetado; os ficheiros são servidos com `nosniff` e CSP `sandbox`.
-- **Erros** – nenhuma resposta inclui mensagens internas; os registos não incluem query strings, tokens nem passwords.
-- **Consultas** – os operadores construídos pelo servidor (`$gt`, `$in`, ...) passaram a ser marcados como confiáveis: o `sanitizeFilter` estava a neutralizá-los, o que desligava o limite de encomendas em curso, o bloqueio por cancelamentos e a pesquisa de pratos.
-- **Dependências** – Angular atualizado para a versão 20 (vulnerabilidades XSS) e removida a dependência `mongoose-validator`, sem uso.
+- **Sessions:** HS256 JWT with issuer, audience, `jti`, and account version, held only in a `HttpOnly`, `SameSite=Strict` cookie. Production uses `Secure` and `__Host-snackify`; development uses `token`. Tokens are neither returned in response bodies nor accepted through `Authorization`. Password resets and `POST /auth/logout-all` invalidate all sessions. Production `JWT_SECRET` must contain at least 32 characters.
+- **CSRF:** POST/PUT/PATCH/DELETE require an Origin or Referer matching `CLIENT_URL` or `SERVER_URL`.
+- **Accounts:** email verification, single-use 30-minute reset links, a 15-minute lockout after five failures, and uniform errors. Passwords require 10–64 characters with upper/lowercase, number, and symbol; bcrypt cost 12. Email tokens are stored as SHA-256 hashes.
+- **Paid vouchers:** initially pending with no balance; activation requires Stripe confirmation on return or through a webhook. Previously simulated purchases granted spendable balance without payment.
+- **Bots/abuse:** endpoint-specific and general API rate limits, registration honeypot, and Cloudflare Turnstile for registration/login/reset.
+- **Headers:** per-request nonce CSP without inline scripts/event attributes, `X-Frame-Options: DENY`, Referrer/Permissions policies, HSTS and production HTTPS redirection, 100 KB bodies, and production Swagger disabled by default.
+- **Uploads:** verify file signatures for JPEG/PNG/WEBP/GIF, use the detected extension, and serve with `nosniff` and sandbox CSP.
+- **Errors/logs:** hide internal messages and exclude query strings, tokens, and passwords from logs.
+- **Queries:** explicitly trust server-built operators (`$gt`, `$in`, etc.); `sanitizeFilter` had neutralised them, breaking order limits, cancellation blocks, and dish search.
+- **Dependencies:** upgraded Angular to version 20 as part of the security review and removed unused `mongoose-validator`.
 
-### Como configurar
+### Configure services
 
-- **Email (SMTP)** – defina `SMTP_HOST`, `SMTP_PORT` (587 com STARTTLS ou 465 com `SMTP_SECURE=true`), `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM`. Sem SMTP, fora de produção o email é escrito na consola; em produção o envio falha e fica registado sem o link.
-- **Webhook do Stripe** – em desenvolvimento, com a [Stripe CLI](https://docs.stripe.com/stripe-cli):
+- **SMTP:** `SMTP_HOST`, `SMTP_PORT` (587/STARTTLS or 465 with `SMTP_SECURE=true`), `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`. Without SMTP, development prints emails; production logs a send failure without the link.
+- **Stripe webhook:** in development:
+
   ```bash
   stripe listen --forward-to localhost:5000/api/stripe/webhook
   ```
-  e copie o `whsec_...` apresentado para `STRIPE_WEBHOOK_SECRET`. Em produção, crie o endpoint `https://<domínio>/api/stripe/webhook` no painel do Stripe com o evento `checkout.session.completed`. Sem o segredo, o webhook responde 503 e o pagamento é confirmado apenas no regresso do cliente.
-- **Cloudflare Turnstile** – crie um *widget* no painel da Cloudflare; a chave secreta vai para `TURNSTILE_SECRET_KEY`, a pública para `TURNSTILE_SITE_KEY` (formulários EJS) e para `turnstileSiteKey` em `frontend/src/environments/*.ts`. Com a chave secreta vazia, a verificação fica desligada.
-- **Administrador** – defina `ADMIN_PASSWORD` (tem de cumprir a regra das passwords) antes de `npm run seed`; sem ela é gerada uma password aleatória, mostrada só fora de produção. As contas criadas pelo seed ficam com o email confirmado.
-- **`ALLOW_SIMULATED_PAYMENTS=true`** – só para desenvolvimento: permite comprar vales sem pagar. É sempre ignorada com `NODE_ENV=production`.
-- **`ENABLE_API_DOCS=true`** – publica o Swagger em produção (fora de produção está sempre disponível).
-- **`TRUST_PROXY`** – número de proxies à frente da aplicação (ex.: `1` atrás de Nginx ou Render). Sem isto, atrás de um proxy, os limites por IP e o redirecionamento para HTTPS não funcionam corretamente.
 
-### Migração de dados existentes
+  Copy the displayed `whsec_...` into `STRIPE_WEBHOOK_SECRET`. In production, configure `https://<domain>/api/stripe/webhook` for `checkout.session.completed`. Without the secret, webhooks return 503 and payment is confirmed only on the customer's return. See [Stripe CLI documentation](https://docs.stripe.com/stripe-cli).
+- **Turnstile:** secret in `TURNSTILE_SECRET_KEY`; public key in `TURNSTILE_SITE_KEY` for EJS and `turnstileSiteKey` in `frontend/src/environments/*.ts`. An empty secret disables verification.
+- **Administrator:** set a policy-compliant `ADMIN_PASSWORD` before `npm run seed`. Otherwise a random password is generated and displayed only outside production. Seeded accounts are email-verified.
+- **`ALLOW_SIMULATED_PAYMENTS=true`:** development-only unpaid voucher purchases; always ignored in production.
+- **`ENABLE_API_DOCS=true`:** enables production Swagger; always available outside production.
+- **`TRUST_PROXY`:** number of proxies in front of the app, such as `1` behind Nginx or Render; required for correct IP limits and HTTPS redirection behind a proxy.
 
-Contas criadas antes desta versão não têm o email confirmado e não conseguem entrar. Depois de rever a lista, marque-as como confirmadas no `mongosh`:
+### Existing-data migration
+
+Older accounts without verified email cannot log in. Review the accounts before marking them verified in mongosh:
 
 ```js
 db.users.updateMany({ emailVerified: { $exists: false } }, { $set: { emailVerified: true } })
 db.restaurants.updateMany({ emailVerified: { $exists: false } }, { $set: { emailVerified: true } })
 ```
 
-Os vales antigos não têm estado e deixam de poder ser usados (foram criados sem pagamento). Se algum for legítimo, ative-o com `db.vouchers.updateOne({ code: "VALE-..." }, { $set: { status: "active" } })`.
+Old vouchers without status cannot be used because they were created without payment. Activate only confirmed legitimate vouchers, for example `db.vouchers.updateOne({ code: "VALE-..." }, { $set: { status: "active" } })`.
 
-## O que faltava face ao enunciado (acrescentado em 2026)
+## Missing assignment features added in 2026
 
-- **Definições do restaurante** – tempos de preparação e de entrega, raio máximo de entrega e número máximo de encomendas em curso. São aplicados ao criar a encomenda (o raio é calculado pela fórmula de haversine quando há coordenadas nas moradas) e dão a hora prevista de preparação e de entrega.
-- **Pesquisa, filtros e ordenação** para clientes, por nome, categoria, preço, restaurante e localização.
-- **Pagamento no local** com o código da encomenda e um documento de identificação, que fica associado à encomenda e é visível para o restaurante.
-- **Notificação no lado do restaurante** quando chega uma encomenda nova.
-- **Vales de refeição** (bonificação), com saldo que é devolvido se a encomenda for cancelada.
+- **Restaurant settings:** preparation/delivery times, maximum radius, concurrent-order capacity. Applied at order creation; Haversine distance is used when addresses have coordinates, and estimated preparation/delivery times are calculated.
+- **Customer search/filter/sorting:** name, category, price, restaurant, location.
+- **On-site payment:** order code and identity document associated with the order and visible to the restaurant.
+- **Restaurant notification:** new-order alerts.
+- **Meal vouchers:** bonus feature with refunded balance when an order is cancelled.

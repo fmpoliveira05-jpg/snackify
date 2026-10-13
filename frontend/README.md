@@ -1,12 +1,12 @@
-# Snackify – cliente Angular
+# Snackify — Angular Client
 
-Cliente web usado pelos clientes e pelo administrador da plataforma. Ver o [README principal](../README.md) para a visão geral do projeto.
+Web client for customers and platform administrators. See the [main README](../README.md) for the project overview.
 
 ```bash
 npm install
-npm start          # http://localhost:4200 (a API tem de estar a correr em http://localhost:5000)
-npm run build      # compila para dist/angular/browser, que o Express serve em produção
-npm run test:ci    # testes unitários em Chrome headless
+npm start        # http://localhost:4200; API required at http://localhost:5000
+npm run build    # Outputs dist/angular/browser, served by Express in production
+npm run test:ci  # Unit tests in headless Chrome
 ```
 
-O endereço da API está em `src/environments/environment.ts` (desenvolvimento) e `environment.production.ts` (produção, mesmo domínio que o Express).
+The API URL is configured in `src/environments/environment.ts` for development and `environment.production.ts` for production, where the client shares Express's domain.
